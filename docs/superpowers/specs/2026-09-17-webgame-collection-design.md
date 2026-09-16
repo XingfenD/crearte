@@ -204,7 +204,7 @@ interface ContentRepository {
 
 `deploy/Dockerfile` 多阶段：
 
-1. `node:22-alpine`：拷 `src/package*.json` → `npm ci` → 拷 `src/` → `npm run build`
+1. `node:24-alpine`：拷 `src/package*.json` → `npm ci` → 拷 `src/` → `npm run build`
 2. `nginx:alpine`：拷 `deploy/nginx.conf` 与构建产物 `dist/`
 
 `.dockerignore` 排除 `docs/`、`deploy/k8s/`、`.git`、`node_modules`、`src/dist`、`src/public/data`。
@@ -220,7 +220,7 @@ interface ContentRepository {
 
 **`validate.yml`**（PR 触发，`paths: src/**`）：
 
-1. setup-node 22 + npm cache（`cache-dependency-path: src/package-lock.json`）
+1. setup-node 24 + npm cache（`cache-dependency-path: src/package-lock.json`）
 2. `cd src && npm ci`
 3. `npm run validate:data`（只校验，错误信息面向贡献者）
 4. `npm run check`（`vue-tsc --noEmit && vitest run && vite build`）
@@ -229,7 +229,7 @@ interface ContentRepository {
 
 1. `permissions: contents: read, packages: write`
 2. 登录 GHCR（`GITHUB_TOKEN`），`docker/build-push-action` 推 `sha-<短哈希>` + `latest`
-3. 调 keel webhook：`POST ${{ secrets.KEEL_WEBHOOK_URL }}`（token 在 body/header，按集群 keel 版本约定）；secret 未配置则跳过并 log 提示（依赖轮询兜底）
+3. 调 keel native webhook：POST `${{ secrets.KEEL_WEBHOOK_URL }}`（`/v1/webhooks/native`），body `{"name":"<镜像名>","tag":"latest"}`；keel 开启 `AUTHENTICATED_WEBHOOKS` 时带 Basic auth（用户名 `keel`，密码 `KEEL_TOKEN`）；secret 未配置则跳过并 log 提示（依赖轮询兜底）
 4. `concurrency` 保证同时间仅一次发布
 
 ### 8.4 k3s 清单（`deploy/k8s/`）
@@ -237,12 +237,13 @@ interface ContentRepository {
 - `namespace.yaml`、`deployment.yaml`：2 副本、RollingUpdate、readinessProbe GET `/`、资源 requests cpu 10m / 内存 16Mi，limits cpu 200m / 内存 128Mi
 - `service.yaml`：ClusterIP:80
 - `ingress.yaml`：k3s 默认 Traefik；host 与 TLS 用占位注释，按实际集群填
-- keel 注解（Deployment）：
+- keel 注解（Deployment，依据 keel 官方文档：`latest` 这类可变标签更新用 `force` + `match-tag` 对比 manifest digest；设置 `trigger: poll` 后 webhook 事件仍然有效）：
 
 ```yaml
 keel.sh/policy: force
-keel.sh/trigger: webhook     # 未配 webhook 时退回轮询
-keel.sh/pollSchedule: "@every 1m"
+keel.sh/match-tag: "true"
+keel.sh/trigger: poll       # 轮询兜底（webhook 未配置/失败时）
+keel.sh/pollSchedule: "@every 5m"
 ```
 
 - 不引入 HPA（纯静态 nginx）
