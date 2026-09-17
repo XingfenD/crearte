@@ -68,3 +68,21 @@ export function filterGames(games: GameSummary[], state: FilterState): GameSumma
   } else sorted.sort((a, b) => a.name.localeCompare(b.name, 'zh') || a.id.localeCompare(b.id))
   return sorted
 }
+
+export function countByType(games: GameSummary[]): Record<GameType, number> {
+  const counts = Object.fromEntries(GAME_TYPES.map((type) => [type, 0])) as Record<GameType, number>
+  for (const game of games) counts[game.type] += 1
+  return counts
+}
+
+export function countByDuration(games: GameSummary[]): Record<DurationBucket, number> {
+  const counts: Record<DurationBucket, number> = { short: 0, mid: 0, long: 0 }
+  for (const game of games) counts[durationBucket(game)] += 1
+  return counts
+}
+
+export function countByTag(games: GameSummary[], limit = 16): Array<[string, number]> {
+  const counts = new Map<string, number>()
+  for (const game of games) for (const tag of game.tags) counts.set(tag, (counts.get(tag) ?? 0) + 1)
+  return [...counts.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0])).slice(0, limit)
+}

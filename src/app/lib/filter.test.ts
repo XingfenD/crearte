@@ -1,6 +1,15 @@
 import { describe, expect, it } from 'vitest'
-import type { GameSummary } from '@/data/types'
-import { DEFAULT_FILTER, durationBucket, filterGames, parseFilterState, toQuery } from './filter'
+import { GAME_TYPES, type GameSummary } from '@/data/types'
+import {
+  countByDuration,
+  countByTag,
+  countByType,
+  DEFAULT_FILTER,
+  durationBucket,
+  filterGames,
+  parseFilterState,
+  toQuery
+} from './filter'
 
 function game(partial: Partial<GameSummary> & Pick<GameSummary, 'id'>): GameSummary {
   return {
@@ -75,5 +84,28 @@ describe('filterGames', () => {
   it('组合筛选', () => {
     expect(filterGames(games, { ...DEFAULT_FILTER, q: '数字', type: 'action' }).map((g) => g.id)).toEqual(['gamma'])
     expect(filterGames(games, { ...DEFAULT_FILTER, q: '不存在' })).toEqual([])
+  })
+})
+
+describe('countByType / countByDuration / countByTag', () => {
+  it('countByType 覆盖全部类型且 0 计数保留', () => {
+    const counts = countByType(games)
+    expect(Object.keys(counts)).toHaveLength(GAME_TYPES.length)
+    expect(counts.puzzle).toBe(1)
+    expect(counts.idle).toBe(1)
+    expect(counts.action).toBe(1)
+    expect(counts.music).toBe(0)
+  })
+
+  it('countByDuration 按 max 分桶统计', () => {
+    expect(countByDuration(games)).toEqual({ short: 1, mid: 1, long: 1 })
+  })
+
+  it('countByTag 按出现次数降序，默认取前 16', () => {
+    const counts = countByTag(games)
+    expect(counts[0]).toEqual(['数字', 2])
+    expect(counts.map(([, n]) => n)).toEqual([2, 1, 1])
+    const many = Array.from({ length: 20 }, (_, i) => game({ id: `g${i}`, tags: [`tag-${String(i).padStart(2, '0')}`] }))
+    expect(countByTag(many)).toHaveLength(16)
   })
 })
