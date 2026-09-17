@@ -1,0 +1,13 @@
+FROM node:24-alpine
+
+WORKDIR /app
+
+COPY src/package.json src/package-lock.json ./
+RUN npm ci
+
+COPY src/ ./
+
+EXPOSE 5173
+
+# predev 会先执行 scripts/build-data.mjs，挂载空目录也能起
+CMD ["npm", "run", "dev", "--", "--host", "0.0.0.0", "--port", "5173"]

@@ -24,7 +24,19 @@ npm run dev      # 自动生成 src/public/data
 npm run check    # vitest + vue-tsc + vite build
 ```
 
-生产形态本地验收：
+容器内开发（源码挂载 + HMR，无需本机装 Node）：
+
+```bash
+docker compose -f deploy/compose.dev.yaml up --build   # http://localhost:5173
+```
+
+## 生产形态本地验收
+
+```bash
+docker compose -f deploy/compose.prod.yaml up -d --build   # http://localhost:8080
+```
+
+或不用 compose：
 
 ```bash
 docker build -f deploy/Dockerfile -t webgame-collection:local .
