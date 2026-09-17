@@ -67,7 +67,7 @@
 
 ### 3.3 描边 / 硬阴影 / 直角
 
-- 描边：常规 `2px solid ink`；强分隔（页头底、侧栏右、页脚顶、文档 h2 下划线）`3px`；微件（标签片、行内代码）`1.5px`
+- 描边：常规 `2px solid ink`；强分隔（页头底、侧栏右、页脚顶）`3px`；微件（标签片、行内代码）`1.5px`；文档 h2 下划线按 §4.7 取 `2px`
 - 硬阴影（无模糊、无透明度）：`3px 3px 0 ink`（小件）/ `4px 4px 0 ink`（卡片、输入）/ `6px 6px 0 ink`（悬停抬起、封面大图）/ `4px 4px 0 accent`（仅详情页主 CTA）
 - 直角：全站 `border-radius: 0`，包括输入框、徽章、卡片、抽屉、对话框
 - 悬停/按下（只动 `transform` 与 `box-shadow`，不占布局）：
@@ -120,6 +120,7 @@
 - `cover.ts` 删除 `coverGradient`，新增 `COVER_COLORS`（8 色）与 `coverColor(id)`：`hashString(id) % 8` 取色，同一 id 恒定
 - 调色板（白字对比度均 ≥ 4.5:1）：`#2F6DE0`、`#C03A1B`、`#1F7A4D`、`#6B4FD8`、`#B35C00`、`#0F6E6E`、`#A3256B`、`#141414`
 - 兜底渲染：纯色块 + 首字（`coverInitial`，display 字体、白色、与封面同尺寸比例）+ `2px` 底边；真实封面图仍优先，加载失败回落到纯色块
+  - 已知装饰性偏差（低优先，未消除）：详情页 hero 封面外层已有 `2px` 描边，兜底块自身的 `2px` 底边与之相邻，视觉上底线偏粗
 
 ### 4.6 状态组件
 
@@ -254,7 +255,8 @@ base 层：`body` 用 `bg-paper text-ink font-sans`；`::selection` 黄底；`:f
 `src/app/lib/no-gradient.test.ts`：
 
 - 扫描 `src/app/**/*.{vue,ts,css}`（排除 `*.test.ts`）与 `src/index.html`
-- 命中任一即失败并输出「文件:行号 + 命中串」：`/gradient/i`、`/repeating-/i`、`/rounded-/i`
+- 命中任一即失败并输出「文件:行号 + 命中串」：`/gradient/i`、`/repeating-/i`、`/rounded-/i`、裸 `rounded`（词边界）、非零 `border-radius` / `borderRadius`
+- `border-radius: 0` 是全局直角复位（base 层），必须放行
 - 守卫自身的关键词以字符串拼接方式书写，避免自命中
 
 ### 7.5 测试更新
