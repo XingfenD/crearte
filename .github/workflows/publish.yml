@@ -1,0 +1,55 @@
+name: publish
+
+on:
+  push:
+    branches: [master]
+  workflow_dispatch:
+
+concurrency:
+  group: publish-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  packages: write
+
+env:
+  IMAGE: ghcr.io/${{ github.repository }}
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    env:
+      KEEL_WEBHOOK_URL: ${{ secrets.KEEL_WEBHOOK_URL }}
+      KEEL_TOKEN: ${{ secrets.KEEL_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - uses: docker/metadata-action@v5
+        id: meta
+        with:
+          images: ${{ env.IMAGE }}
+          tags: |
+            type=sha,format=long
+            type=raw,value=latest
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: deploy/Dockerfile
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+      - name: Notify keel
+        if: env.KEEL_WEBHOOK_URL != ''
+        run: |
+          curl -fsS -X POST "${KEEL_WEBHOOK_URL}" \
+            -u "keel:${KEEL_TOKEN}" \
+            -H 'Content-Type: application/json' \
+            -d "{\"name\":\"${IMAGE}\",\"tag\":\"latest\"}"
+      - name: Keel skipped
+        if: env.KEEL_WEBHOOK_URL == ''
+        run: echo "KEEL_WEBHOOK_URL 未配置，跳过 webhook 通知（依赖 keel 轮询兜底）"
