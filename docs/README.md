@@ -48,7 +48,7 @@ docker run --rm -p 8080:80 webgame-collection:local
 ## 部署
 
 1. 推送 `master` 后 Actions 自动推送镜像 `ghcr.io/<owner>/webgame-collection:{latest,sha-<long>}`（首次需把 Package 可见性设为 public）
-2. k3s：替换 `deploy/k8s/deployment.yaml` 中的 `OWNER`、`deploy/k8s/ingress.yaml` 中的 `host` 后 `kubectl apply -f deploy/k8s/`
+2. k3s：`kubectl apply -f deploy/k8s/`（镜像已固定为 `ghcr.io/xingfend/webgame-collection:latest`）；集群未装 ingress controller，Service 为 NodePort，访问 `http://<节点IP>:30080`
 3. keel：集群内安装 [keel.sh](https://keel.sh)（`helm upgrade --install keel --namespace=keel keel/keel --set helmProvider.enabled=false`），仓库 Secrets 配置 `KEEL_WEBHOOK_URL`（如 `http://keel.keel.svc.cluster.local:9300/v1/webhooks/native`）与 `KEEL_TOKEN`（keel 的 `TOKEN_SECRET`；keel 未开 `AUTHENTICATED_WEBHOOKS` 时留空即可）
 4. 发布链路：推镜像后 Action POST keel native webhook（`{"name":"<镜像>","tag":"latest"}`），keel 滚动更新 Deployment；webhook 不可用时依赖 `@every 5m` 轮询兜底
 

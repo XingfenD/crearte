@@ -4,8 +4,10 @@ metadata:
   name: webgame-collection
   namespace: webgame-collection
 spec:
+  type: NodePort
   selector:
     app: webgame-collection
   ports:
     - port: 80
       targetPort: 80
+      nodePort: 30080

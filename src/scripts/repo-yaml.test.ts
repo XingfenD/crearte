@@ -34,7 +34,7 @@ describe('GitHub workflows', () => {
 })
 
 describe('k8s manifests', () => {
-  const files = ['namespace.yaml', 'deployment.yaml', 'service.yaml', 'ingress.yaml']
+  const files = ['namespace.yaml', 'deployment.yaml', 'service.yaml']
 
   it('全部可解析且命名空间一致', async () => {
     for (const file of files) {
@@ -59,9 +59,11 @@ describe('k8s manifests', () => {
     expect(container.resources.limits).toBeTruthy()
   })
 
-  it('service 指向应用端口 80', async () => {
+  it('service 以 NodePort 暴露应用端口 80', async () => {
     const service = await loadYaml('deploy/k8s/service.yaml')
+    expect(service.spec.type).toBe('NodePort')
     expect(service.spec.ports[0].port).toBe(80)
+    expect(service.spec.ports[0].nodePort).toBe(30080)
     expect(service.spec.selector.app).toBe('webgame-collection')
   })
 })

@@ -6,6 +6,16 @@ All notable changes to this template should be documented in this file.
 The format loosely follows Keep a Changelog and can be adapted to the team's habits.
 本文档参考了 Keep a Changelog 的思路，也可以根据团队习惯调整。
 
+## [0.1.2] - 2026-09-17
+
+### Changed / 变更
+
+- Removed the k8s Ingress because the cluster has no ingress controller, and exposed the Service as NodePort 30080 instead.
+- 集群未安装 ingress controller，移除 k8s Ingress，改为 NodePort 30080 暴露 Service。
+
+- Updated the deployment docs and manifest tests to match the NodePort setup.
+- 同步更新部署文档与清单测试以匹配 NodePort 方案。
+
 ## [0.1.1] - 2026-09-17
 
 ### Fixed / 修复
