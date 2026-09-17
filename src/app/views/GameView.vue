@@ -1,10 +1,11 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { RouterLink } from 'vue-router'
+import { PhArrowLeft, PhArrowSquareOut } from '@phosphor-icons/vue'
 import { NotFoundError, repo, type Game } from '@/data'
 import { useAsync } from '@/composables/useAsync'
 import { renderMarkdown } from '@/lib/markdown'
-import { GAME_TYPE_LABELS, durationText } from '@/lib/labels'
+import { durationText } from '@/lib/labels'
 import GameCover from '@/components/GameCover.vue'
 import StatePanel from '@/components/StatePanel.vue'
 
@@ -20,39 +21,46 @@ const introHtml = computed(() => (game.value?.intro ? renderMarkdown(game.value.
 
 <template>
   <StatePanel :loading="loading" :error="notFound ? null : error" @retry="reload">
-    <div v-if="notFound" class="py-24 text-center space-y-4">
-      <p class="text-neutral-400">该游戏不存在或已移除。</p>
-      <RouterLink to="/" class="inline-block text-violet-400 hover:underline">返回目录</RouterLink>
+    <div v-if="notFound" class="border-2 border-dashed border-ink p-10 text-center">
+      <p class="font-mono text-[0.6875rem] tracking-[0.05em] text-ink-soft">GAME NOT FOUND</p>
+      <p class="mt-3 text-sm">该游戏不存在或已移除。</p>
+      <RouterLink to="/" class="btn-ink lift mt-5 hover:shadow-hard active:shadow-none">返回目录</RouterLink>
     </div>
 
     <article v-else-if="game" class="mx-auto max-w-3xl space-y-6">
-      <RouterLink to="/" class="inline-block text-sm text-neutral-400 hover:text-neutral-200">← 返回目录</RouterLink>
+      <RouterLink
+        to="/"
+        class="inline-flex items-center gap-1.5 font-mono text-xs text-accent-ink underline decoration-2 underline-offset-2"
+      >
+        <PhArrowLeft :size="14" weight="bold" aria-hidden="true" />返回目录
+      </RouterLink>
 
-      <div class="overflow-hidden rounded-xl border border-neutral-800">
-        <GameCover :game="game" />
+      <div class="border-2 border-ink shadow-hard-lg">
+        <GameCover :game="game" ratio="hero" />
       </div>
 
       <div class="space-y-3">
-        <div class="flex flex-wrap items-center gap-3">
-          <h1 class="text-2xl font-semibold">{{ game.name }}</h1>
-          <span class="rounded-full bg-neutral-800 px-2.5 py-0.5 text-xs text-neutral-300">
-            {{ GAME_TYPE_LABELS[game.type] }}
-          </span>
-        </div>
-        <p class="text-sm text-neutral-400">
+        <h1 class="font-display text-[2.125rem] font-black leading-[1.1]">{{ game.name }}</h1>
+        <p class="font-mono text-[0.6875rem] tracking-[0.05em] text-ink-soft">
           作者：
-          <a v-if="game.author.url" :href="game.author.url" target="_blank" rel="noopener noreferrer" class="text-violet-400 hover:underline">
-            {{ game.author.name }}
-          </a>
+          <a
+            v-if="game.author.url"
+            :href="game.author.url"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="text-accent-ink underline decoration-2 underline-offset-2"
+          >{{ game.author.name }}</a>
           <span v-else>{{ game.author.name }}</span>
-          <span class="mx-2 text-neutral-700">·</span>
-          预计时长：{{ durationText(game.durationMinutes) }}
-          <span class="mx-2 text-neutral-700">·</span>
-          收录于 {{ game.addedAt }}
+          <span class="mx-2">·</span>预计时长：{{ durationText(game.durationMinutes) }}
+          <span class="mx-2">·</span>收录于 {{ game.addedAt }}
         </p>
-        <p class="text-neutral-300">{{ game.description }}</p>
-        <div class="flex flex-wrap gap-1.5 text-xs text-neutral-400">
-          <span v-for="tag in game.tags" :key="tag" class="rounded bg-neutral-800/70 px-2 py-0.5">{{ tag }}</span>
+        <p class="text-sm leading-[1.8] text-ink-soft">{{ game.description }}</p>
+        <div class="flex flex-wrap gap-1.5">
+          <span
+            v-for="tag in game.tags"
+            :key="tag"
+            class="border-[1.5px] border-ink bg-surface px-2 py-0.5 font-mono text-[0.6875rem]"
+          >{{ tag }}</span>
         </div>
       </div>
 
@@ -60,10 +68,15 @@ const introHtml = computed(() => (game.value?.intro ? renderMarkdown(game.value.
         :href="game.url"
         target="_blank"
         rel="noopener noreferrer"
-        class="inline-block rounded-lg bg-violet-600 px-5 py-2.5 font-medium hover:bg-violet-500"
-      >开始游戏 ↗</a>
+        class="lift inline-flex items-center gap-2 border-2 border-ink bg-ink px-5 py-2.5 font-extrabold text-paper shadow-hard-accent hover:shadow-[6px_6px_0_#e8552f] active:shadow-none"
+      >
+        开始游戏
+        <PhArrowSquareOut :size="16" weight="bold" aria-hidden="true" />
+      </a>
 
-      <div v-if="introHtml" class="markdown-body border-t border-neutral-800 pt-4" v-html="introHtml" />
+      <div v-if="introHtml" class="border-t-[3px] border-ink pt-6">
+        <div class="markdown-body" v-html="introHtml" />
+      </div>
     </article>
   </StatePanel>
 </template>

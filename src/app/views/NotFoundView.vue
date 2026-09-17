@@ -1,7 +1,14 @@
+<script setup lang="ts">
+import { RouterLink } from 'vue-router'
+</script>
+
 <template>
-  <div class="py-24 text-center space-y-4">
-    <p class="text-5xl font-bold text-neutral-700">404</p>
-    <p class="text-neutral-400">页面不存在。</p>
-    <RouterLink to="/" class="inline-block text-violet-400 hover:underline">返回目录</RouterLink>
+  <div class="flex min-h-[50vh] flex-col items-center justify-center gap-6 px-4 text-center">
+    <p class="font-display text-[clamp(2.25rem,6vw,3.25rem)] font-black leading-[1.05]">404</p>
+    <p class="-rotate-6 border-[2.5px] border-accent-ink px-3 py-1 font-mono text-xs font-bold tracking-[0.2em] text-accent-ink">
+      PAGE NOT FOUND
+    </p>
+    <p class="text-sm text-ink-soft">页面不存在。</p>
+    <RouterLink to="/" class="btn-ink lift hover:shadow-hard active:shadow-none">返回目录</RouterLink>
   </div>
 </template>
