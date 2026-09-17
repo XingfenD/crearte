@@ -1,0 +1,44 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/webgame-collection/schema/game.schema.json",
+  "title": "Webgame Collection Game",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["id", "name", "url", "author", "description", "durationMinutes", "type", "tags", "addedAt"],
+  "properties": {
+    "id": { "type": "string", "pattern": "^[a-z0-9-]{1,64}$" },
+    "name": { "type": "string", "minLength": 1, "maxLength": 60 },
+    "url": { "type": "string", "pattern": "^https://[^\\s]+$" },
+    "author": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name"],
+      "properties": {
+        "name": { "type": "string", "minLength": 1, "maxLength": 60 },
+        "url": { "type": "string", "pattern": "^https://[^\\s]+$" }
+      }
+    },
+    "description": { "type": "string", "minLength": 1, "maxLength": 140 },
+    "intro": { "type": "string", "maxLength": 5000 },
+    "durationMinutes": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["min", "max"],
+      "properties": {
+        "min": { "type": "integer", "minimum": 1 },
+        "max": { "type": "integer", "minimum": 1, "maximum": 600 }
+      }
+    },
+    "type": {
+      "enum": ["puzzle", "action", "idle", "strategy", "simulation", "narrative", "music", "creative", "casual", "other"]
+    },
+    "tags": {
+      "type": "array",
+      "maxItems": 8,
+      "uniqueItems": true,
+      "items": { "type": "string", "minLength": 1, "maxLength": 12, "pattern": "^\\S(.*\\S)?$" }
+    },
+    "cover": { "type": "string", "pattern": "^(https://[^\\s]+|/data/assets/covers/)" },
+    "addedAt": { "type": "string", "pattern": "^\\d{4}-\\d{2}-\\d{2}$" }
+  }
+}

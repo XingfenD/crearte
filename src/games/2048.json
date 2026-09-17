@@ -1,0 +1,12 @@
+{
+  "id": "2048",
+  "name": "2048",
+  "url": "https://play2048.co/",
+  "author": { "name": "Gabriele Cirulli", "url": "https://github.com/gabrielecirulli/2048" },
+  "description": "滑动合并数字方块，凑出 2048 的经典益智游戏。",
+  "intro": "使用方向键（移动端滑动）移动所有方块，相同数字碰撞后合并。\n\n全部方块卡死且无法再合并时游戏结束。",
+  "durationMinutes": { "min": 5, "max": 20 },
+  "type": "puzzle",
+  "tags": ["数字", "休闲"],
+  "addedAt": "2026-09-17"
+}

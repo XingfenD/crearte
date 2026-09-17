@@ -1,0 +1,12 @@
+{
+  "id": "a-dark-room",
+  "name": "A Dark Room",
+  "url": "https://adarkroom.doublespeakgames.com/",
+  "author": { "name": "Doublespeak Games", "url": "https://www.doublespeakgames.com/" },
+  "description": "从一堆篝火开始，逐步建设定居点并探索黑暗世界的文字放置游戏。",
+  "intro": "游戏从“生火”开始，资源、建筑与事件逐步展开。\n\n耐心是这款游戏的核心机制之一。",
+  "durationMinutes": { "min": 30, "max": 300 },
+  "type": "idle",
+  "tags": ["文字", "生存", "放置"],
+  "addedAt": "2026-09-17"
+}
