@@ -29,9 +29,13 @@ const toc = computed(() => (doc.value ? extractToc(doc.value.content) : []))
   <StatePanel :loading="listLoading || docLoading" :error="listError ?? docError" @retry="reload">
     <DocSidebar :docs="docs ?? []" :active-slug="slug ?? ''" variant="tabs" class="mb-6 sm:hidden" />
 
-    <div class="flex items-start gap-8">
-      <aside class="hidden w-[200px] shrink-0 self-stretch border-r-[3px] border-ink bg-surface p-4 sm:block">
-        <DocSidebar :docs="docs ?? []" :active-slug="slug ?? ''" />
+    <div class="flex flex-1 items-start gap-8">
+      <aside class="relative hidden w-[200px] shrink-0 self-stretch sm:block">
+        <div class="absolute inset-0">
+          <div class="sticky top-20 h-[calc(100vh-9.75rem)] max-h-full overflow-y-auto border-r-[3px] border-ink bg-surface p-4">
+            <DocSidebar :docs="docs ?? []" :active-slug="slug ?? ''" />
+          </div>
+        </div>
       </aside>
       <article class="min-w-0 flex-1 max-w-[640px]">
         <h1 class="mb-5 font-display text-[1.625rem] font-black">{{ doc?.title }}</h1>
