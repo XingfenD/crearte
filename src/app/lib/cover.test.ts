@@ -1,20 +1,22 @@
 import { describe, expect, it } from 'vitest'
-import { coverGradient, coverInitial, hashString } from './cover'
+import { COVER_COLORS, coverColor, coverInitial, hashString } from './cover'
 
 describe('cover fallback', () => {
-  it('hashString 与 coverGradient 对同一 id 稳定，且色相在 0-359', () => {
-    expect(hashString('2048')).toBe(hashString('2048'))
-    const [from, to] = coverGradient('2048')
-    for (const color of [from, to]) {
-      const hue = Number(/hsl\((\d+)/.exec(color)?.[1])
-      expect(hue).toBeGreaterThanOrEqual(0)
-      expect(hue).toBeLessThan(360)
-    }
-    expect(coverGradient('2048')).toEqual(coverGradient('2048'))
+  it('coverColor 对同一 id 稳定，且取值属于 8 色表', () => {
+    expect(COVER_COLORS).toHaveLength(8)
+    expect(coverColor('2048')).toBe(coverColor('2048'))
+    expect(COVER_COLORS).toContain(coverColor('2048'))
+    expect(COVER_COLORS).toContain(coverColor('hextris'))
   })
 
-  it('不同 id 通常不同色（样例要不同）', () => {
-    expect(coverGradient('2048')).not.toEqual(coverGradient('hextris'))
+  it('不同 id 在色表上有分布', () => {
+    const ids = ['2048', 'hextris', 'a-dark-room', 'alpha', 'beta', 'gamma']
+    expect(new Set(ids.map(coverColor)).size).toBeGreaterThan(1)
+  })
+
+  it('hashString 稳定', () => {
+    expect(hashString('2048')).toBe(hashString('2048'))
+    expect(hashString('2048')).toBeGreaterThanOrEqual(0)
   })
 
   it('coverInitial 支持中文、emoji 与空串', () => {

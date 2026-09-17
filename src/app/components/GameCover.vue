@@ -1,22 +1,22 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
 import type { GameSummary } from '@/data/types'
-import { coverGradient, coverInitial } from '@/lib/cover'
+import { coverColor, coverInitial } from '@/lib/cover'
 
-const props = defineProps<{ game: GameSummary }>()
+const props = withDefaults(defineProps<{ game: GameSummary; ratio?: 'video' | 'hero' }>(), {
+  ratio: 'video'
+})
 const failed = ref(false)
 
 watch(() => props.game.cover, () => { failed.value = false })
 
-const gradient = computed(() => {
-  const [from, to] = coverGradient(props.game.id)
-  return `linear-gradient(135deg, ${from}, ${to})`
-})
+const color = computed(() => coverColor(props.game.id))
 const initial = computed(() => coverInitial(props.game.name))
+const ratioClass = computed(() => (props.ratio === 'hero' ? 'aspect-[16/7]' : 'aspect-video'))
 </script>
 
 <template>
-  <div class="aspect-[16/9] w-full overflow-hidden">
+  <div class="w-full overflow-hidden" :class="ratioClass">
     <img
       v-if="game.cover && !failed"
       :src="game.cover"
@@ -27,8 +27,8 @@ const initial = computed(() => coverInitial(props.game.name))
     />
     <div
       v-else
-      class="h-full w-full flex items-center justify-center text-4xl font-bold text-white/90 select-none"
-      :style="{ background: gradient }"
+      class="flex h-full w-full select-none items-center justify-center border-b-2 border-ink font-display text-4xl font-black text-white"
+      :style="{ background: color }"
     >
       {{ initial }}
     </div>
