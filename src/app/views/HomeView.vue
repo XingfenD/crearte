@@ -26,9 +26,13 @@ function clearSearch(): void {
 <template>
   <StatePanel :loading="loading" :error="error" @retry="reload">
     <h1 class="sr-only">网页游戏收藏馆 · 游戏目录</h1>
-    <div class="flex items-start gap-6">
-      <aside class="hidden w-[215px] shrink-0 self-stretch border-r-[3px] border-ink bg-surface p-4 lg:block">
-        <FilterSidebar :games="games ?? []" />
+    <div class="flex flex-1 items-start gap-6">
+      <aside class="relative hidden w-[215px] shrink-0 self-stretch lg:block">
+        <div class="absolute inset-0">
+          <div class="sticky top-20 h-[calc(100vh-9.75rem)] max-h-full overflow-y-auto border-r-[3px] border-ink bg-surface p-4">
+            <FilterSidebar :games="games ?? []" />
+          </div>
+        </div>
       </aside>
 
       <div class="min-w-0 flex-1 space-y-4">
