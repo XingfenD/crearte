@@ -32,3 +32,36 @@ describe('GitHub workflows', () => {
     expect(body).toContain('deploy/Dockerfile')
   })
 })
+
+describe('k8s manifests', () => {
+  const files = ['namespace.yaml', 'deployment.yaml', 'service.yaml', 'ingress.yaml']
+
+  it('全部可解析且命名空间一致', async () => {
+    for (const file of files) {
+      const doc = await loadYaml(`deploy/k8s/${file}`)
+      expect(doc, `${file} 无法解析`).toBeTruthy()
+      if (doc.metadata?.namespace) expect(doc.metadata.namespace).toBe('webgame-collection')
+      else expect(doc.metadata?.name).toBe('webgame-collection')
+    }
+  })
+
+  it('deployment 带 keel 注解、镜像指向 ghcr、带探针与资源限制', async () => {
+    const deployment = await loadYaml('deploy/k8s/deployment.yaml')
+    const annotations = deployment.metadata.annotations
+    expect(annotations['keel.sh/policy']).toBe('force')
+    expect(annotations['keel.sh/match-tag']).toBe('true')
+    expect(annotations['keel.sh/trigger']).toBe('poll')
+    const container = deployment.spec.template.spec.containers[0]
+    expect(container.image).toContain('ghcr.io/')
+    expect(container.image.endsWith(':latest')).toBe(true)
+    expect(container.readinessProbe.httpGet.path).toBe('/')
+    expect(container.resources.requests).toBeTruthy()
+    expect(container.resources.limits).toBeTruthy()
+  })
+
+  it('service 指向应用端口 80', async () => {
+    const service = await loadYaml('deploy/k8s/service.yaml')
+    expect(service.spec.ports[0].port).toBe(80)
+    expect(service.spec.selector.app).toBe('webgame-collection')
+  })
+})

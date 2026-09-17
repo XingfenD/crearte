@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: webgame-collection
+  namespace: webgame-collection
+spec:
+  selector:
+    app: webgame-collection
+  ports:
+    - port: 80
+      targetPort: 80
