@@ -27,6 +27,7 @@ function onClose(): void {
 <template>
   <dialog
     ref="dialog"
+    aria-label="筛选"
     class="m-0 mt-auto max-h-[85vh] w-full max-w-none overflow-y-auto border-t-[3px] border-ink bg-paper backdrop:bg-ink/60"
     @close="onClose"
   >

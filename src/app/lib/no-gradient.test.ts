@@ -26,21 +26,36 @@ function candidates(): string[] {
   return files
 }
 
+function hasBareRounded(lower: string): boolean {
+  return new RegExp('(?<![\\w-])' + 'round' + 'ed' + '(?![\\w-])').test(lower)
+}
+
+function hasNonZeroRadius(lower: string): boolean {
+  const marker = new RegExp('(?<![\\w-])border-?' + 'radius' + '(?![\\w-])', 'g')
+  for (const match of lower.matchAll(marker)) {
+    const declared = lower.slice((match.index ?? 0) + match[0].length).match(/^\s*:\s*([^;,}\]]*)/)
+    if (declared && declared[1].trim() !== '0') return true
+  }
+  return false
+}
+
 function violations(file: string): string[] {
   const found: string[] = []
   readFileSync(file, 'utf8')
     .split('\n')
     .forEach((line, index) => {
       const lower = line.toLowerCase()
-      for (const banned of BANNED) {
-        if (lower.includes(banned)) found.push(`${relative(SRC_ROOT, file)}:${index + 1}: ${line.trim()}`)
-      }
+      const hit =
+        BANNED.some((banned) => lower.includes(banned)) ||
+        hasBareRounded(lower) ||
+        hasNonZeroRadius(lower)
+      if (hit) found.push(`${relative(SRC_ROOT, file)}:${index + 1}: ${line.trim()}`)
     })
   return found
 }
 
 describe('平面海报守卫', () => {
-  it('源码中不得出现渐变与圆角工具类', () => {
+  it('源码中不得出现渐变、圆角工具类与非零圆角', () => {
     expect(candidates().flatMap(violations)).toEqual([])
   })
 })
