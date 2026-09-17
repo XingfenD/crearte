@@ -1,0 +1,48 @@
+<script setup lang="ts">
+import { computed } from 'vue'
+import { RouterLink, useRoute } from 'vue-router'
+import { repo, type DocMeta, type GameSummary } from '@/data'
+import { useAsync } from '@/composables/useAsync'
+
+const route = useRoute()
+const onCatalog = computed(() => route.name === 'home')
+const onDocs = computed(() => route.name === 'docs' || route.name === 'doc')
+
+const { data: games } = useAsync<GameSummary[] | null>(
+  () => (onCatalog.value ? repo.listGames() : Promise.resolve(null)),
+  [onCatalog]
+)
+const { data: docs } = useAsync<DocMeta[] | null>(
+  () => (onDocs.value ? repo.listDocs() : Promise.resolve(null)),
+  [onDocs]
+)
+
+const sticker = computed(() => {
+  if (onCatalog.value && games.value) return `共 ${games.value.length} 款`
+  if (onDocs.value && docs.value) return `共 ${docs.value.length} 篇`
+  return 'STATIC WEB GAMES'
+})
+</script>
+
+<template>
+  <header class="border-b-[3px] border-ink bg-paper">
+    <div class="mx-auto flex h-14 w-full max-w-6xl items-center gap-6 px-4">
+      <RouterLink to="/" class="bg-ink px-2 py-1 text-sm font-extrabold tracking-[0.04em] text-paper">
+        网页游戏收藏馆
+      </RouterLink>
+      <nav class="flex gap-4 text-sm font-bold">
+        <RouterLink
+          to="/"
+          class="border-b-[3px] border-b-transparent pb-0.5 text-ink-soft [&.router-link-exact-active]:border-b-accent-ink [&.router-link-exact-active]:text-accent-ink"
+        >游戏</RouterLink>
+        <RouterLink
+          to="/docs"
+          class="border-b-[3px] border-b-transparent pb-0.5 text-ink-soft [&.router-link-active]:border-b-accent-ink [&.router-link-active]:text-accent-ink"
+        >文档</RouterLink>
+      </nav>
+      <span
+        class="ml-auto hidden border-2 border-ink bg-highlight px-2 py-0.5 font-mono text-[0.6875rem] tracking-[0.05em] sm:inline-block"
+      >{{ sticker }}</span>
+    </div>
+  </header>
+</template>
