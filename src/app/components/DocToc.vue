@@ -30,7 +30,7 @@ onBeforeUnmount(() => observer?.disconnect())
 </script>
 
 <template>
-  <nav v-if="items.length" class="sticky top-6 border-l-[3px] border-ink text-xs" aria-label="本页目录">
+  <nav v-if="items.length" class="sticky top-20 border-l-[3px] border-ink text-xs" aria-label="本页目录">
     <p class="pb-2 pl-3 text-[0.625rem] font-extrabold tracking-[0.2em] text-ink-soft">本页目录</p>
     <a
       v-for="item in items"
