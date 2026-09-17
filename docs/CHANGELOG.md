@@ -6,6 +6,13 @@ All notable changes to this template should be documented in this file.
 The format loosely follows Keep a Changelog and can be adapted to the team's habits.
 本文档参考了 Keep a Changelog 的思路，也可以根据团队习惯调整。
 
+## [0.1.1] - 2026-09-17
+
+### Fixed / 修复
+
+- Lowercased the GHCR image path to `ghcr.io/xingfend/webgame-collection` in the k8s manifest and publish workflow, since containerd rejects repository names with uppercase letters.
+- 将 k8s 清单与发布工作流中的 GHCR 镜像路径改为小写 `ghcr.io/xingfend/webgame-collection`，containerd 拒绝含大写字母的仓库名。
+
 ## [0.0.1] - 2026-04-28
 
 ### Added / 新增

@@ -22,7 +22,7 @@ spec:
     spec:
       containers:
         - name: web
-          image: ghcr.io/XingfenD/webgame-collection:latest
+          image: ghcr.io/xingfend/webgame-collection:latest
           imagePullPolicy: Always
           ports:
             - containerPort: 80
