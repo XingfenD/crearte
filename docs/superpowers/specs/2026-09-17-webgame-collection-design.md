@@ -257,7 +257,7 @@ keel.sh/pollSchedule: "@every 5m"
 
 ## 9. 本地开发与验收
 
-- 开发：`cd src && npm run dev`（predev 自动生成数据）；容器内开发用 `docker compose -f deploy/compose.dev.yaml up --build`（`deploy/Dockerfile.dev`，源码挂载 + `/app/node_modules` 命名卷隔离，HMR 可用，端口 `5173`）
+- 开发：`cd src && npm run dev`（predev 自动生成数据）；容器内开发用 `docker compose -f deploy/compose.dev.yaml up --build`（`deploy/Dockerfile.dev`，源码挂载 + `/app/node_modules` 命名卷隔离，HMR 可用，访问 `http://localhost:8080`，与生产模式共用同一入口端口、两者不同时启动）
 - 门槛：`npm run check`（vue-tsc + vitest + vite build）
 - 生产形态：`docker compose -f deploy/compose.prod.yaml up -d --build`（等价于 `docker build -f deploy/Dockerfile -t webgame-collection:local . && docker run -p 8080:80 webgame-collection:local`，端口可用 `WGC_PORT` 覆盖），人工过一遍目录/筛选/详情/文档 TOC
 - 端到端：合并一个游戏 JSON 的 PR → validate 通过；push main → GHCR 新镜像 → keel 更新 k3s → 站点出现新游戏

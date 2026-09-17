@@ -27,8 +27,10 @@ npm run check    # vitest + vue-tsc + vite build
 容器内开发（源码挂载 + HMR，无需本机装 Node）：
 
 ```bash
-docker compose -f deploy/compose.dev.yaml up --build   # http://localhost:5173
+docker compose -f deploy/compose.dev.yaml up --build   # http://localhost:8080
 ```
+
+> 访问端口与生产模式统一为 8080（`WGC_PORT` 可覆盖），两者不要同时启动。
 
 ## 生产形态本地验收
 
