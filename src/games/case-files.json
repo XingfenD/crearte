@@ -1,0 +1,12 @@
+{
+  "id": "case-files",
+  "name": "案件推演系统",
+  "url": "https://lemuria1907.github.io/Case-Files/",
+  "author": { "name": "lemuria1907", "url": "https://github.com/lemuria1907" },
+  "description": "点击高亮文字收集线索、在推演终端验证推理的系列案件游戏，证人可能撒谎。",
+  "intro": "以仿旧式电脑系统界面呈现的文字推理游戏：在“档案目录”中逐个打开案件，点击高亮文字收集线索，把关键词提交到“逻辑推演终端”验证推理。\n\n证人可能撒谎，关键词可能重复出现，看似毫无关联的细节往往才是解题关键。推理正确才能推进到下一个档案。\n\n进度保存在浏览器本地，共 19 份档案（FILE_00 至 FILE_18），部分档案需要解锁。",
+  "durationMinutes": { "min": 20, "max": 120 },
+  "type": "puzzle",
+  "tags": ["推理", "悬疑", "文字"],
+  "addedAt": "2026-09-17"
+}

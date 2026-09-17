@@ -1,0 +1,12 @@
+{
+  "id": "arclight-nightcast",
+  "name": "弧光镇晚间新闻",
+  "url": "https://lemuria1907.github.io/Arclight-Nightcast/",
+  "author": { "name": "灰烬马戏团", "url": "https://github.com/lemuria1907" },
+  "description": "在弧光镇收集新闻、复盘事件并完成晚间播报的悬疑叙事游戏，共 11 天。",
+  "intro": "你是弧光镇夜间广播站的新人记者，老板要求你每天凑齐四条新闻。\n\n查阅今日晨报、接听居民热线，在正确的时间前往正确的地点目击事件；点击地点会消耗 30 分钟，错过的事件可以花 2 小时呼叫米米补救。\n\n把收集到的事件在“事件复盘”中推理串联，晚上在直播间播报：推理正确才能拿到收听率，并解锁后续剧情。\n\n游戏共 11 天，音乐由 Mubert 生成。",
+  "durationMinutes": { "min": 30, "max": 300 },
+  "type": "narrative",
+  "tags": ["悬疑", "推理", "文字"],
+  "addedAt": "2026-09-17"
+}
