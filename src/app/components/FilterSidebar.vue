@@ -67,6 +67,7 @@ function toggleTag(tag: string): void {
             type="button"
             class="flex min-h-11 w-full items-center justify-between gap-2 border-2 px-2 text-left text-[0.8125rem] lg:min-h-9"
             :class="state.type === row.key ? 'border-ink bg-highlight font-bold' : 'border-transparent hover:bg-paper'"
+            :aria-pressed="state.type === row.key"
             @click="update({ type: row.key })"
           >
             <span class="truncate">{{ row.label }}</span>
@@ -89,6 +90,7 @@ function toggleTag(tag: string): void {
             type="button"
             class="flex min-h-11 w-full items-center justify-between gap-2 border-2 px-2 text-left text-[0.8125rem] lg:min-h-9"
             :class="state.dur === row.key ? 'border-ink bg-highlight font-bold' : 'border-transparent hover:bg-paper'"
+            :aria-pressed="state.dur === row.key"
             @click="update({ dur: row.key })"
           >
             <span class="truncate">{{ row.label }}</span>
@@ -109,6 +111,7 @@ function toggleTag(tag: string): void {
             type="button"
             class="flex min-h-11 w-full items-center justify-between gap-2 border-2 px-2 text-left text-[0.8125rem] lg:min-h-9"
             :class="state.tags.length === 0 ? 'border-ink bg-highlight font-bold' : 'border-transparent hover:bg-paper'"
+            :aria-pressed="state.tags.length === 0"
             @click="update({ tags: [] })"
           >
             <span class="truncate">全部</span>
@@ -125,6 +128,7 @@ function toggleTag(tag: string): void {
             type="button"
             class="flex min-h-11 w-full items-center justify-between gap-2 border-2 px-2 text-left text-[0.8125rem] lg:min-h-9"
             :class="state.tags.includes(tag) ? 'border-ink bg-highlight font-bold' : 'border-transparent hover:bg-paper'"
+            :aria-pressed="state.tags.includes(tag)"
             @click="toggleTag(tag)"
           >
             <span class="truncate">{{ tag }}</span>

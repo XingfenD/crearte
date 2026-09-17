@@ -15,6 +15,7 @@ withDefaults(defineProps<{ docs: DocMeta[]; activeSlug: string; variant?: 'list'
       :to="`/docs/${doc.slug}`"
       class="flex items-baseline gap-2 border-2 border-transparent px-2 py-1.5"
       :class="doc.slug === activeSlug ? 'border-ink bg-highlight font-bold' : 'hover:bg-surface'"
+      :aria-current="doc.slug === activeSlug ? 'page' : undefined"
     >
       <span class="font-mono text-[0.625rem]">{{ String(doc.order).padStart(2, '0') }}</span>
       <span class="text-sm">{{ doc.title }}</span>
@@ -28,6 +29,7 @@ withDefaults(defineProps<{ docs: DocMeta[]; activeSlug: string; variant?: 'list'
       :to="`/docs/${doc.slug}`"
       class="shrink-0 border-2 border-ink px-3 py-2 font-mono text-xs"
       :class="doc.slug === activeSlug ? 'bg-highlight font-bold' : 'bg-surface'"
+      :aria-current="doc.slug === activeSlug ? 'page' : undefined"
     >{{ doc.title }}</RouterLink>
   </nav>
 </template>

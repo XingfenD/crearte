@@ -12,7 +12,7 @@ defineProps<{ game: GameSummary }>()
     :to="`/games/${game.id}`"
     class="lift block border-2 border-ink bg-surface shadow-hard hover:shadow-hard-lg active:shadow-none"
   >
-    <div class="relative">
+    <div class="relative border-b-2 border-ink">
       <GameCover :game="game" />
       <span
         class="absolute left-2 top-2 -rotate-3 border-2 border-ink bg-surface px-2 py-0.5 font-mono text-[0.625rem] font-bold tracking-[0.05em]"

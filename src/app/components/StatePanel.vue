@@ -8,7 +8,7 @@ defineEmits<{ retry: [] }>()
 <template>
   <div v-if="loading" aria-busy="true">
     <span class="sr-only">加载中</span>
-    <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+    <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
       <div
         v-for="n in 3"
         :key="n"

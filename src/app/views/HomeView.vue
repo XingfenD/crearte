@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
-import { PhMagnifyingGlass } from '@phosphor-icons/vue'
+import { PhMagnifyingGlass, PhX } from '@phosphor-icons/vue'
 import { repo, type GameSummary } from '@/data'
 import { useAsync } from '@/composables/useAsync'
 import { DEFAULT_FILTER, filterGames } from '@/lib/filter'
@@ -15,6 +15,12 @@ const { data: games, error, loading, reload } = useAsync<GameSummary[]>(() => re
 const { state, update } = useFilterState()
 const visible = computed(() => filterGames(games.value ?? [], state.value))
 const drawerOpen = ref(false)
+const searchInput = ref<HTMLInputElement | null>(null)
+
+function clearSearch(): void {
+  update({ q: '' })
+  searchInput.value?.focus()
+}
 </script>
 
 <template>
@@ -35,15 +41,25 @@ const drawerOpen = ref(false)
           />
           <input
             id="game-search"
+            ref="searchInput"
             :value="state.q"
             type="search"
             placeholder="搜索游戏名、简介、作者或标签…"
-            class="w-full appearance-none border-2 border-ink bg-surface py-2.5 pl-10 pr-3 text-sm shadow-hard-sm"
+            class="w-full appearance-none border-2 border-ink bg-surface py-2.5 pl-10 pr-12 text-sm shadow-hard-sm"
             @input="update({ q: ($event.target as HTMLInputElement).value })"
           />
+          <button
+            v-if="state.q"
+            type="button"
+            class="absolute right-2 top-1/2 flex min-h-8 min-w-8 -translate-y-1/2 items-center justify-center border-2 border-ink bg-surface"
+            aria-label="清除搜索"
+            @click="clearSearch"
+          >
+            <PhX :size="14" weight="bold" aria-hidden="true" />
+          </button>
         </div>
 
-        <ResultMeta :count="visible.length" @open-filters="drawerOpen = true" />
+        <ResultMeta :count="visible.length" :filters-open="drawerOpen" @open-filters="drawerOpen = true" />
 
         <div v-if="visible.length" class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           <GameCard v-for="game in visible" :key="game.id" :game="game" />

@@ -35,7 +35,7 @@ function onClose(): void {
       <span class="text-[0.625rem] font-extrabold tracking-[0.22em] text-accent-ink">筛选</span>
       <button
         type="button"
-        class="border-2 border-ink bg-surface p-1.5"
+        class="flex min-h-11 min-w-11 items-center justify-center border-2 border-ink bg-surface"
         aria-label="关闭筛选"
         @click="dialog?.close()"
       >

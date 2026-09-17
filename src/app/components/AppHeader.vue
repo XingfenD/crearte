@@ -35,11 +35,13 @@ const sticker = computed(() => {
           to="/"
           class="border-b-[3px] pb-0.5 text-sm font-bold"
           :class="onCatalog ? 'border-b-accent-ink text-accent-ink' : 'border-b-transparent text-ink-soft'"
+          :aria-current="onCatalog ? 'page' : undefined"
         >游戏</RouterLink>
         <RouterLink
           to="/docs"
           class="border-b-[3px] pb-0.5 text-sm font-bold"
           :class="onDocs ? 'border-b-accent-ink text-accent-ink' : 'border-b-transparent text-ink-soft'"
+          :aria-current="onDocs ? 'page' : undefined"
         >文档</RouterLink>
       </nav>
       <span

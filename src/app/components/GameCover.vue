@@ -13,6 +13,7 @@ watch(() => props.game.cover, () => { failed.value = false })
 const color = computed(() => coverColor(props.game.id))
 const initial = computed(() => coverInitial(props.game.name))
 const ratioClass = computed(() => (props.ratio === 'hero' ? 'aspect-[16/7]' : 'aspect-video'))
+const initialClass = computed(() => (props.ratio === 'hero' ? 'text-6xl' : 'text-4xl'))
 </script>
 
 <template>
@@ -27,7 +28,8 @@ const ratioClass = computed(() => (props.ratio === 'hero' ? 'aspect-[16/7]' : 'a
     />
     <div
       v-else
-      class="flex h-full w-full select-none items-center justify-center border-b-2 border-ink font-display text-4xl font-black text-white"
+      class="flex h-full w-full select-none items-center justify-center font-display font-black text-white"
+      :class="initialClass"
       :style="{ background: color }"
     >
       {{ initial }}

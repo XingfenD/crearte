@@ -2,6 +2,11 @@ import MarkdownIt, { type Token } from 'markdown-it'
 
 const md = new MarkdownIt({ html: false, linkify: true })
 
+md.renderer.rules.table_open = (tokens, idx, options, _env, self) =>
+  `<div class="md-table-wrap">${self.renderToken(tokens, idx, options)}`
+md.renderer.rules.table_close = (tokens, idx, options, _env, self) =>
+  `${self.renderToken(tokens, idx, options)}</div>`
+
 export interface TocItem {
   level: 2 | 3
   text: string
