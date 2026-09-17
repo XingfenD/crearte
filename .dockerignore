@@ -1,0 +1,8 @@
+.git
+docs
+deploy/k8s
+src/node_modules
+src/dist
+src/public/data
+**/*.log
+.DS_Store
