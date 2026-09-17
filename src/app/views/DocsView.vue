@@ -30,7 +30,9 @@ const toc = computed(() => (doc.value ? extractToc(doc.value.content) : []))
     <DocSidebar :docs="docs ?? []" :active-slug="slug ?? ''" variant="tabs" class="mb-6 sm:hidden" />
 
     <div class="flex items-start gap-8">
-      <DocSidebar :docs="docs ?? []" :active-slug="slug ?? ''" class="hidden w-[200px] shrink-0 sm:block" />
+      <aside class="hidden w-[200px] shrink-0 self-stretch border-r-[3px] border-ink bg-surface p-4 sm:block">
+        <DocSidebar :docs="docs ?? []" :active-slug="slug ?? ''" />
+      </aside>
       <article class="min-w-0 flex-1 max-w-[640px]">
         <h1 class="mb-5 font-display text-[1.625rem] font-black">{{ doc?.title }}</h1>
         <div class="markdown-body" v-html="html" />

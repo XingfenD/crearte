@@ -20,6 +20,7 @@
   --shadow-hard: 4px 4px 0 #141414;
   --shadow-hard-lg: 6px 6px 0 #141414;
   --shadow-hard-accent: 4px 4px 0 #e8552f;
+  --shadow-hard-accent-lg: 6px 6px 0 #e8552f;
 
   --animate-skeleton: skeleton-pulse 1.4s ease-in-out infinite;
 

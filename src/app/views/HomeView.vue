@@ -25,6 +25,7 @@ function clearSearch(): void {
 
 <template>
   <StatePanel :loading="loading" :error="error" @retry="reload">
+    <h1 class="sr-only">网页游戏收藏馆 · 游戏目录</h1>
     <div class="flex items-start gap-6">
       <aside class="hidden w-[215px] shrink-0 self-stretch border-r-[3px] border-ink bg-surface p-4 lg:block">
         <FilterSidebar :games="games ?? []" />

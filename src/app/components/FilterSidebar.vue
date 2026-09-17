@@ -54,8 +54,9 @@ function toggleTag(tag: string): void {
 
 <template>
   <div class="space-y-6">
+    <h2 class="sr-only">筛选</h2>
     <section>
-      <h2 class="text-[0.625rem] font-extrabold tracking-[0.22em] text-accent-ink">类型</h2>
+      <h3 class="text-[0.625rem] font-extrabold tracking-[0.22em] text-accent-ink">类型</h3>
       <ul class="mt-2">
         <li
           v-for="row in typeRows"
@@ -78,7 +79,7 @@ function toggleTag(tag: string): void {
     </section>
 
     <section>
-      <h2 class="text-[0.625rem] font-extrabold tracking-[0.22em] text-accent-ink">时长</h2>
+      <h3 class="text-[0.625rem] font-extrabold tracking-[0.22em] text-accent-ink">时长</h3>
       <ul class="mt-2">
         <li
           v-for="row in durationRows"
@@ -101,7 +102,7 @@ function toggleTag(tag: string): void {
     </section>
 
     <section v-if="tagCounts.length">
-      <h2 class="text-[0.625rem] font-extrabold tracking-[0.22em] text-accent-ink">标签</h2>
+      <h3 class="text-[0.625rem] font-extrabold tracking-[0.22em] text-accent-ink">标签</h3>
       <ul class="mt-2">
         <li
           class="border-b-[1.5px] border-dashed"

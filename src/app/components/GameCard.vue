@@ -1,10 +1,15 @@
 <script setup lang="ts">
+import { computed } from 'vue'
 import { RouterLink } from 'vue-router'
 import type { GameSummary } from '@/data/types'
 import { GAME_TYPE_LABELS, durationText } from '@/lib/labels'
 import GameCover from './GameCover.vue'
 
-defineProps<{ game: GameSummary }>()
+const props = defineProps<{ game: GameSummary }>()
+
+const MAX_TAGS = 2
+const visibleTags = computed(() => props.game.tags.slice(0, MAX_TAGS))
+const hiddenTags = computed(() => props.game.tags.slice(MAX_TAGS))
 </script>
 
 <template>
@@ -22,14 +27,18 @@ defineProps<{ game: GameSummary }>()
       <h2 class="truncate font-display text-[0.875rem] font-black">{{ game.name }}</h2>
       <p class="line-clamp-2 text-xs leading-relaxed text-ink-soft">{{ game.description }}</p>
       <div class="flex flex-wrap items-center gap-1.5">
-        <span class="border-[1.5px] border-ink px-1.5 py-0.5 font-mono text-[0.625rem]">
+        <span class="border-[1.5px] border-ink px-1 py-0.5 font-mono text-[0.625rem]">
           {{ durationText(game.durationMinutes) }}
         </span>
         <span
-          v-for="tag in game.tags"
+          v-for="tag in visibleTags"
           :key="tag"
-          class="border-[1.5px] border-ink px-1.5 py-0.5 font-mono text-[0.625rem]"
+          class="border-[1.5px] border-ink px-1 py-0.5 font-mono text-[0.625rem]"
         >{{ tag }}</span>
+        <span
+          v-if="hiddenTags.length"
+          class="border-[1.5px] border-ink px-1 py-0.5 font-mono text-[0.625rem]"
+        >+{{ hiddenTags.length }}<span class="sr-only">：{{ hiddenTags.join('、') }}</span></span>
       </div>
     </div>
   </RouterLink>

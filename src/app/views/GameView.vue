@@ -23,7 +23,7 @@ const introHtml = computed(() => (game.value?.intro ? renderMarkdown(game.value.
   <StatePanel :loading="loading" :error="notFound ? null : error" @retry="reload">
     <div v-if="notFound" class="border-2 border-dashed border-ink p-10 text-center">
       <p class="font-mono text-[0.6875rem] tracking-[0.05em] text-ink-soft">GAME NOT FOUND</p>
-      <p class="mt-3 text-sm">该游戏不存在或已移除。</p>
+      <h1 class="mt-3 text-lg font-extrabold">该游戏不存在或已移除。</h1>
       <RouterLink to="/" class="btn-ink lift mt-5 hover:shadow-hard active:shadow-none">返回目录</RouterLink>
     </div>
 
@@ -68,7 +68,7 @@ const introHtml = computed(() => (game.value?.intro ? renderMarkdown(game.value.
         :href="game.url"
         target="_blank"
         rel="noopener noreferrer"
-        class="lift inline-flex items-center gap-2 border-2 border-ink bg-ink px-5 py-2.5 font-extrabold text-paper shadow-hard-accent hover:shadow-[6px_6px_0_#e8552f] active:shadow-none"
+        class="lift inline-flex items-center gap-2 border-2 border-ink bg-ink px-5 py-2.5 font-extrabold text-paper shadow-hard-accent hover:shadow-hard-accent-lg active:shadow-none"
       >
         开始游戏
         <PhArrowSquareOut :size="16" weight="bold" aria-hidden="true" />
