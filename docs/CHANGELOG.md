@@ -6,6 +6,13 @@ All notable changes to this template should be documented in this file.
 The format loosely follows Keep a Changelog and can be adapted to the team's habits.
 本文档参考了 Keep a Changelog 的思路，也可以根据团队习惯调整。
 
+## [0.1.3] - 2026-09-17
+
+### Added / 新增
+
+- Added Case Files and Arclight Nightcast to the collection.
+- 收录《案件推演系统》（Case Files）与《弧光镇晚间新闻》（Arclight Nightcast）。
+
 ## [0.1.2] - 2026-09-17
 
 ### Changed / 变更
