@@ -1,3 +1,39 @@
+<script setup lang="ts">
+import { computed, watchEffect } from 'vue'
+import { useRouter } from 'vue-router'
+import { repo, type Doc, type DocMeta } from '@/data'
+import { useAsync } from '@/composables/useAsync'
+import { extractToc, renderMarkdown } from '@/lib/markdown'
+import DocSidebar from '@/components/DocSidebar.vue'
+import DocToc from '@/components/DocToc.vue'
+import StatePanel from '@/components/StatePanel.vue'
+
+const props = defineProps<{ slug?: string }>()
+const router = useRouter()
+
+const { data: docs, error: listError, loading: listLoading } = useAsync<DocMeta[]>(() => repo.listDocs())
+const { data: doc, error: docError, loading: docLoading, reload } = useAsync<Doc | null>(
+  () => (props.slug ? repo.getDoc(props.slug) : Promise.resolve(null)),
+  [computed(() => props.slug ?? '')]
+)
+
+watchEffect(() => {
+  if (!props.slug && docs.value?.length) void router.replace(`/docs/${docs.value[0].slug}`)
+})
+
+const html = computed(() => (doc.value ? renderMarkdown(doc.value.content) : ''))
+const toc = computed(() => (doc.value ? extractToc(doc.value.content) : []))
+</script>
+
 <template>
-  <div />
+  <StatePanel :loading="listLoading || docLoading" :error="listError ?? docError" @retry="reload">
+    <div class="flex gap-8">
+      <DocSidebar :docs="docs ?? []" :active-slug="slug ?? ''" class="hidden w-44 shrink-0 sm:block" />
+      <article class="min-w-0 flex-1">
+        <h1 class="mb-4 text-2xl font-semibold">{{ doc?.title }}</h1>
+        <div class="markdown-body" v-html="html" />
+      </article>
+      <DocToc :items="toc" class="hidden w-44 shrink-0 lg:block" />
+    </div>
+  </StatePanel>
 </template>
