@@ -33,11 +33,13 @@ const sticker = computed(() => {
       <nav class="flex gap-4 text-sm font-bold">
         <RouterLink
           to="/"
-          class="border-b-[3px] border-b-transparent pb-0.5 text-ink-soft [&.router-link-exact-active]:border-b-accent-ink [&.router-link-exact-active]:text-accent-ink"
+          class="border-b-[3px] pb-0.5 text-sm font-bold"
+          :class="onCatalog ? 'border-b-accent-ink text-accent-ink' : 'border-b-transparent text-ink-soft'"
         >游戏</RouterLink>
         <RouterLink
           to="/docs"
-          class="border-b-[3px] border-b-transparent pb-0.5 text-ink-soft [&.router-link-active]:border-b-accent-ink [&.router-link-active]:text-accent-ink"
+          class="border-b-[3px] pb-0.5 text-sm font-bold"
+          :class="onDocs ? 'border-b-accent-ink text-accent-ink' : 'border-b-transparent text-ink-soft'"
         >文档</RouterLink>
       </nav>
       <span
