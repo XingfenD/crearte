@@ -88,7 +88,7 @@
   font-size: 1.125rem;
   font-weight: 800;
   border-bottom: 2px solid var(--color-ink);
-  scroll-margin-top: 1rem;
+  scroll-margin-top: 4.5rem;
 }
 .markdown-body h3 {
   margin: 1.5rem 0 0.5rem;
@@ -96,7 +96,7 @@
   font-size: 0.9rem;
   font-weight: 800;
   border-left: 4px solid var(--color-accent);
-  scroll-margin-top: 1rem;
+  scroll-margin-top: 4.5rem;
 }
 .markdown-body p { margin: 0.75rem 0; }
 .markdown-body strong {

@@ -25,7 +25,7 @@ const sticker = computed(() => {
 </script>
 
 <template>
-  <header class="border-b-[3px] border-ink bg-paper">
+  <header class="sticky top-0 z-40 border-b-[3px] border-ink bg-paper">
     <div class="mx-auto flex h-14 w-full max-w-6xl items-center gap-6 px-4">
       <RouterLink to="/" class="bg-ink px-2 py-1 text-sm font-extrabold tracking-[0.04em] text-paper">
         网页游戏收藏馆
