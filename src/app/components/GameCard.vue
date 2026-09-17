@@ -10,20 +10,26 @@ defineProps<{ game: GameSummary }>()
 <template>
   <RouterLink
     :to="`/games/${game.id}`"
-    class="group block overflow-hidden rounded-xl border border-neutral-800 bg-neutral-900 transition hover:border-neutral-600"
+    class="lift block border-2 border-ink bg-surface shadow-hard hover:shadow-hard-lg active:shadow-none"
   >
-    <GameCover :game="game" />
-    <div class="space-y-2 p-4">
-      <div class="flex items-center justify-between gap-2">
-        <h2 class="truncate font-medium group-hover:text-white">{{ game.name }}</h2>
-        <span class="shrink-0 rounded-full bg-neutral-800 px-2 py-0.5 text-xs text-neutral-300">
-          {{ GAME_TYPE_LABELS[game.type] }}
+    <div class="relative">
+      <GameCover :game="game" />
+      <span
+        class="absolute left-2 top-2 -rotate-3 border-2 border-ink bg-surface px-2 py-0.5 font-mono text-[0.625rem] font-bold tracking-[0.05em]"
+      >{{ GAME_TYPE_LABELS[game.type] }}</span>
+    </div>
+    <div class="space-y-2 p-3">
+      <h2 class="truncate font-display text-[0.875rem] font-black">{{ game.name }}</h2>
+      <p class="line-clamp-2 text-xs leading-relaxed text-ink-soft">{{ game.description }}</p>
+      <div class="flex flex-wrap items-center gap-1.5">
+        <span class="border-[1.5px] border-ink px-1.5 py-0.5 font-mono text-[0.625rem]">
+          {{ durationText(game.durationMinutes) }}
         </span>
-      </div>
-      <p class="line-clamp-2 text-sm text-neutral-400">{{ game.description }}</p>
-      <div class="flex flex-wrap items-center gap-1.5 text-xs text-neutral-500">
-        <span>{{ durationText(game.durationMinutes) }}</span>
-        <span v-for="tag in game.tags" :key="tag" class="rounded bg-neutral-800/70 px-1.5 py-0.5">{{ tag }}</span>
+        <span
+          v-for="tag in game.tags"
+          :key="tag"
+          class="border-[1.5px] border-ink px-1.5 py-0.5 font-mono text-[0.625rem]"
+        >{{ tag }}</span>
       </div>
     </div>
   </RouterLink>
