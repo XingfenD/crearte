@@ -21,6 +21,7 @@ export function decodeAssetPath(pathname: string): string | null {
     return null
   }
   if (decoded.includes('\0')) return null
+  if (decoded.includes('\\')) return null
   const segments: string[] = []
   for (const segment of decoded.split('/')) {
     if (segment === '' || segment === '.') continue

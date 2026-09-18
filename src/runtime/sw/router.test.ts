@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest'
-import { decodeAssetPath, routeRequest, AGENT_CACHE_PATH } from './router'
+import { assetCacheKey, decodeAssetPath, routeRequest, AGENT_CACHE_PATH } from './router'
 
 const base = { isNavigation: true, hasActiveVersion: true, entry: 'index.html' }
 
@@ -14,6 +14,14 @@ describe('decodeAssetPath', () => {
     expect(decodeAssetPath('/%2e%2e/secret')).toBeNull()
     expect(decodeAssetPath('/a/../../b')).toBeNull()
     expect(decodeAssetPath('/a/../b')).toBe('b')
+    expect(decodeAssetPath('/%5c..%5c..%5csecret')).toBeNull()
+    expect(decodeAssetPath('/%2e%2e%5csecret')).toBeNull()
+  })
+})
+
+describe('assetCacheKey', () => {
+  test('拼接 __bundle 命名空间', () => {
+    expect(assetCacheKey('js/game.js', 'https://x.test')).toBe('https://x.test/__bundle/js/game.js')
   })
 })
 
@@ -31,7 +39,7 @@ describe('routeRequest', () => {
     expect(routeRequest({ ...base, pathname: '/', hasActiveVersion: false })).toEqual({ kind: 'redirect-bootstrap' })
     expect(routeRequest({ ...base, pathname: '/', hasActiveVersion: false, isNavigation: false })).toEqual({ kind: 'not-found' })
   })
-  test('目录补 entry、query 不进路径', () => {
+  test('目录补 entry、文件路径直通', () => {
     expect(routeRequest({ ...base, pathname: '/sub/', entry: 'sub/index.html' })).toEqual({ kind: 'asset', path: 'sub/index.html' })
     expect(routeRequest({ ...base, pathname: '/js/game.js' })).toEqual({ kind: 'asset', path: 'js/game.js' })
   })
