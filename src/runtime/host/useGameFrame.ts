@@ -3,6 +3,7 @@ import { HELLO_TIMEOUT_MS, PROTOCOL_VERSION, isGameEvent, isHostCommand, isShell
 import type { RuntimeTarget } from './adapters'
 
 const BOOTSTRAP_TIMEOUT_MS = 60_000
+const BRIDGE_WARN_MS = 3_000
 
 export type GameFramePhase = 'booting' | 'ready' | 'degraded' | 'error'
 export interface GameFrameState {
@@ -29,6 +30,7 @@ export function useGameFrame(options: GameFrameOptions) {
   const state = ref<GameFrameState>({ phase: 'booting', progress: null, error: null, paused: false, score: null, storageKeys: null, storageBytes: null })
   let port: MessagePort | null = null
   let timeout: ReturnType<typeof setTimeout> | null = null
+  let bridgeWarn: ReturnType<typeof setTimeout> | null = null
 
   const target = computed(() => options.targets()[targetIndex.value] ?? null)
   const sandbox = 'allow-scripts allow-same-origin allow-pointer-lock'
@@ -48,7 +50,22 @@ export function useGameFrame(options: GameFrameOptions) {
     const current = target.value
     if (!current) { state.value.phase = 'error'; state.value.error = '没有可用的运行目标'; return }
     if (current.mode === 'virtual') armTimeout(BOOTSTRAP_TIMEOUT_MS)
-    else state.value.phase = 'ready'
+    else {
+      state.value.phase = 'ready'
+      if (current.mode === 'hosted') armBridgeWarn(current.url)
+    }
+  }
+
+  function armBridgeWarn(url: string): void {
+    clearBridgeWarn()
+    bridgeWarn = setTimeout(() => {
+      bridgeWarn = null
+      console.warn(`[game-runtime] hosted 目标 ${url} 在 3s 内未收到 agent:boot，桥不可用；游戏仍可继续游玩`)
+    }, BRIDGE_WARN_MS)
+  }
+
+  function clearBridgeWarn(): void {
+    if (bridgeWarn) { globalThis.clearTimeout(bridgeWarn); bridgeWarn = null }
   }
 
   function armTimeout(ms: number): void {
@@ -69,6 +86,7 @@ export function useGameFrame(options: GameFrameOptions) {
     if (event.source !== iframeRef.value?.contentWindow) return
     if (isShellSignal(event.data)) { degrade(event.data.message); return }
     if (event.data?.type === 'agent:boot' && isGameEvent(event.data)) {
+      clearBridgeWarn()
       armTimeout(HELLO_TIMEOUT_MS)
       const channel = new MessageChannel()
       port = channel.port1
@@ -85,8 +103,8 @@ export function useGameFrame(options: GameFrameOptions) {
 
   function handleEvent(event: GameEvent): void {
     options.onEvent?.(event)
-    if (event.type === 'agent:hello-ack') { clearTimeout(); state.value.phase = 'ready' }
-    else if (event.type === 'game:ready') { clearTimeout(); state.value.phase = 'ready' }
+    if (event.type === 'agent:hello-ack') { clearTimeout(); clearBridgeWarn(); state.value.phase = 'ready' }
+    else if (event.type === 'game:ready') { clearTimeout(); clearBridgeWarn(); state.value.phase = 'ready' }
     else if (event.type === 'game:error') { state.value.error = event.message }
     else if (event.type === 'game:score') { state.value.score = event.score }
     else if (event.type === 'game:storage-changed') { state.value.storageKeys = event.keys; state.value.storageBytes = event.bytes }
@@ -110,6 +128,7 @@ export function useGameFrame(options: GameFrameOptions) {
 
   function degrade(reason: string): void {
     clearTimeout()
+    clearBridgeWarn()
     const next = targetIndex.value + 1
     const chain = options.targets()
     if (next < chain.length && chain[next].mode === 'external') {
@@ -123,6 +142,7 @@ export function useGameFrame(options: GameFrameOptions) {
       state.value.phase = chain[next].mode === 'hosted' ? 'ready' : 'booting'
       state.value.error = null
       if (chain[next].mode === 'virtual') armTimeout(BOOTSTRAP_TIMEOUT_MS)
+      if (chain[next].mode === 'hosted') armBridgeWarn(chain[next].url)
       return
     }
     state.value.phase = 'error'
@@ -131,6 +151,7 @@ export function useGameFrame(options: GameFrameOptions) {
 
   function stop(): void {
     clearTimeout()
+    clearBridgeWarn()
     port?.close()
     port = null
   }
