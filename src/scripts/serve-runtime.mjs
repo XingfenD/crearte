@@ -23,8 +23,15 @@ const versionOverrides = new Map()
 
 const server = createServer(async (req, res) => {
   const host = (req.headers.host ?? '').split(':')[0]
-  const url = new URL(req.url ?? '/', `http://${req.headers.host}`)
   const isGameHost = host.endsWith('.localhost')
+  let url
+  try {
+    url = new URL(req.url ?? '/', 'http://localhost')
+  } catch {
+    res.writeHead(400, { 'Content-Type': 'text/plain; charset=utf-8' })
+    res.end('bad request')
+    return
+  }
 
   try {
     if (url.pathname === '/__test/bump-version') {

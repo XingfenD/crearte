@@ -9,7 +9,7 @@ const root = path.resolve(fileURLToPath(new URL('..', import.meta.url)))
 const gamesDir = path.join(root, 'fixtures', 'games')
 const catalogDir = path.join(root, 'fixtures', 'catalog')
 const outDir = path.join(root, 'fixtures', 'generated')
-const FIXED_MTIME = new Date(Date.UTC(2000, 0, 1))
+const FIXED_MTIME = new Date(2000, 0, 1)
 
 async function collect(dir, prefix = '') {
   const files = {}
