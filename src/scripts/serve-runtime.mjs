@@ -55,13 +55,16 @@ function securityHeaders(features, hostOrigin) {
   }
 }
 
-async function gameFeatures(gameId) {
+async function gameCatalog(gameId) {
   try {
-    const catalog = JSON.parse(await readFile(path.join(fixtures, 'catalog', `${gameId}.json`), 'utf8'))
-    return { ...DEFAULT_FEATURES, ...(catalog.features ?? {}) }
+    return JSON.parse(await readFile(path.join(fixtures, 'catalog', `${gameId}.json`), 'utf8'))
   } catch {
-    return { ...DEFAULT_FEATURES }
+    return {}
   }
+}
+
+function escapeAttribute(value) {
+  return value.replace(/&/g, '&amp;').replace(/"/g, '&quot;')
 }
 
 async function fileOrNull(file) {
@@ -121,11 +124,15 @@ const server = createServer(async (req, res) => {
         const ext = path.extname(candidate)
         if (ext === '.html') {
           const html = await readFile(candidate, 'utf8')
+          const catalog = await gameCatalog(gameId)
           const hostOrigin = `http://localhost:${port}`
+          const version = typeof catalog.version === 'string' && catalog.version ? ` data-game-version="${escapeAttribute(catalog.version)}"` : ''
+          const attrs = ` data-game-id="${escapeAttribute(String(catalog.id ?? gameId))}"${version}`
           const tag = `<script src="/agent.js?host=${encodeURIComponent(hostOrigin)}"></script>`
-          const at = html.search(/<head[^>]*>/i)
-          const injected = at >= 0 ? html.slice(0, html.indexOf('>', at) + 1) + tag + html.slice(html.indexOf('>', at) + 1) : tag + html
-          res.writeHead(200, { ...securityHeaders(await gameFeatures(gameId), hostOrigin), 'Content-Type': MIME['.html'], 'Cache-Control': 'no-store' })
+          const withMeta = html.replace(/<html(?=[\s>])/i, `<html${attrs}`)
+          const at = withMeta.search(/<head[^>]*>/i)
+          const injected = at >= 0 ? withMeta.slice(0, withMeta.indexOf('>', at) + 1) + tag + withMeta.slice(withMeta.indexOf('>', at) + 1) : tag + withMeta
+          res.writeHead(200, { ...securityHeaders({ ...DEFAULT_FEATURES, ...(catalog.features ?? {}) }, hostOrigin), 'Content-Type': MIME['.html'], 'Cache-Control': 'no-store' })
           res.end(injected); return
         }
         const body = await readFile(candidate)

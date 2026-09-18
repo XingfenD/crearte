@@ -33,16 +33,29 @@ test('两个游戏的存储互相隔离且持久', async ({ page }) => {
 })
 
 test('外联被 CSP 阻断', async ({ page }) => {
+  const outbound: string[] = []
+  page.on('request', (request) => { if (request.url().startsWith('https://example.com')) outbound.push(request.url()) })
   const failures: string[] = []
   page.on('console', (msg) => { if (msg.type() === 'error') failures.push(msg.text()) })
   await openGame(page, 'exfil')
   expect(await frameDataset(page, 'fetch')).toBe('blocked')
+  // CORS 拒绝也会有 rejected fetch；只有 CSP 才会让请求根本不发出
+  expect(outbound).toEqual([])
+  expect(failures.some((text) => /Content Security Policy/.test(text))).toBe(true)
 })
 
 test('游戏自注册 SW 被剥夺且运行时 SW 仍工作', async ({ page }) => {
   await openGame(page, 'nested-sw')
   expect(await frameDataset(page, 'sw')).toBe('blocked')
   await expect(page.frameLocator('iframe').locator('body')).toHaveAttribute('data-ready', '1')
+})
+
+test('__GAME_HOST__ 暴露注入的游戏元数据', async ({ page }) => {
+  await openGame(page, 'abs-paths')
+  const body = page.frameLocator('iframe').locator('body')
+  const version = await body.getAttribute('data-version')
+  const meta = await body.evaluate(() => window.__GAME_HOST__?.getMeta())
+  expect(meta).toMatchObject({ id: 'abs-paths', version })
 })
 
 test('桥事件：score 上报到宿主 UI', async ({ page }) => {
