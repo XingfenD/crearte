@@ -52,4 +52,14 @@ docker run --rm -p 8080:80 webgame-collection:local
 3. keel：集群内安装 [keel.sh](https://keel.sh)（`helm upgrade --install keel --namespace=keel keel/keel --set helmProvider.enabled=false`），仓库 Secrets 配置 `KEEL_WEBHOOK_URL`（如 `http://keel.keel.svc.cluster.local:9300/v1/webhooks/native`）与 `KEEL_TOKEN`（keel 的 `TOKEN_SECRET`；keel 未开 `AUTHENTICATED_WEBHOOKS` 时留空即可）
 4. 发布链路：推镜像后 Action POST keel native webhook（`{"name":"<镜像>","tag":"latest"}`），keel 滚动更新 Deployment；webhook 不可用时依赖 `@every 5m` 轮询兜底
 
+## 运行时运维配置
+
+游戏以 `<id>.games.example.com` 子域运行，运维侧需要：
+
+1. DNS：把 `*.games.example.com` 泛解析到节点 IP（或前端代理地址）。
+2. 访问：集群未装 ingress controller，Service 走 NodePort 30080，即 `http://<节点IP>:30080`；生产建议由前端代理按 Host 转发。
+3. TLS：集群内不终止 TLS；需要 HTTPS 时在前端代理用 `*.games.example.com` 通配证书终止，或后续补装 ingress controller 再导入通配证书（DNS-01 签发，如 acme.sh `dns_ali` 或 cert-manager）。
+4. 构建变量：`VITE_GAMES_BASE_DOMAIN`（默认 `games.example.com`）决定子域后缀，`VITE_HOST_ORIGIN`（默认 `https://games.example.com`）为宿主站来源；构建镜像前按实际域名覆盖。
+5. 运行时三件套固定为 `dist/bootstrap/index.html`、`dist/sw.js`、`dist/agent.js`，由 nginx 通配 server block 精确暴露为 `/__bootstrap`、`/sw.js`、`/agent.js`（均 `no-store`），其余路径返回 404；主站 `/data/bundles/` 带 `Access-Control-Allow-Origin: *` 供子域拉取 bundle。
+
 设计文档：[`docs/superpowers/specs/2026-09-17-webgame-collection-design.md`](./superpowers/specs/2026-09-17-webgame-collection-design.md)
