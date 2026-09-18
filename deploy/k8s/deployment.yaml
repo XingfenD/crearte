@@ -1,8 +1,8 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: webgame-collection
-  namespace: webgame-collection
+  name: crearte
+  namespace: crearte
   annotations:
     keel.sh/policy: force
     keel.sh/match-tag: "true"
@@ -14,15 +14,15 @@ spec:
     type: RollingUpdate
   selector:
     matchLabels:
-      app: webgame-collection
+      app: crearte
   template:
     metadata:
       labels:
-        app: webgame-collection
+        app: crearte
     spec:
       containers:
         - name: web
-          image: ghcr.io/xingfend/webgame-collection:latest
+          image: ghcr.io/xingfend/crearte:latest
           imagePullPolicy: Always
           ports:
             - containerPort: 80
