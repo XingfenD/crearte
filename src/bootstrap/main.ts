@@ -11,11 +11,15 @@ const errorMessage = document.getElementById('error-message') as HTMLParagraphEl
 const errorDetail = document.getElementById('error-detail') as HTMLPreElement
 const retry = document.getElementById('retry') as HTMLButtonElement
 
-function fail(message: string, detail?: string): void {
+function fail(message: string, detail?: string, dropRegistration = false): void {
   errorBox.hidden = false
   errorMessage.textContent = message
   if (detail) { errorDetail.hidden = false; errorDetail.textContent = detail }
-  signalDegrade(detail ? `${message}: ${detail}` : message)
+  const text = detail ? `${message}: ${detail}` : message
+  // 安装失败时 SW 无可用版本，仍会拦截 hosted 降级的同源导航；先注销再上报降级
+  const registration = dropRegistration ? navigator.serviceWorker?.getRegistration?.() : undefined
+  if (registration) void registration.then((found) => found?.unregister()).catch(() => {}).finally(() => signalDegrade(text))
+  else signalDegrade(text)
 }
 
 const hostOrigin = import.meta.env.VITE_HOST_ORIGIN ?? 'https://games.example.com'
@@ -44,7 +48,7 @@ function handle(message: ShellMessage): void {
     }).catch(() => {})
     location.replace('/')
   } else if (message.type === 'runtime:error') {
-    fail('运行环境准备失败', message.message)
+    fail('运行环境准备失败', message.message, true)
   }
 }
 

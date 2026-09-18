@@ -78,6 +78,13 @@ function onMessage(event: MessageEvent): void { frame.onMessage(event) }
            class="absolute inset-0 grid place-items-center bg-black/70 text-sm text-neutral-300">
         正在加载游戏…
       </div>
+      <div v-if="frame.state.value.phase === 'error'"
+           class="absolute inset-0 grid place-items-center bg-black/80 p-6 text-center text-sm text-neutral-300">
+        <div class="space-y-3">
+          <p>游戏加载失败：{{ frame.state.value.error }}</p>
+          <button class="rounded-md bg-violet-600 px-4 py-2 hover:bg-violet-500" @click="restart()">重试</button>
+        </div>
+      </div>
     </div>
 
     <div class="flex flex-wrap items-center gap-2 text-sm">
