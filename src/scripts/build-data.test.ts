@@ -138,6 +138,7 @@ describe('schema v2 运行时字段', () => {
       'games/virtual-demo.json': { ...baseGame, runtime: 'virtual' }
     })
     expect(errors.join('\n')).toMatch(/version/)
+    expect(errors.join('\n')).toMatch(/bundle/)
   })
 
   it('runtime=hosted 必须带 hostedUrl', async () => {
@@ -164,5 +165,31 @@ describe('schema v2 运行时字段', () => {
       }
     })
     expect(errors.length).toBeGreaterThan(0)
+  })
+
+  it('index 摘要只带 runtime；详情带全部运行时字段', async () => {
+    const bundle = { url: '/data/bundles/virtual-demo.zip', bytes: 1, sha256: 'a'.repeat(64) }
+    const root = await fixture({
+      'games/virtual-demo.json': {
+        ...baseGame, runtime: 'virtual', version: 'v1', entry: 'index.html',
+        playOrigin: 'https://games.example.com/', bundle,
+        features: { wasm: true }, display: { aspect: '16:9' }, fallback: 'external'
+      }
+    })
+    await generate({ srcRoot: root })
+    const index = JSON.parse(await readFile(path.join(root, 'public/data/index.json'), 'utf8'))
+    expect(index.games[0].runtime).toBe('virtual')
+    expect(index.games[0].bundle).toBeUndefined()
+    const detail = JSON.parse(await readFile(path.join(root, 'public/data/games/virtual-demo.json'), 'utf8'))
+    expect(detail).toMatchObject({
+      runtime: 'virtual',
+      version: 'v1',
+      entry: 'index.html',
+      playOrigin: 'https://games.example.com/',
+      bundle,
+      features: { wasm: true },
+      display: { aspect: '16:9' },
+      fallback: 'external'
+    })
   })
 })

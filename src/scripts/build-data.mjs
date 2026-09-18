@@ -146,14 +146,14 @@ function pickGame(game, withIntro) {
     ...(game.cover ? { cover: game.cover } : {}),
     addedAt: game.addedAt,
     ...(game.runtime ? { runtime: game.runtime } : {}),
-    ...(game.version ? { version: game.version } : {}),
-    ...(game.entry ? { entry: game.entry } : {}),
-    ...(game.playOrigin ? { playOrigin: game.playOrigin } : {}),
-    ...(game.hostedUrl ? { hostedUrl: game.hostedUrl } : {}),
-    ...(game.bundle ? { bundle: { ...game.bundle } } : {}),
-    ...(game.features ? { features: { ...game.features } } : {}),
-    ...(game.display ? { display: { ...game.display } } : {}),
-    ...(game.fallback ? { fallback: game.fallback } : {})
+    ...(withIntro && game.version ? { version: game.version } : {}),
+    ...(withIntro && game.entry ? { entry: game.entry } : {}),
+    ...(withIntro && game.playOrigin ? { playOrigin: game.playOrigin } : {}),
+    ...(withIntro && game.hostedUrl ? { hostedUrl: game.hostedUrl } : {}),
+    ...(withIntro && game.bundle ? { bundle: { ...game.bundle } } : {}),
+    ...(withIntro && game.features ? { features: { ...game.features } } : {}),
+    ...(withIntro && game.display ? { display: { ...game.display } } : {}),
+    ...(withIntro && game.fallback ? { fallback: game.fallback } : {})
   }
 }
 
