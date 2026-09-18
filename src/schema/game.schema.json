@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://github.com/webgame-collection/schema/game.schema.json",
-  "title": "Webgame Collection Game",
+  "$id": "https://github.com/XingfenD/crearte/schema/game.schema.json",
+  "title": "Crearte Game",
   "type": "object",
   "additionalProperties": false,
   "required": ["id", "name", "url", "author", "description", "durationMinutes", "type", "tags", "addedAt"],

@@ -1,4 +1,4 @@
-# webgame-collection
+# crearte
 
 收集**静态网页游戏**（打开网页即玩、无需服务端）的开源目录站。
 
@@ -27,7 +27,7 @@ npm run check    # vitest + vue-tsc + vite build
 容器内开发（源码挂载 + HMR，无需本机装 Node）：
 
 ```bash
-docker compose -f deploy/compose.dev.yaml up --build   # http://localhost:8080
+docker compose -f deploy/docker-compose.dev.yml up --build   # http://localhost:8080
 ```
 
 > 访问端口与生产模式统一为 8080（`WGC_PORT` 可覆盖），两者不要同时启动。
@@ -35,22 +35,27 @@ docker compose -f deploy/compose.dev.yaml up --build   # http://localhost:8080
 ## 生产形态本地验收
 
 ```bash
-docker compose -f deploy/compose.prod.yaml up -d --build   # http://localhost:8080
+docker compose -f deploy/docker-compose.prod.yml up -d --build   # http://localhost:8080
 ```
 
 或不用 compose：
 
 ```bash
-docker build -f deploy/Dockerfile -t webgame-collection:local .
-docker run --rm -p 8080:80 webgame-collection:local
+docker build -f deploy/Dockerfile -t crearte:local .
+docker run --rm -p 8080:80 crearte:local
 ```
 
 ## 部署
 
-1. 推送 `master` 后 Actions 自动推送镜像 `ghcr.io/<owner>/webgame-collection:{latest,sha-<long>}`（首次需把 Package 可见性设为 public）
-2. k3s：`kubectl apply -f deploy/k8s/`（镜像已固定为 `ghcr.io/xingfend/webgame-collection:latest`）；集群未装 ingress controller，Service 为 NodePort，访问 `http://<节点IP>:30080`
-3. keel：集群内安装 [keel.sh](https://keel.sh)（`helm upgrade --install keel --namespace=keel keel/keel --set helmProvider.enabled=false`），仓库 Secrets 配置 `KEEL_WEBHOOK_URL`（如 `http://keel.keel.svc.cluster.local:9300/v1/webhooks/native`）与 `KEEL_TOKEN`（keel 的 `TOKEN_SECRET`；keel 未开 `AUTHENTICATED_WEBHOOKS` 时留空即可）
-4. 发布链路：推镜像后 Action POST keel native webhook（`{"name":"<镜像>","tag":"latest"}`），keel 滚动更新 Deployment；webhook 不可用时依赖 `@every 5m` 轮询兜底
+1. 本机构建并推送镜像（首次需把 Package 可见性设为 public）：
+
+   ```bash
+   docker build -f deploy/Dockerfile -t ghcr.io/xingfend/crearte:latest .
+   docker push ghcr.io/xingfend/crearte:latest
+   ```
+2. k3s：`kubectl apply -f deploy/k8s/`（镜像固定为 `ghcr.io/xingfend/crearte:latest`）；集群未装 ingress controller，Service 为 NodePort，访问 `http://<节点IP>:30080`
+3. keel：集群内安装 [keel.sh](https://keel.sh)（`helm upgrade --install keel --namespace=keel keel/keel --set helmProvider.enabled=false`）
+4. 发布链路：推送新镜像后 keel 按 `@every 5m` 轮询自动滚动更新；需要立即触发时手动 POST native webhook（`{"name":"ghcr.io/xingfend/crearte","tag":"latest"}`）
 
 ## 运行时运维配置
 
@@ -61,5 +66,13 @@ docker run --rm -p 8080:80 webgame-collection:local
 3. TLS：集群内不终止 TLS；需要 HTTPS 时在前端代理用 `*.games.example.com` 通配证书终止，或后续补装 ingress controller 再导入通配证书（DNS-01 签发，如 acme.sh `dns_ali` 或 cert-manager）。
 4. 构建变量：`VITE_GAMES_BASE_DOMAIN`（默认 `games.example.com`）决定子域后缀，`VITE_HOST_ORIGIN`（默认 `https://games.example.com`）为宿主站来源；构建镜像前按实际域名覆盖。
 5. 运行时三件套固定为 `dist/bootstrap/index.html`、`dist/sw.js`、`dist/agent.js`，由 nginx 通配 server block 精确暴露为 `/__bootstrap`、`/sw.js`、`/agent.js`（均 `no-store`），其余路径返回 404；主站 `/data/bundles/` 带 `Access-Control-Allow-Origin: *` 供子域拉取 bundle。
+
+## 许可与商业授权
+
+本仓库（前端与运行时）以 [AGPL-3.0-only](https://www.gnu.org/licenses/agpl-3.0.html) 开源：可自由使用、修改、自建部署；但**修改后通过网络向用户提供服务时，必须按 AGPL 第 13 条向这些用户提供修改版的完整源码**。如需在闭源条件下使用（如商业集成），可联系作者获取商业授权。
+
+服务端与运营相关内容不开源，单独私有维护。字体（SIL OFL，见 `src/assets/fonts/OFL.txt`）与第三方依赖遵循各自许可。
+
+Copyright (C) 2026 XingfenD
 
 设计文档：[`docs/superpowers/specs/2026-09-17-webgame-collection-design.md`](./superpowers/specs/2026-09-17-webgame-collection-design.md)

@@ -28,18 +28,6 @@ describe('GitHub workflows', () => {
     expect(body).toContain('validate:data')
     expect(body).toContain('npm run check')
   })
-
-  it('publish.yml 推到 GHCR 并调用 keel webhook', async () => {
-    const workflow = await loadYaml('.github/workflows/publish.yml')
-    const steps = workflow.jobs.publish.steps as Array<Record<string, unknown>>
-    expect(steps.some((step) => String(step.uses ?? '').startsWith('docker/build-push-action'))).toBe(true)
-    expect(steps.some((step) => String(step.uses ?? '').startsWith('docker/login-action'))).toBe(true)
-    const body = JSON.stringify(workflow)
-    expect(body).toContain('ghcr.io')
-    expect(body).toContain('keel:${KEEL_TOKEN}')
-    expect(body).toContain('KEEL_WEBHOOK_URL')
-    expect(body).toContain('deploy/Dockerfile')
-  })
 })
 
 describe('k8s manifests', () => {
@@ -49,8 +37,8 @@ describe('k8s manifests', () => {
     for (const file of files) {
       const doc = await loadYaml(`deploy/k8s/${file}`)
       expect(doc, `${file} 无法解析`).toBeTruthy()
-      if (doc.metadata?.namespace) expect(doc.metadata.namespace).toBe('webgame-collection')
-      else expect(doc.metadata?.name).toBe('webgame-collection')
+      if (doc.metadata?.namespace) expect(doc.metadata.namespace).toBe('crearte')
+      else expect(doc.metadata?.name).toBe('crearte')
     }
   })
 
@@ -73,7 +61,7 @@ describe('k8s manifests', () => {
     expect(service.spec.type).toBe('NodePort')
     expect(service.spec.ports[0].port).toBe(80)
     expect(service.spec.ports[0].nodePort).toBe(30080)
-    expect(service.spec.selector.app).toBe('webgame-collection')
+    expect(service.spec.selector.app).toBe('crearte')
   })
 })
 

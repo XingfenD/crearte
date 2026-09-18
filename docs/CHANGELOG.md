@@ -16,6 +16,9 @@ The format loosely follows Keep a Changelog and can be adapted to the team's hab
 - Extended the game schema to v2 with `runtime`/`version`/`bundle`/`entry`/`hostedUrl`/`fallback`/`features`, plus fixture/data pipelines and a multi-origin mock runtime server; added a Playwright e2e suite.
 - 游戏 schema 升级到 v2，新增 `runtime`/`version`/`bundle`/`entry`/`hostedUrl`/`fallback`/`features`，并补充夹具/数据管线与多源 mock 运行时服务；新增 Playwright e2e 测试。
 
+- Added `deploy/docker-compose.mock.yml` to run the multi-origin runtime mock (host site + `*.localhost` game subdomains) alongside the dev container.
+- 新增 `deploy/docker-compose.mock.yml`，可与 dev 容器并行运行多源运行时 mock（宿主站 + `*.localhost` 游戏子域）。
+
 ### Changed / 变更
 
 - Added a wildcard game-host nginx block and bundle download CORS; PR validation now runs the runtime e2e suite.
@@ -26,6 +29,18 @@ The format loosely follows Keep a Changelog and can be adapted to the team's hab
 
 - Made the delivery type explicit in game data: existing games now declare `runtime: "external"` instead of relying on the schema default.
 - 游戏数据显式声明投递类型：现有游戏均写明 `runtime: "external"`，不再依赖缺省值。
+
+- Renamed the compose files to the `docker-compose.*.yml` pattern (`deploy/docker-compose.dev.yml`, `docker-compose.prod.yml`, `docker-compose.mock.yml`).
+- compose 文件统一改名为 `docker-compose.*.yml`（`deploy/docker-compose.dev.yml`、`docker-compose.prod.yml`、`docker-compose.mock.yml`）。
+
+- Renamed the project and images to `crearte`: GHCR image `ghcr.io/xingfend/crearte`, compose images `crearte:dev`/`crearte:local`, compose projects `crearte-dev`/`crearte-prod`/`crearte-mock`, k8s namespace/name/labels, npm package name and schema `$id`.
+- 项目与镜像全面改名为 `crearte`：GHCR 镜像 `ghcr.io/xingfend/crearte`，compose 镜像 `crearte:dev`/`crearte:local`，compose 项目名 `crearte-dev`/`crearte-prod`/`crearte-mock`，k8s namespace/名称/标签、npm 包名与 schema `$id`。
+
+- Relicensed the frontend under AGPL-3.0-only (network copyleft) with a commercial-licensing note in the README; the service side stays proprietary and separately maintained.
+- 前端改为 AGPL-3.0-only 许可（含网络条款），README 增加商业授权说明；服务端保持闭源、独立维护。
+
+- Removed the publish workflow; images are now built and pushed manually, with keel polling (or a manual webhook) rolling out updates.
+- 移除 publish 工作流；镜像改为手动构建推送，由 keel 轮询（或手动 webhook）滚动更新。
 
 ### Fixed / 修复
 
