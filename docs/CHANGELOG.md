@@ -6,6 +6,26 @@ All notable changes to this template should be documented in this file.
 The format loosely follows Keep a Changelog and can be adapted to the team's habits.
 本文档参考了 Keep a Changelog 的思路，也可以根据团队习惯调整。
 
+## [0.2.0] - 2026-09-18
+
+### Added / 新增
+
+- Added the game runtime: per-game subdomains, a Service Worker virtual source for signed bundles, a hosted (C) mode, sandboxed iframes with per-game feature flags, an agent-injected MessagePort bridge (score/save/exit), a shell degrade chain with a host error panel, offline play and bundle updates.
+- 新增游戏运行时：按游戏子域隔离、签名 bundle 的 Service Worker 虚拟源、C 模式（后端托管）、带 features 开关的沙箱 iframe、注入 agent 的 MessagePort 桥（得分/存档/退出）、shell 降级链与宿主错误面板、离线可玩与版本更新。
+
+- Extended the game schema to v2 with `runtime`/`version`/`bundle`/`entry`/`hostedUrl`/`fallback`/`features`, plus fixture/data pipelines and a multi-origin mock runtime server; added a Playwright e2e suite.
+- 游戏 schema 升级到 v2，新增 `runtime`/`version`/`bundle`/`entry`/`hostedUrl`/`fallback`/`features`，并补充夹具/数据管线与多源 mock 运行时服务；新增 Playwright e2e 测试。
+
+### Changed / 变更
+
+- Added a wildcard game-host nginx block and bundle download CORS; PR validation now runs the runtime e2e suite.
+- 新增游戏子域 nginx 通配 server block 与 bundle 下载 CORS；PR 校验流水线现在会执行运行时 e2e。
+
+### Fixed / 修复
+
+- Service Worker install signals readiness only after best-effort cache cleanup, and malformed request URLs and fixture mtimes are handled deterministically.
+- Service Worker 安装改为缓存清理（尽力而为）完成后才上报就绪；畸形请求 URL 与夹具 mtime 处理确定化。
+
 ## [0.1.3] - 2026-09-17
 
 ### Added / 新增
