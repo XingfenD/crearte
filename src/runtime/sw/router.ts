@@ -20,8 +20,7 @@ export function decodeAssetPath(pathname: string): string | null {
   } catch {
     return null
   }
-  if (decoded.includes('\0')) return null
-  if (decoded.includes('\\')) return null
+  if (/[\x00-\x1f\x7f\\]/.test(decoded)) return null
   const segments: string[] = []
   for (const segment of decoded.split('/')) {
     if (segment === '' || segment === '.') continue

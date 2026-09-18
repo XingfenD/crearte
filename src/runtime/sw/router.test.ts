@@ -17,6 +17,11 @@ describe('decodeAssetPath', () => {
     expect(decodeAssetPath('/%5c..%5c..%5csecret')).toBeNull()
     expect(decodeAssetPath('/%2e%2e%5csecret')).toBeNull()
   })
+  test('拒绝控制字符', () => {
+    expect(decodeAssetPath('/%2e%0a%2e/%2e%0a%2e/secret')).toBeNull()
+    expect(decodeAssetPath('/%09x')).toBeNull()
+    expect(decodeAssetPath('/%0dx')).toBeNull()
+  })
 })
 
 describe('assetCacheKey', () => {
