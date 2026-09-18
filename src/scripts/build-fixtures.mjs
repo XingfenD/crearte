@@ -47,7 +47,7 @@ await mkdir(path.join(outDir, 'games-alt'), { recursive: true })
 
 for (const file of (await readdir(catalogDir)).filter((f) => f.endsWith('.json')).sort()) {
   const catalog = JSON.parse(await readFile(path.join(catalogDir, file), 'utf8'))
-  const { _corruptSha, ...game } = catalog
+  const { _corruptSha, _corruptV2Sha, ...game } = catalog
   // C 模式夹具由 mock 服务直接托管源文件，不打包；原样输出供 build-data --with-fixtures 合并
   if (game.runtime === 'hosted') {
     await writeFile(path.join(outDir, 'games', `${game.id}.json`), JSON.stringify(game, null, 2) + '\n')
@@ -62,6 +62,7 @@ for (const file of (await readdir(catalogDir)).filter((f) => f.endsWith('.json')
   const shaV1 = createHash('sha256').update(zipV1).digest('hex')
   const shaV2 = createHash('sha256').update(zipV2).digest('hex')
   const declaredSha = _corruptSha ? shaV1.replace(/^./, (c) => (c === '0' ? '1' : '0')) : shaV1
+  const declaredShaV2 = _corruptV2Sha ? shaV2.replace(/^./, (c) => (c === '0' ? '1' : '0')) : shaV2
   await writeFile(path.join(outDir, 'bundles', `${game.id}.zip`), zipV1)
   await writeFile(path.join(outDir, 'bundles', `${game.id}-v2.zip`), zipV2)
   await writeFile(path.join(outDir, 'games', `${game.id}.json`), JSON.stringify({
@@ -73,7 +74,7 @@ for (const file of (await readdir(catalogDir)).filter((f) => f.endsWith('.json')
   }, null, 2) + '\n')
   await writeFile(path.join(outDir, 'games-alt', `${game.id}.json`), JSON.stringify({
     version: version2,
-    bundle: { url: `/data/bundles/${game.id}-v2.zip`, bytes: zipV2.length, sha256: shaV2 }
+    bundle: { url: `/data/bundles/${game.id}-v2.zip`, bytes: zipV2.length, sha256: declaredShaV2 }
   }, null, 2) + '\n')
   console.log(`[fixtures] ${game.id}: ${Object.keys(files).length} files, v1=${version} v2=${version2} (${zipV1.length} bytes)`)
 }

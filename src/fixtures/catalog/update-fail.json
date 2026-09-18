@@ -1,0 +1,16 @@
+{
+  "id": "update-fail",
+  "name": "更新失败夹具",
+  "url": "https://example.com/update-fail",
+  "author": { "name": "test" },
+  "description": "fixture",
+  "durationMinutes": { "min": 1, "max": 1 },
+  "type": "other",
+  "tags": ["fixture"],
+  "addedAt": "2026-09-17",
+  "entry": "index.html",
+  "_corruptV2Sha": true,
+  "fallback": "hosted",
+  "hostedUrl": "http://update-fail.localhost:4173/",
+  "features": { "inlineScript": true }
+}

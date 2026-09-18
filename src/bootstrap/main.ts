@@ -48,6 +48,13 @@ function handle(message: ShellMessage): void {
     }).catch(() => {})
     location.replace('/')
   } else if (message.type === 'runtime:error') {
+    // 旧版本仍完整可玩：不注销 SW，回根路径让 SW 继续服务旧版本（spec §16 保留旧版）
+    if (message.priorVersion) {
+      if (settleTimer) { clearTimeout(settleTimer); settleTimer = null }
+      status.textContent = `新版本准备失败，恢复旧版本 ${message.priorVersion}…`
+      location.replace('/')
+      return
+    }
     fail('运行环境准备失败', message.message, true)
   }
 }

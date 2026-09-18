@@ -39,7 +39,7 @@ export type ShellMessage =
   | { type: 'runtime:install'; id: string; version: string; entry: string; bundleUrl: string; sha256: string; token?: string; hostOrigin: string; features?: Partial<FeatureFlags> }
   | { type: 'runtime:progress'; received: number; total: number }
   | { type: 'runtime:ready'; version: string }
-  | { type: 'runtime:error'; message: string }
+  | { type: 'runtime:error'; message: string; priorVersion?: string }
 
 // shell → 宿主的降级信号（bundle 失败/准备超时时，Agent 尚未注入，桥还不存在）
 export type ShellSignal = { type: 'runtime:degrade'; message: string }
@@ -114,7 +114,7 @@ export function isShellMessage(value: unknown): value is ShellMessage {
     case 'runtime:ready':
       return typeof value.version === 'string'
     case 'runtime:error':
-      return typeof value.message === 'string'
+      return typeof value.message === 'string' && (value.priorVersion === undefined || typeof value.priorVersion === 'string')
     default:
       return false
   }

@@ -26,6 +26,11 @@ describe('protocol guards', () => {
     expect(isShellMessage({ type: 'runtime:install', id: 'a', version: 'v', entry: 'index.html', bundleUrl: 'https://x/b.zip', sha256: 'a'.repeat(64), hostOrigin: 'https://h' })).toBe(true)
     expect(isShellMessage({ type: 'runtime:install', id: 'a' })).toBe(false)
   })
+  test('runtime:error 可选 priorVersion 校验', () => {
+    expect(isShellMessage({ type: 'runtime:error', message: 'x', priorVersion: 'v1' })).toBe(true)
+    expect(isShellMessage({ type: 'runtime:error', message: 'x', priorVersion: 1 })).toBe(false)
+    expect(isShellMessage({ type: 'runtime:error', message: 'x', priorVersion: null })).toBe(false)
+  })
   test('install 的 features 仅接受已知键的 boolean', () => {
     const install = { type: 'runtime:install', id: 'a', version: 'v', entry: 'index.html', bundleUrl: 'https://x/b.zip', sha256: 'a'.repeat(64), hostOrigin: 'https://h' }
     expect(isShellMessage({ ...install, features: { eval: true } })).toBe(true)
