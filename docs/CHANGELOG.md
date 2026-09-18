@@ -24,6 +24,9 @@ The format loosely follows Keep a Changelog and can be adapted to the team's hab
 - Widened the game player to `max-w-5xl` and restyled the runtime controls with design-system surface buttons (readable contrast, new `.btn-surface`); the iframe now has a white backdrop and an accessible title.
 - 游戏播放器加宽到 `max-w-5xl`，运行时控制按钮改用设计系统纸面样式（对比度恢复正常，新增 `.btn-surface`）；iframe 增加白底与可访问标题。
 
+- Made the delivery type explicit in game data: existing games now declare `runtime: "external"` instead of relying on the schema default.
+- 游戏数据显式声明投递类型：现有游戏均写明 `runtime: "external"`，不再依赖缺省值。
+
 ### Fixed / 修复
 
 - Service Worker install signals readiness only after best-effort cache cleanup, and malformed request URLs and fixture mtimes are handled deterministically.

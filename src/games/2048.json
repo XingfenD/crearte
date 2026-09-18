@@ -1,5 +1,6 @@
 {
   "id": "2048",
+  "runtime": "external",
   "name": "2048",
   "url": "https://play2048.co/",
   "author": { "name": "Gabriele Cirulli", "url": "https://github.com/gabrielecirulli/2048" },

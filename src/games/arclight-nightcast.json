@@ -1,5 +1,6 @@
 {
   "id": "arclight-nightcast",
+  "runtime": "external",
   "name": "弧光镇晚间新闻",
   "url": "https://lemuria1907.github.io/Arclight-Nightcast/",
   "author": { "name": "灰烬马戏团", "url": "https://github.com/lemuria1907" },

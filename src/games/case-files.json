@@ -1,5 +1,6 @@
 {
   "id": "case-files",
+  "runtime": "external",
   "name": "案件推演系统",
   "url": "https://lemuria1907.github.io/Case-Files/",
   "author": { "name": "lemuria1907", "url": "https://github.com/lemuria1907" },

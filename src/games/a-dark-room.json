@@ -1,5 +1,6 @@
 {
   "id": "a-dark-room",
+  "runtime": "external",
   "name": "A Dark Room",
   "url": "https://adarkroom.doublespeakgames.com/",
   "author": { "name": "Doublespeak Games", "url": "https://www.doublespeakgames.com/" },
