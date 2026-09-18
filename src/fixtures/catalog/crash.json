@@ -8,5 +8,6 @@
   "type": "other",
   "tags": ["fixture"],
   "addedAt": "2026-09-17",
-  "entry": "index.html"
+  "entry": "index.html",
+  "features": { "inlineScript": true }
 }

@@ -9,5 +9,6 @@
   "tags": ["fixture"],
   "addedAt": "2026-09-17",
   "entry": "index.html",
-  "display": { "aspect": "4:3" }
+  "display": { "aspect": "4:3" },
+  "features": { "inlineScript": true }
 }

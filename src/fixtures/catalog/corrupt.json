@@ -11,5 +11,6 @@
   "entry": "index.html",
   "_corruptSha": true,
   "fallback": "hosted",
-  "hostedUrl": "http://corrupt.localhost:4173/"
+  "hostedUrl": "http://corrupt.localhost:4173/",
+  "features": { "inlineScript": true }
 }

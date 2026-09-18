@@ -15,6 +15,7 @@
     "preview": "vite preview",
     "typecheck": "vue-tsc --noEmit",
     "validate:data": "node scripts/build-data.mjs --check",
+    "e2e": "playwright test",
     "test": "vitest run",
     "check": "vitest run && npm run build"
   },
@@ -26,6 +27,7 @@
     "vue-router": "^5.3.1"
   },
   "devDependencies": {
+    "@playwright/test": "^1.63.0",
     "@tailwindcss/vite": "^4.3.3",
     "@types/node": "^22.20.3",
     "@vitejs/plugin-vue": "^6.0.9",
