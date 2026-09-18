@@ -9,11 +9,11 @@ const root = path.resolve(fileURLToPath(new URL('..', import.meta.url)))
 const gamesDir = path.join(root, 'fixtures', 'games')
 const catalogDir = path.join(root, 'fixtures', 'catalog')
 const outDir = path.join(root, 'fixtures', 'generated')
-const FIXTURE_PORT = process.env.FIXTURE_GAME_PORT ?? '4173'
+const FIXED_MTIME = new Date(Date.UTC(2000, 0, 1))
 
 async function collect(dir, prefix = '') {
   const files = {}
-  for (const entry of await readdir(dir, { withFileTypes: true })) {
+  for (const entry of (await readdir(dir, { withFileTypes: true })).sort((a, b) => a.name.localeCompare(b.name))) {
     const full = path.join(dir, entry.name)
     const rel = prefix ? `${prefix}/${entry.name}` : entry.name
     if (entry.isDirectory()) Object.assign(files, await collect(full, rel))
@@ -37,7 +37,7 @@ function render(files, version) {
 }
 
 function pack(files) {
-  return zipSync(Object.fromEntries(Object.entries(files).map(([name, bytes]) => [name, [bytes, { level: 6 }]])))
+  return zipSync(Object.fromEntries(Object.entries(files).map(([name, bytes]) => [name, [bytes, { level: 6, mtime: FIXED_MTIME }]])))
 }
 
 await rm(outDir, { recursive: true, force: true })
@@ -72,4 +72,3 @@ for (const file of (await readdir(catalogDir)).filter((f) => f.endsWith('.json')
   }, null, 2) + '\n')
   console.log(`[fixtures] ${game.id}: ${Object.keys(files).length} files, v1=${version} v2=${version2} (${zipV1.length} bytes)`)
 }
-void FIXTURE_PORT
