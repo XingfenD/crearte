@@ -6,7 +6,9 @@
   "scripts": {
     "dev": "vite",
     "predev": "node scripts/build-data.mjs",
-    "build": "vue-tsc --noEmit && vite build",
+    "build": "vue-tsc --noEmit && vite build && node scripts/build-runtime.mjs",
+    "build:runtime": "node scripts/build-runtime.mjs",
+    "serve:runtime": "node scripts/serve-runtime.mjs",
     "prebuild": "node scripts/build-data.mjs",
     "preview": "vite preview",
     "typecheck": "vue-tsc --noEmit",
