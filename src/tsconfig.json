@@ -16,5 +16,5 @@
     "resolveJsonModule": true,
     "paths": { "@/*": ["./app/*"] }
   },
-  "include": ["app/**/*.ts", "app/**/*.vue", "scripts/**/*.mjs", "scripts/**/*.ts"]
+  "include": ["app/**/*.ts", "app/**/*.vue", "runtime/**/*.ts", "bootstrap/**/*.ts", "scripts/**/*.mjs", "scripts/**/*.ts", "e2e/**/*.ts", "playwright.config.ts"]
 }
