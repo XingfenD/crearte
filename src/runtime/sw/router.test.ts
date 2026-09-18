@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest'
-import { assetCacheKey, decodeAssetPath, routeRequest, AGENT_CACHE_PATH } from './router'
+import { assetCacheKey, decodeAssetPath, parseRange, routeRequest, AGENT_CACHE_PATH } from './router'
 
 const base = { isNavigation: true, hasActiveVersion: true, entry: 'index.html' }
 
@@ -34,6 +34,20 @@ describe('assetCacheKey', () => {
     expect(assetCacheKey('%2e%2e/secret', 'https://x.test')).toBe('https://x.test/__bundle/%252e%252e/secret')
     expect(assetCacheKey('.. /secret', 'https://x.test')).toBe('https://x.test/__bundle/..%20/secret')
     expect(assetCacheKey('..%20', 'https://x.test')).toBe('https://x.test/__bundle/..%2520')
+  })
+})
+
+describe('parseRange', () => {
+  test('闭区间/开区间/后缀区间', () => {
+    expect(parseRange('bytes=0-3', 10)).toEqual({ start: 0, end: 3 })
+    expect(parseRange('bytes=5-', 10)).toEqual({ start: 5, end: 9 })
+    expect(parseRange('bytes=-4', 10)).toEqual({ start: 6, end: 9 })
+    expect(parseRange('bytes=8-100', 10)).toEqual({ start: 8, end: 9 })
+  })
+  test('非法区间返回 null', () => {
+    expect(parseRange('bytes=9-2', 10)).toBeNull()
+    expect(parseRange('bytes=10-', 10)).toBeNull()
+    expect(parseRange('items=0-1', 10)).toBeNull()
   })
 })
 

@@ -53,3 +53,12 @@ export function routeRequest(args: {
   if (decoded === '' || decoded.endsWith('/')) return { kind: 'asset', path: decoded === '' ? entry : `${decoded}${entry.split('/').pop()}` }
   return { kind: 'asset', path: decoded }
 }
+
+export function parseRange(header: string, size: number): { start: number; end: number } | null {
+  const match = /^bytes=(\d*)-(\d*)$/.exec(header.trim())
+  if (!match) return null
+  const start = match[1] === '' ? size - Number(match[2]) : Number(match[1])
+  const end = match[1] === '' || match[2] === '' ? size - 1 : Number(match[2])
+  if (Number.isNaN(start) || Number.isNaN(end) || start < 0 || start > end || start >= size) return null
+  return { start, end: Math.min(end, size - 1) }
+}
