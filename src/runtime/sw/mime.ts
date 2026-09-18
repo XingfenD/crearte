@@ -19,5 +19,5 @@ const TYPES: Record<string, string> = {
 
 export function contentTypeFor(path: string): string {
   const ext = path.slice(path.lastIndexOf('.') + 1).toLowerCase()
-  return TYPES[ext] ?? 'application/octet-stream'
+  return Object.hasOwn(TYPES, ext) ? TYPES[ext] : 'application/octet-stream'
 }

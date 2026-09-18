@@ -20,6 +20,15 @@ describe('buildCsp', () => {
     expect(csp).toContain('style-src \'self\';')
     expect(csp).not.toContain('wasm-unsafe-eval')
   })
+  test('恶意 hostOrigin 不得注入指令', () => {
+    const csp = buildCsp(DEFAULT_FEATURES, "https://evil.test; script-src-elem 'unsafe-inline'")
+    expect(csp).not.toContain('script-src-elem')
+    expect(csp).toContain("frame-ancestors 'none'")
+    expect(buildCsp(DEFAULT_FEATURES, 'https://evil.test;script-src-elem')).toContain("frame-ancestors 'none'")
+  })
+  test('畸形 hostOrigin 回退 none', () => {
+    expect(buildCsp(DEFAULT_FEATURES, 'not a url')).toContain("frame-ancestors 'none'")
+  })
 })
 
 describe('securityHeaders', () => {

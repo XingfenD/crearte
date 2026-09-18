@@ -19,3 +19,8 @@ test('未知扩展名兜底 octet-stream，且大小写不敏感', () => {
   expect(contentTypeFor('x.weird')).toBe('application/octet-stream')
   expect(contentTypeFor('noext')).toBe('application/octet-stream')
 })
+test('原型链键不命中映射表', () => {
+  expect(contentTypeFor('x.constructor')).toBe('application/octet-stream')
+  expect(contentTypeFor('x.__proto__')).toBe('application/octet-stream')
+  expect(contentTypeFor('x.toString')).toBe('application/octet-stream')
+})

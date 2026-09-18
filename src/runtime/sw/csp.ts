@@ -1,5 +1,15 @@
 import type { FeatureFlags } from '../bridge/protocol'
 
+function frameAncestor(hostOrigin: string): string {
+  try {
+    const url = new URL(hostOrigin)
+    if (!/^[a-z0-9.-]+(:\d+)?$/.test(url.host)) return "'none'"
+    return `${url.protocol}//${url.host}`
+  } catch {
+    return "'none'"
+  }
+}
+
 export function buildCsp(features: FeatureFlags, hostOrigin: string): string {
   const script = ["'self'"]
   if (features.eval) script.push("'unsafe-eval'")
@@ -21,7 +31,7 @@ export function buildCsp(features: FeatureFlags, hostOrigin: string): string {
     "base-uri 'self'",
     "form-action 'none'",
     "manifest-src 'none'",
-    `frame-ancestors ${hostOrigin}`
+    `frame-ancestors ${frameAncestor(hostOrigin)}`
   ].join('; ')
 }
 
