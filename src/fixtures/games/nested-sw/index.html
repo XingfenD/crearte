@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <title>nested-sw fixture</title>
+  </head>
+  <body>
+    <script>
+      try {
+        const registration = navigator.serviceWorker.register('/x.js')
+        if (registration && typeof registration.catch === 'function') {
+          registration.catch(() => {
+            document.body.dataset.sw = 'blocked'
+          })
+        }
+      } catch {
+        document.body.dataset.sw = 'blocked'
+      }
+      document.body.dataset.ready = '1'
+    </script>
+  </body>
+</html>

@@ -1,0 +1,16 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <title>range fixture</title>
+  </head>
+  <body>
+    <script>
+      fetch('/data.bin', { headers: { Range: 'bytes=0-3' } }).then(async (response) => {
+        document.body.dataset.range = String(response.status)
+        document.body.dataset.body = await response.text()
+      })
+      document.body.dataset.ready = '1'
+    </script>
+  </body>
+</html>

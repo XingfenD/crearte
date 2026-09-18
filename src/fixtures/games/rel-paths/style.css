@@ -1,0 +1,4 @@
+body {
+  --fixture-style: loaded;
+  font-family: system-ui, sans-serif;
+}

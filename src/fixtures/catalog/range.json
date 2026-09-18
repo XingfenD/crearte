@@ -1,0 +1,12 @@
+{
+  "id": "range",
+  "name": "Range 夹具",
+  "url": "https://example.com/range",
+  "author": { "name": "test" },
+  "description": "fixture",
+  "durationMinutes": { "min": 1, "max": 1 },
+  "type": "other",
+  "tags": ["fixture"],
+  "addedAt": "2026-09-17",
+  "entry": "index.html"
+}

@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <title>storage fixture</title>
+  </head>
+  <body>
+    <button id="write">write</button>
+    <button id="score">score</button>
+    <script>
+      function render() {
+        document.body.dataset.k = localStorage.getItem('k') ?? ''
+      }
+      render()
+      document.getElementById('write').addEventListener('click', () => {
+        localStorage.setItem('k', 'from-a')
+        render()
+      })
+      document.getElementById('score').addEventListener('click', () => {
+        window.__GAME_HOST__?.reportScore(42)
+      })
+      document.body.dataset.ready = '1'
+    </script>
+  </body>
+</html>

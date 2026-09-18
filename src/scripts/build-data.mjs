@@ -165,7 +165,7 @@ export function buildIndex(games, generatedAt) {
   }
 }
 
-export async function generate({ srcRoot = SRC_ROOT, check = false, now = new Date() } = {}) {
+export async function generate({ srcRoot = SRC_ROOT, check = false, withFixtures = false, now = new Date() } = {}) {
   const gamesDir = path.join(srcRoot, 'games')
   const docsDir = path.join(srcRoot, 'docs')
   const coversDir = path.join(srcRoot, 'assets', 'covers')
@@ -181,6 +181,14 @@ export async function generate({ srcRoot = SRC_ROOT, check = false, now = new Da
   const generatedAt = now.toISOString()
   await rm(outDir, { recursive: true, force: true })
   await mkdir(path.join(outDir, 'games'), { recursive: true })
+  if (withFixtures) {
+    const fixtureDir = path.join(srcRoot, 'fixtures', 'generated', 'games')
+    try {
+      for (const file of (await readdir(fixtureDir)).filter((f) => f.endsWith('.json')).sort()) {
+        games.push(JSON.parse(await readFile(path.join(fixtureDir, file), 'utf8')))
+      }
+    } catch { /* 未生成夹具时忽略 */ }
+  }
   await writeFile(path.join(outDir, 'index.json'), JSON.stringify(buildIndex(games, generatedAt), null, 2) + '\n')
   for (const game of games) {
     await writeFile(path.join(outDir, 'games', `${game.id}.json`), JSON.stringify(pickGame(game, true), null, 2) + '\n')
@@ -188,13 +196,18 @@ export async function generate({ srcRoot = SRC_ROOT, check = false, now = new Da
   const sortedDocs = [...docs].sort((a, b) => a.order - b.order || a.slug.localeCompare(b.slug))
   await writeFile(path.join(outDir, 'docs.json'), JSON.stringify({ generatedAt, docs: sortedDocs }, null, 2) + '\n')
   if (existsSync(coversDir)) await cp(coversDir, path.join(outDir, 'assets', 'covers'), { recursive: true })
+  if (withFixtures) {
+    const bundlesSrc = path.join(srcRoot, 'fixtures', 'generated', 'bundles')
+    try { await cp(bundlesSrc, path.join(outDir, 'bundles'), { recursive: true }) } catch { /* noop */ }
+  }
   return { ok: true, errors: [], games: games.length, docs: docs.length }
 }
 
 const isMain = process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)
 if (isMain) {
   const check = process.argv.includes('--check')
-  const result = await generate({ check })
+  const withFixtures = process.argv.includes('--with-fixtures')
+  const result = await generate({ check, withFixtures })
   if (!result.ok) {
     console.error(`数据校验失败（${result.errors.length} 个问题）：`)
     for (const err of result.errors) console.error(`  - ${err}`)
