@@ -64,6 +64,12 @@ function attachPort(port: MessagePort): void {
     if (command.type === 'host:pause') dispatchHook('pause')
     else if (command.type === 'host:resume') dispatchHook('resume')
     else if (command.type === 'host:clear-save') { try { localStorage.clear() } catch { /* noop */ } dispatchHook('clear-save') }
+    else if (command.type === 'host:snapshot-request') {
+      const data = JSON.stringify(Object.fromEntries(Object.keys(localStorage).map((k) => [k, localStorage.getItem(k)])))
+      const bytes = new TextEncoder().encode(data).length
+      const truncated = bytes > 512 * 1024
+      emit({ type: 'game:snapshot', id: command.id, data: truncated ? '' : data, bytes, truncated })
+    }
   }
   port.start()
 }

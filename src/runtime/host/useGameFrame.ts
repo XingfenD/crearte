@@ -101,7 +101,12 @@ export function useGameFrame(options: GameFrameOptions) {
 
   function pause(): void { send({ type: 'host:pause' }); state.value.paused = true }
   function resume(): void { send({ type: 'host:resume' }); state.value.paused = false }
-  function clearSave(): void { send({ type: 'host:clear-save' }) }
+  function clearSave(): void {
+    send({ type: 'host:clear-save' })
+    state.value.storageKeys = 0
+    state.value.storageBytes = 0
+  }
+  function requestSnapshot(id: string): void { send({ type: 'host:snapshot-request', id }) }
 
   function degrade(reason: string): void {
     clearTimeout()
@@ -130,5 +135,5 @@ export function useGameFrame(options: GameFrameOptions) {
     port = null
   }
 
-  return { iframeRef, attach, onMessage, target, state, sandbox, allow, start, stop, pause, resume, clearSave, degrade, send }
+  return { iframeRef, attach, onMessage, target, state, sandbox, allow, start, stop, pause, resume, clearSave, requestSnapshot, degrade, send }
 }

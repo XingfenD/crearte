@@ -41,6 +41,17 @@ describe('installAgent', () => {
     expect(port.postMessage).toHaveBeenCalledWith({ type: 'game:score', score: 42, meta: undefined })
   })
 
+  test('host:snapshot-request 返回 localStorage 快照', () => {
+    const port = { postMessage: vi.fn(), onmessage: null, start: vi.fn(), close: vi.fn() } as unknown as MessagePort
+    installAgent(window, { hostOrigin: 'https://host.test', parent: window, port })
+    window.localStorage.clear()
+    window.localStorage.setItem('snap', 'value')
+    port.onmessage!({ data: { type: 'host:snapshot-request', id: 's1' } } as MessageEvent)
+    expect(port.postMessage).toHaveBeenCalledWith({
+      type: 'game:snapshot', id: 's1', data: JSON.stringify({ snap: 'value' }), bytes: expect.any(Number), truncated: false
+    })
+  })
+
   test('剥夺 serviceWorker.register', () => {
     installAgent(window, { hostOrigin: 'https://host.test', parent: window, port: null })
     expect(() => navigator.serviceWorker.register('/sw.js')).toThrowError()

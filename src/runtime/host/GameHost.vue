@@ -94,6 +94,7 @@ function onMessage(event: MessageEvent): void { frame.onMessage(event) }
       <button class="rounded-md bg-neutral-800 px-3 py-1.5 hover:bg-neutral-700" @click="frame.clearSave()">清除存档</button>
       <button class="rounded-md bg-neutral-800 px-3 py-1.5 hover:bg-neutral-700" @click="emit('exit')">退出</button>
       <span v-if="frame.state.value.score !== null" class="text-neutral-400">得分：{{ frame.state.value.score }}</span>
+      <span v-if="frame.state.value.storageKeys !== null" class="text-neutral-400">存档：{{ frame.state.value.storageKeys }} 项</span>
       <span v-if="lastError" class="text-red-400">{{ lastError }}</span>
     </div>
   </div>
