@@ -10,7 +10,8 @@ export type RouteDecision =
   | { kind: 'asset'; path: string }
 
 export function assetCacheKey(path: string, origin: string): string {
-  return new URL(`/__bundle/${path}`, origin).href
+  const encoded = path.split('/').map((segment) => encodeURIComponent(segment)).join('/')
+  return new URL(`/__bundle/${encoded}`, origin).href
 }
 
 export function decodeAssetPath(pathname: string): string | null {

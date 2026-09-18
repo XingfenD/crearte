@@ -27,6 +27,13 @@ describe('decodeAssetPath', () => {
 describe('assetCacheKey', () => {
   test('拼接 __bundle 命名空间', () => {
     expect(assetCacheKey('js/game.js', 'https://x.test')).toBe('https://x.test/__bundle/js/game.js')
+    expect(assetCacheKey('img/', 'https://x.test')).toBe('https://x.test/__bundle/img/')
+    expect(assetCacheKey('', 'https://x.test')).toBe('https://x.test/__bundle/')
+  })
+  test('逐段编码，双重编码与尾随空格不得逃逸', () => {
+    expect(assetCacheKey('%2e%2e/secret', 'https://x.test')).toBe('https://x.test/__bundle/%252e%252e/secret')
+    expect(assetCacheKey('.. /secret', 'https://x.test')).toBe('https://x.test/__bundle/..%20/secret')
+    expect(assetCacheKey('..%20', 'https://x.test')).toBe('https://x.test/__bundle/..%2520')
   })
 })
 
