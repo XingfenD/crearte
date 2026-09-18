@@ -60,6 +60,24 @@ describe('安全边界（补充）', () => {
     }
     await expect(extractZip(raw)).rejects.toMatchObject({ code: 'extract-mismatch' })
   })
+  test('stored 条目按实际大小记账', async () => {
+    const raw = zipSync({ 'a.bin': new Uint8Array(30), 'b.bin': new Uint8Array(30) }, { level: 0 })
+    await expect(extractZip(raw, { ...ZIP_LIMITS, maxTotal: 50 })).rejects.toMatchObject({ code: 'total-too-large' })
+  })
+  test('stored 条目申报大小背离报 size-mismatch', async () => {
+    const raw = zipSync({ 'a.bin': [new Uint8Array(32), { level: 0 }] })
+    const view = new DataView(raw.buffer, raw.byteOffset, raw.byteLength)
+    let sig = -1
+    for (let i = 0; i <= raw.length - 4; i++) {
+      if (view.getUint32(i, true) === 0x02014b50) {
+        sig = i
+        break
+      }
+    }
+    expect(sig).toBeGreaterThanOrEqual(0)
+    view.setUint32(sig + 24, 1, true)
+    await expect(extractZip(raw)).rejects.toMatchObject({ code: 'size-mismatch' })
+  })
   test('空路径与过长路径报错，点段归一化', () => {
     expect(() => validateEntryPath('.')).toThrowError()
     expect(() => validateEntryPath('./')).toThrowError()

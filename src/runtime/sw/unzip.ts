@@ -45,21 +45,25 @@ export async function extractZip(data: Uint8Array, limits: ZipLimits = ZIP_LIMIT
     filter(file) {
       const path = validateEntryPath(file.name)
       if (planned.has(path)) throw new ZipError('duplicate-entry', `重复条目: ${path}`)
-      const original = file.originalSize
-      if (original > limits.maxEntry) throw new ZipError('entry-too-large', `条目过大: ${path}`)
+      if (file.compression === 0 && file.originalSize !== file.size) throw new ZipError('size-mismatch', `stored 条目大小不一致: ${path}`)
+      const effective = Math.max(file.originalSize, file.size)
+      if (effective > limits.maxEntry) throw new ZipError('entry-too-large', `条目过大: ${path}`)
       const compressed = Math.max(file.size, 1)
-      if (original / compressed > limits.maxRatio) throw new ZipError('ratio-too-high', `压缩比异常: ${path}`)
+      if (file.originalSize / compressed > limits.maxRatio) throw new ZipError('ratio-too-high', `压缩比异常: ${path}`)
       if (planned.size + 1 > limits.maxEntries) throw new ZipError('too-many-entries', `条目数超过 ${limits.maxEntries}`)
-      plannedTotal += original
+      plannedTotal += effective
       if (plannedTotal > limits.maxTotal) throw new ZipError('total-too-large', `解压总量超过 ${limits.maxTotal}`)
-      planned.set(path, original)
+      planned.set(path, effective)
       return true
     }
   })
   const entries = new Map<string, Uint8Array>()
+  let actualTotal = 0
   for (const [name, bytes] of Object.entries(unzipped)) {
     const path = validateEntryPath(name)
+    actualTotal += bytes.length
     if (bytes.length > limits.maxEntry) throw new ZipError('entry-too-large', `条目过大: ${path}`)
+    if (actualTotal > limits.maxTotal) throw new ZipError('total-too-large', `解压总量超过 ${limits.maxTotal}`)
     entries.set(path, bytes)
   }
   if (entries.size !== planned.size) throw new ZipError('extract-mismatch', '解压结果与目录不一致')
