@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
-import type { Game } from '@/data'
+import type { Game } from '../../app/data/types'
 import { runtimeConfig } from './config'
 import { resolveRuntimeTargets, type RuntimeTarget } from './adapters'
 import { useGameFrame } from './useGameFrame'
@@ -30,8 +30,15 @@ const aspect = computed(() => props.game.display?.aspect ?? '16:9')
 const aspectClass = computed(() => aspect.value === '4:3' ? 'aspect-[4/3]' : aspect.value === 'fill' ? 'h-[70vh]' : 'aspect-video')
 const iframeSrc = computed(() => frame.target.value?.url ?? '')
 const frameKey = ref(0)
-watch(() => props.game.version, () => { frameKey.value++; frame.stop(); frame.start() })
-function restart(): void { frameKey.value++; frame.stop(); frame.start() }
+watch(() => props.game.version, restart)
+watch(() => props.game.id, restart)
+function restart(): void {
+  degradedToExternal.value = null
+  lastError.value = null
+  frameKey.value++
+  frame.stop()
+  frame.start()
+}
 
 function onIframeLoad(): void {
   // iframe 加载完成不等于桥就绪：virtual 模式等 agent:boot，hosted 模式已由 start() 置为 ready
