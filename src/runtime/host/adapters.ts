@@ -24,7 +24,7 @@ export function resolveRuntimeTargets(game: Game, opts: { baseDomain: string; pr
     const hash = new URLSearchParams(fragment)
     targets.push({ mode: 'virtual', url: `${origin}/__bootstrap#${hash.toString()}`, origin })
   }
-  if (game.runtime === 'hosted' && (game.hostedUrl ?? game.runtime === 'hosted')) {
+  if (game.runtime === 'hosted') {
     targets.push({ mode: 'hosted', url: game.hostedUrl ?? `${origin}/`, origin })
   }
   if (game.fallback === 'hosted' && targets[0]?.mode === 'virtual' && game.hostedUrl) {

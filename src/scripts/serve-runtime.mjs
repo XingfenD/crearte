@@ -9,6 +9,60 @@ const dist = path.join(root, 'dist')
 const fixtures = path.join(root, 'fixtures')
 const port = Number(process.argv[process.argv.indexOf('--port') + 1] || 4173)
 const MIME = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.css': 'text/css; charset=utf-8', '.json': 'application/json; charset=utf-8', '.zip': 'application/zip', '.bin': 'application/octet-stream', '.wav': 'audio/wav', '.png': 'image/png', '.svg': 'image/svg+xml' }
+const DEFAULT_FEATURES = { eval: false, inlineScript: false, inlineStyle: true, wasm: true, coop: false }
+
+// 与 runtime/sw/csp.ts 同语义的最小镜像（Node 端无法 import TS）；生产由后端按游戏 features 下发
+function frameAncestor(hostOrigin) {
+  try {
+    const url = new URL(hostOrigin)
+    if (!/^[a-z0-9.-]+(:\d+)?$/.test(url.host)) return "'none'"
+    return `${url.protocol}//${url.host}`
+  } catch {
+    return "'none'"
+  }
+}
+
+function buildCsp(features, hostOrigin) {
+  const script = ["'self'"]
+  if (features.eval) script.push("'unsafe-eval'")
+  if (features.inlineScript) script.push("'unsafe-inline'")
+  if (features.wasm) script.push("'wasm-unsafe-eval'")
+  const style = ["'self'"]
+  if (features.inlineStyle) style.push("'unsafe-inline'")
+  return [
+    "default-src 'none'",
+    `script-src ${script.join(' ')}`,
+    `style-src ${style.join(' ')}`,
+    "img-src 'self' data: blob:",
+    "media-src 'self' data: blob:",
+    "font-src 'self' data:",
+    "connect-src 'self'",
+    "worker-src 'self' blob:",
+    "frame-src 'none'",
+    "object-src 'none'",
+    "base-uri 'self'",
+    "form-action 'none'",
+    "manifest-src 'none'",
+    `frame-ancestors ${frameAncestor(hostOrigin)}`
+  ].join('; ')
+}
+
+function securityHeaders(features, hostOrigin) {
+  return {
+    'Content-Security-Policy': buildCsp(features, hostOrigin),
+    'X-Content-Type-Options': 'nosniff',
+    'Referrer-Policy': 'no-referrer'
+  }
+}
+
+async function gameFeatures(gameId) {
+  try {
+    const catalog = JSON.parse(await readFile(path.join(fixtures, 'catalog', `${gameId}.json`), 'utf8'))
+    return { ...DEFAULT_FEATURES, ...(catalog.features ?? {}) }
+  } catch {
+    return { ...DEFAULT_FEATURES }
+  }
+}
 
 async function fileOrNull(file) {
   try { const info = await stat(file); return info.isFile() ? file : null } catch { return null }
@@ -67,10 +121,11 @@ const server = createServer(async (req, res) => {
         const ext = path.extname(candidate)
         if (ext === '.html') {
           const html = await readFile(candidate, 'utf8')
-          const tag = `<script src="/agent.js?host=${encodeURIComponent(`http://localhost:${port}`)}"></script>`
+          const hostOrigin = `http://localhost:${port}`
+          const tag = `<script src="/agent.js?host=${encodeURIComponent(hostOrigin)}"></script>`
           const at = html.search(/<head[^>]*>/i)
           const injected = at >= 0 ? html.slice(0, html.indexOf('>', at) + 1) + tag + html.slice(html.indexOf('>', at) + 1) : tag + html
-          res.writeHead(200, { 'Content-Type': MIME['.html'], 'Cache-Control': 'no-store' })
+          res.writeHead(200, { ...securityHeaders(await gameFeatures(gameId), hostOrigin), 'Content-Type': MIME['.html'], 'Cache-Control': 'no-store' })
           res.end(injected); return
         }
         const body = await readFile(candidate)

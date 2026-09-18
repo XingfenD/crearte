@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <title>hosted fixture</title>
+  </head>
+  <body>
+    <button id="score">score</button>
+    <button id="write">write</button>
+    <script>
+      document.body.dataset.ok = 'hosted'
+      document.body.dataset.ready = '1'
+      document.getElementById('score').addEventListener('click', () => {
+        window.__GAME_HOST__?.reportScore(7)
+      })
+      document.getElementById('write').addEventListener('click', () => {
+        localStorage.setItem('k', 'from-hosted')
+      })
+      fetch('https://example.com/x').then(
+        () => {
+          document.body.dataset.fetch = 'allowed'
+        },
+        () => {
+          document.body.dataset.fetch = 'blocked'
+        }
+      )
+    </script>
+  </body>
+</html>
