@@ -60,6 +60,10 @@ describe('routeRequest', () => {
     expect(routeRequest({ ...base, pathname: '/robots.txt' })).toEqual({ kind: 'robots' })
     expect(routeRequest({ ...base, pathname: '/agent.js' })).toEqual({ kind: 'asset', path: AGENT_CACHE_PATH })
   })
+  test('无版本时 agent 与普通路径一样按版本状态分流', () => {
+    expect(routeRequest({ ...base, pathname: '/agent.js', hasActiveVersion: false, isNavigation: false })).toEqual({ kind: 'not-found' })
+    expect(routeRequest({ ...base, pathname: '/agent.js', hasActiveVersion: false })).toEqual({ kind: 'redirect-bootstrap' })
+  })
   test('根路径按版本状态分流', () => {
     expect(routeRequest({ ...base, pathname: '/' })).toEqual({ kind: 'asset', path: 'index.html' })
     expect(routeRequest({ ...base, pathname: '/', hasActiveVersion: false })).toEqual({ kind: 'redirect-bootstrap' })

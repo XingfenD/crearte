@@ -4,7 +4,7 @@ import { contentTypeFor } from './mime'
 import { securityHeaders } from './csp'
 import { DEFAULT_FEATURES, isShellMessage, type FeatureFlags } from '../bridge/protocol'
 import { readMeta, writeMeta, type RuntimeMeta } from './meta'
-import { extractZip } from './unzip'
+import { extractZip, ZIP_LIMITS, ZipError } from './unzip'
 
 declare const self: ServiceWorkerGlobalScope & { __FEATURES__?: FeatureFlags }
 
@@ -33,13 +33,18 @@ self.addEventListener('message', (event) => {
   event.waitUntil(installBundle(event.data, client))
 })
 
-async function fetchAgentSource(): Promise<Uint8Array | null> {
+async function fetchAgentSource(): Promise<Uint8Array> {
+  let response: Response
   try {
-    const response = await fetch(AGENT_SOURCE_URL, { cache: 'no-store' })
-    if (!response.ok) return null
+    response = await fetch(AGENT_SOURCE_URL, { cache: 'no-store' })
+  } catch {
+    throw new Error('agent.js 获取失败')
+  }
+  if (!response.ok) throw new Error(`agent.js 获取失败: HTTP ${response.status}`)
+  try {
     return new Uint8Array(await response.arrayBuffer())
   } catch {
-    return null
+    throw new Error('agent.js 获取失败')
   }
 }
 
@@ -52,6 +57,7 @@ async function installBundle(message: Extract<import('../bridge/protocol').Shell
     const response = await fetch(message.bundleUrl, { headers, cache: 'no-store' })
     if (!response.ok) throw new Error(`bundle 下载失败: HTTP ${response.status}`)
     const total = Number(response.headers.get('Content-Length') ?? 0) || 0
+    if (total > ZIP_LIMITS.maxBundle) throw new ZipError('bundle-too-large', `包体超过上限 ${ZIP_LIMITS.maxBundle}`)
     const reader = response.body?.getReader()
     const chunks: Uint8Array[] = []
     let received = 0
@@ -59,14 +65,16 @@ async function installBundle(message: Extract<import('../bridge/protocol').Shell
       for (;;) {
         const { done, value } = await reader.read()
         if (done) break
-        chunks.push(value)
         received += value.length
+        if (received > ZIP_LIMITS.maxBundle) throw new ZipError('bundle-too-large', `包体超过上限 ${ZIP_LIMITS.maxBundle}`)
+        chunks.push(value)
         tell({ type: 'runtime:progress', received, total: Math.max(total, received) })
       }
     } else {
       const buffer = new Uint8Array(await response.arrayBuffer())
       chunks.push(buffer)
       received = buffer.length
+      if (received > ZIP_LIMITS.maxBundle) throw new ZipError('bundle-too-large', `包体超过上限 ${ZIP_LIMITS.maxBundle}`)
     }
     const bundle = new Uint8Array(received)
     let offset = 0
@@ -79,7 +87,7 @@ async function installBundle(message: Extract<import('../bridge/protocol').Shell
     const entries = await extractZip(bundle)
     if (!entries.has(message.entry)) throw new Error(`入口不存在: ${message.entry}`)
     const agentBytes = await fetchAgentSource()
-    if (agentBytes) entries.set(AGENT_CACHE_PATH, agentBytes)
+    entries.set(AGENT_CACHE_PATH, agentBytes)
 
     const cacheName = `bundle-${message.version}`
     const cache = await caches.open(cacheName)
@@ -135,7 +143,7 @@ async function handle(event: FetchEvent): Promise<Response> {
     return new Response(null, { status: 404 })
   }
 
-  const headers = new Headers(securityHeaders(FEATURES, self.location.origin))
+  const headers = new Headers(securityHeaders(FEATURES, meta!.hostOrigin))
   headers.set('Content-Type', contentTypeFor(decision.path))
   const etag = `"${meta!.version}:${decision.path}"`
   headers.set('ETag', etag)

@@ -46,8 +46,8 @@ export function routeRequest(args: {
   if (pathname === BOOTSTRAP_PATH || pathname.startsWith(`${BOOTSTRAP_PATH}/`)) return { kind: 'passthrough' }
   if (pathname === '/sw.js') return { kind: 'passthrough' }
   if (pathname === '/robots.txt') return { kind: 'robots' }
-  if (pathname === AGENT_URL) return { kind: 'asset', path: AGENT_CACHE_PATH }
   if (!hasActiveVersion) return isNavigation ? { kind: 'redirect-bootstrap' } : { kind: 'not-found' }
+  if (pathname === AGENT_URL) return { kind: 'asset', path: AGENT_CACHE_PATH }
   const decoded = decodeAssetPath(pathname)
   if (decoded === null) return { kind: 'not-found' }
   if (decoded === '' || decoded.endsWith('/')) return { kind: 'asset', path: decoded === '' ? entry : `${decoded}${entry.split('/').pop()}` }
