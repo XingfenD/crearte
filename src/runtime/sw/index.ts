@@ -97,12 +97,14 @@ async function installBundle(message: Extract<import('../bridge/protocol').Shell
     }
     const meta: RuntimeMeta = { id: message.id, version: message.version, entry: message.entry, hostOrigin: message.hostOrigin, installedAt: Date.now(), features: message.features }
     await writeMeta(meta, origin)
-    tell({ type: 'runtime:ready', version: message.version })
-    // 仅保留当前版本缓存，避免旧包累积
-    for (const name of await caches.keys()) {
-      if (name.startsWith('bundle-') && name !== cacheName) await caches.delete(name)
-    }
+    // 仅保留当前版本缓存，避免旧包累积；清理失败不影响本次安装
+    try {
+      for (const name of await caches.keys()) {
+        if (name.startsWith('bundle-') && name !== cacheName) await caches.delete(name)
+      }
+    } catch { /* 尽力清理 */ }
     await self.skipWaiting()
+    tell({ type: 'runtime:ready', version: message.version })
   } catch (error) {
     tell({ type: 'runtime:error', message: error instanceof Error ? error.message : String(error) })
   }
