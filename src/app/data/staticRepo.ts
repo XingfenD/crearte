@@ -11,6 +11,9 @@ function assertGameSummary(value: unknown, path: string): asserts value is GameS
   assert(Array.isArray(g.tags), `${path}.tags 必须是数组`)
   assert(g.author && typeof g.author.name === 'string', `${path}.author.name 缺失`)
   assert(g.durationMinutes && typeof g.durationMinutes.min === 'number' && typeof g.durationMinutes.max === 'number', `${path}.durationMinutes 非法`)
+  if (g.runtime && !['external', 'virtual', 'hosted'].includes(g.runtime)) {
+    throw new Error(`数据格式错误: ${path}.runtime 非法`)
+  }
 }
 
 function assertGamesIndex(value: unknown): GamesIndex {
@@ -60,6 +63,9 @@ export class StaticContentRepository implements ContentRepository {
       pending = this.fetchJson(`/games/${encodeURIComponent(id)}.json`)
         .then((data) => {
           assertGameSummary(data, `games/${id}`)
+          if ((data as Game).runtime === 'virtual' && !(data as Game).bundle) {
+            throw new Error(`数据格式错误: games/${id}.bundle 缺失（runtime=virtual 必须提供 bundle）`)
+          }
           return data as Game
         })
         .catch((error) => {

@@ -10,6 +10,24 @@ export interface Author {
   url?: string
 }
 
+export type GameRuntimeMode = 'external' | 'virtual' | 'hosted'
+
+export interface FeatureFlags {
+  eval?: boolean
+  inlineScript?: boolean
+  inlineStyle?: boolean
+  wasm?: boolean
+  coop?: boolean
+  fullscreen?: boolean
+  gamepad?: boolean
+}
+
+export interface GameBundle {
+  url: string
+  bytes: number
+  sha256: string
+}
+
 export interface GameSummary {
   id: string
   name: string
@@ -21,10 +39,19 @@ export interface GameSummary {
   tags: string[]
   cover?: string
   addedAt: string
+  runtime?: GameRuntimeMode
 }
 
 export interface Game extends GameSummary {
   intro?: string
+  version?: string
+  entry?: string
+  playOrigin?: string
+  hostedUrl?: string
+  bundle?: GameBundle
+  features?: FeatureFlags
+  display?: { aspect?: '16:9' | '4:3' | 'fill' }
+  fallback?: 'external' | 'hosted' | 'none'
 }
 
 export interface DocMeta {

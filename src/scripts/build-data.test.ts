@@ -2,7 +2,7 @@ import { copyFile, mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promi
 import { tmpdir } from 'node:os'
 import path from 'node:path'
 import { afterEach, describe, expect, it } from 'vitest'
-import { SRC_ROOT, generate } from './build-data.mjs'
+import { RESERVED_GAME_IDS, SRC_ROOT, createValidator, generate, loadGames } from './build-data.mjs'
 
 const validGame = {
   id: '2048',
@@ -110,5 +110,59 @@ describe('loadGames via generate', () => {
     await generate({ srcRoot: sorted })
     const docs = JSON.parse(await readFile(path.join(sorted, 'public/data/docs.json'), 'utf8'))
     expect(docs.docs.map((d: { slug: string }) => d.slug)).toEqual(['a', 'b'])
+  })
+})
+
+describe('schema v2 运行时字段', () => {
+  const baseGame = {
+    id: 'virtual-demo', name: 'V', url: 'https://example.com/', author: { name: 'a' },
+    description: 'd', durationMinutes: { min: 1, max: 2 }, type: 'puzzle', tags: ['x'], addedAt: '2026-09-17'
+  }
+
+  async function makeValidator() {
+    const schema = JSON.parse(await readFile(path.join(SRC_ROOT, 'schema', 'game.schema.json'), 'utf8'))
+    return createValidator(schema)
+  }
+
+  async function loadGameFiles(files: Record<string, unknown>) {
+    const root = await fixture(files)
+    return loadGames({
+      gamesDir: path.join(root, 'games'),
+      coversDir: path.join(root, 'assets', 'covers'),
+      validate: await makeValidator()
+    })
+  }
+
+  it('runtime=virtual 必须带 version 与 bundle', async () => {
+    const { errors } = await loadGameFiles({
+      'games/virtual-demo.json': { ...baseGame, runtime: 'virtual' }
+    })
+    expect(errors.join('\n')).toMatch(/version/)
+  })
+
+  it('runtime=hosted 必须带 hostedUrl', async () => {
+    const { errors } = await loadGameFiles({
+      'games/virtual-demo.json': { ...baseGame, runtime: 'hosted' }
+    })
+    expect(errors.join('\n')).toMatch(/hostedUrl/)
+  })
+
+  it('保留字 id 被拒绝', async () => {
+    expect(RESERVED_GAME_IDS.has('api')).toBe(true)
+    const { errors } = await loadGameFiles({
+      'games/api.json': { ...baseGame, id: 'api' }
+    })
+    expect(errors.join('\n')).toMatch(/保留|reserved/)
+  })
+
+  it('features 未知键被拒绝', async () => {
+    const { errors } = await loadGameFiles({
+      'games/virtual-demo.json': {
+        ...baseGame, runtime: 'virtual', version: 'v1',
+        bundle: { url: '/data/bundles/virtual-demo.zip', bytes: 1, sha256: 'a'.repeat(64) },
+        features: { nope: true }
+      }
+    })
+    expect(errors.length).toBeGreaterThan(0)
   })
 })

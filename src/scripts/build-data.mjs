@@ -6,7 +6,8 @@ import { fileURLToPath } from 'node:url'
 import Ajv2020 from 'ajv/dist/2020.js'
 
 export const SRC_ROOT = path.resolve(fileURLToPath(new URL('..', import.meta.url)))
-export const GAME_ID_PATTERN = /^[a-z0-9-]{1,64}$/
+export const GAME_ID_PATTERN = /^[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?$/
+export const RESERVED_GAME_IDS = new Set(['www', 'api', 'cdn', 'assets', 'static', 'admin', 'status', 'play'])
 export const DOC_SLUG_PATTERN = /^[a-z0-9-]+$/
 export const LOCAL_COVER_PATTERN = /^\/data\/assets\/covers\/([a-z0-9-]{1,64})\.(png|jpg|jpeg|webp|avif|gif)$/
 
@@ -64,7 +65,7 @@ export async function loadGames({ gamesDir, coversDir, validate }) {
   for (const file of files) {
     const label = `games/${file}`
     const fileId = file.slice(0, -'.json'.length)
-    if (!GAME_ID_PATTERN.test(fileId)) errors.push(`${label}: 文件名必须是 [a-z0-9-]{1,64}`)
+    if (!GAME_ID_PATTERN.test(fileId)) errors.push(`${label}: 文件名必须是 [a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?`)
     const lower = fileId.toLowerCase()
     if (seen.has(lower)) errors.push(`${label}: id 与 ${seen.get(lower)} 重复（忽略大小写）`)
     seen.set(lower, label)
@@ -81,6 +82,14 @@ export async function loadGames({ gamesDir, coversDir, validate }) {
     }
     if (raw.id !== fileId) {
       errors.push(`${label}: id "${raw.id}" 必须等于文件名 "${fileId}"`)
+      continue
+    }
+    if (RESERVED_GAME_IDS.has(raw.id) || raw.id.startsWith('__')) {
+      errors.push(`${label}: id "${raw.id}" 是保留字，禁止使用`)
+      continue
+    }
+    if (raw.entry?.includes('..') || raw.entry?.startsWith('/')) {
+      errors.push(`${label}: entry 必须是包根相对路径且不得包含 ".."`)
       continue
     }
     if (raw.durationMinutes.max < raw.durationMinutes.min) {
@@ -135,7 +144,16 @@ function pickGame(game, withIntro) {
     type: game.type,
     tags: [...game.tags],
     ...(game.cover ? { cover: game.cover } : {}),
-    addedAt: game.addedAt
+    addedAt: game.addedAt,
+    ...(game.runtime ? { runtime: game.runtime } : {}),
+    ...(game.version ? { version: game.version } : {}),
+    ...(game.entry ? { entry: game.entry } : {}),
+    ...(game.playOrigin ? { playOrigin: game.playOrigin } : {}),
+    ...(game.hostedUrl ? { hostedUrl: game.hostedUrl } : {}),
+    ...(game.bundle ? { bundle: { ...game.bundle } } : {}),
+    ...(game.features ? { features: { ...game.features } } : {}),
+    ...(game.display ? { display: { ...game.display } } : {}),
+    ...(game.fallback ? { fallback: game.fallback } : {})
   }
 }
 
