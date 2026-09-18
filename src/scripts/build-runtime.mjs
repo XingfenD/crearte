@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 import { existsSync } from 'node:fs'
-import { readFile, rm, writeFile } from 'node:fs/promises'
+import { readFile, readdir, rm, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { build } from 'vite'
@@ -82,5 +82,13 @@ const output = `${cleaned.slice(0, bodyClose.index)}    ${SHELL_START}\n    <scr
 if (ASSET_RE.test(output)) throw new Error('[build-runtime] dist/bootstrap/index.html 仍引用 /assets/')
 await writeFile(bootstrapHtmlPath, output)
 await rm(shellPath)
+
+// bootstrap 已内联，删除多入口构建残留的 bootstrap-*.js 死 chunk（主应用 chunk 不受影响）
+const assetsDir = path.join(dist, 'assets')
+if (existsSync(assetsDir)) {
+  for (const name of await readdir(assetsDir)) {
+    if (/^bootstrap-.*\.js$/.test(name)) await rm(path.join(assetsDir, name))
+  }
+}
 
 console.log('[build-runtime] dist/sw.js, dist/agent.js, dist/bootstrap/index.html (self-contained)')

@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest'
-import { isGameEvent, isHostCommand, isShellMessage, isShellSignal, PROTOCOL_VERSION } from './protocol'
+import { isGameEvent, isHostCommand, isPartialFeatures, isShellMessage, isShellSignal, PROTOCOL_VERSION } from './protocol'
 
 describe('protocol guards', () => {
   test('接受合法命令', () => {
@@ -32,6 +32,14 @@ describe('protocol guards', () => {
     expect(isShellMessage({ ...install, features: { eval: true, gamepad: false } })).toBe(true)
     expect(isShellMessage({ ...install, features: { eval: 'yes' } })).toBe(false)
     expect(isShellMessage({ ...install, features: { nope: true } })).toBe(false)
+  })
+  test('isPartialFeatures 直接校验部分特性开关', () => {
+    expect(isPartialFeatures({})).toBe(true)
+    expect(isPartialFeatures({ eval: true, gamepad: false })).toBe(true)
+    expect(isPartialFeatures({ eval: 'yes' })).toBe(false)
+    expect(isPartialFeatures({ nope: true })).toBe(false)
+    expect(isPartialFeatures(null)).toBe(false)
+    expect(isPartialFeatures([])).toBe(false)
   })
   test('shell 降级信号', () => {
     expect(isShellSignal({ type: 'runtime:degrade', message: 'sha 校验失败' })).toBe(true)

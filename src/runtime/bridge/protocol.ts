@@ -52,7 +52,7 @@ const FEATURE_KEYS: Record<keyof FeatureFlags, true> = {
   eval: true, inlineScript: true, inlineStyle: true, wasm: true, coop: true, fullscreen: true, gamepad: true
 }
 
-function isPartialFeatures(value: unknown): value is Partial<FeatureFlags> {
+export function isPartialFeatures(value: unknown): value is Partial<FeatureFlags> {
   if (!isRecord(value) || Array.isArray(value)) return false
   return Object.entries(value).every(([key, flag]) => Object.hasOwn(FEATURE_KEYS, key) && typeof flag === 'boolean')
 }

@@ -1,4 +1,4 @@
-import { isShellMessage, type FeatureFlags, type ShellMessage } from '../runtime/bridge/protocol'
+import { isPartialFeatures, isShellMessage, type FeatureFlags, type ShellMessage } from '../runtime/bridge/protocol'
 
 const params = new URLSearchParams(location.hash.replace(/^#/, ''))
 const version = params.get('v') ?? ''
@@ -30,10 +30,6 @@ function signalDegrade(message: string): void {
 }
 
 retry.addEventListener('click', () => location.reload())
-window.addEventListener('message', (event) => {
-  if (!isShellMessage(event.data)) return
-  handle(event.data)
-})
 
 function handle(message: ShellMessage): void {
   if (message.type === 'runtime:progress') {
@@ -59,11 +55,10 @@ function formatBytes(n: number): string {
 }
 
 function parseFeatures(raw: string | null): Partial<FeatureFlags> | undefined {
-  if (!raw) return undefined
+  if (raw === null) return undefined
   try {
     const parsed: unknown = JSON.parse(raw)
-    if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed)) return undefined
-    return parsed as Partial<FeatureFlags>
+    return isPartialFeatures(parsed) ? parsed : undefined
   } catch {
     return undefined
   }
@@ -78,11 +73,20 @@ async function main(): Promise<void> {
   const bundleUrl = params.get('bundle') ?? ''
   const sha256 = params.get('sha') ?? ''
   const entry = params.get('entry') ?? 'index.html'
-  const features = parseFeatures(params.get('features'))
+  const rawFeatures = params.get('features')
+  const features = parseFeatures(rawFeatures)
   if (!version || !bundleUrl || !sha256) {
     fail('启动参数不完整', location.href)
     return
   }
+  if (rawFeatures !== null && !features) {
+    fail('启动参数不完整', `features 参数无效: ${rawFeatures}`)
+    return
+  }
+  // Service Worker 的 client.postMessage 只派发到 container，不会派发到 window
+  navigator.serviceWorker.addEventListener('message', (event) => {
+    if (isShellMessage(event.data)) handle(event.data)
+  })
   try {
     const registration = await navigator.serviceWorker.register('/sw.js')
     await navigator.serviceWorker.ready
