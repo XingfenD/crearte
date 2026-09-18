@@ -66,7 +66,8 @@ function onMessage(event: MessageEvent): void { frame.onMessage(event) }
         :allow="frame.allow.value"
         allowfullscreen
         referrerpolicy="no-referrer"
-        class="h-full w-full border-0"
+        :title="game.name"
+        class="h-full w-full border-0 bg-white"
         @load="onIframeLoad"
       />
       <div v-else class="flex h-full flex-col items-center justify-center gap-3 p-6 text-center">
@@ -87,15 +88,15 @@ function onMessage(event: MessageEvent): void { frame.onMessage(event) }
       </div>
     </div>
 
-    <div class="flex flex-wrap items-center gap-2 text-sm">
-      <button class="rounded-md bg-neutral-800 px-3 py-1.5 hover:bg-neutral-700" @click="frame.pause()">暂停</button>
-      <button class="rounded-md bg-neutral-800 px-3 py-1.5 hover:bg-neutral-700" @click="frame.resume()">继续</button>
-      <button class="rounded-md bg-neutral-800 px-3 py-1.5 hover:bg-neutral-700" @click="restart()">重开</button>
-      <button class="rounded-md bg-neutral-800 px-3 py-1.5 hover:bg-neutral-700" @click="frame.clearSave()">清除存档</button>
-      <button class="rounded-md bg-neutral-800 px-3 py-1.5 hover:bg-neutral-700" @click="emit('exit')">退出</button>
-      <span v-if="frame.state.value.score !== null" class="text-neutral-400">得分：{{ frame.state.value.score }}</span>
-      <span v-if="frame.state.value.storageKeys !== null" class="text-neutral-400">存档：{{ frame.state.value.storageKeys }} 项</span>
-      <span v-if="lastError" class="text-red-400">{{ lastError }}</span>
+    <div class="flex flex-wrap items-center gap-2">
+      <button class="btn-surface lift px-3 py-1.5" @click="frame.pause()">暂停</button>
+      <button class="btn-surface lift px-3 py-1.5" @click="frame.resume()">继续</button>
+      <button class="btn-surface lift px-3 py-1.5" @click="restart()">重开</button>
+      <button class="btn-surface lift px-3 py-1.5" @click="frame.clearSave()">清除存档</button>
+      <button class="btn-surface lift px-3 py-1.5" @click="emit('exit')">退出</button>
+      <span v-if="frame.state.value.score !== null" class="font-mono text-xs text-ink-soft">得分：{{ frame.state.value.score }}</span>
+      <span v-if="frame.state.value.storageKeys !== null" class="font-mono text-xs text-ink-soft">存档：{{ frame.state.value.storageKeys }} 项</span>
+      <span v-if="lastError" class="font-mono text-xs text-accent-ink">{{ lastError }}</span>
     </div>
   </div>
 </template>

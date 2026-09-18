@@ -33,7 +33,7 @@ function onExit(): void {
       <RouterLink to="/" class="btn-ink lift mt-5 hover:shadow-hard active:shadow-none">返回目录</RouterLink>
     </div>
 
-    <article v-else-if="game" class="mx-auto max-w-3xl space-y-6">
+    <article v-else-if="game" class="mx-auto w-full space-y-6" :class="playable ? 'max-w-5xl' : 'max-w-3xl'">
       <RouterLink
         to="/"
         class="inline-flex items-center gap-1.5 font-mono text-xs text-accent-ink underline decoration-2 underline-offset-2"

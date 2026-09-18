@@ -21,6 +21,9 @@ The format loosely follows Keep a Changelog and can be adapted to the team's hab
 - Added a wildcard game-host nginx block and bundle download CORS; PR validation now runs the runtime e2e suite.
 - 新增游戏子域 nginx 通配 server block 与 bundle 下载 CORS；PR 校验流水线现在会执行运行时 e2e。
 
+- Widened the game player to `max-w-5xl` and restyled the runtime controls with design-system surface buttons (readable contrast, new `.btn-surface`); the iframe now has a white backdrop and an accessible title.
+- 游戏播放器加宽到 `max-w-5xl`，运行时控制按钮改用设计系统纸面样式（对比度恢复正常，新增 `.btn-surface`）；iframe 增加白底与可访问标题。
+
 ### Fixed / 修复
 
 - Service Worker install signals readiness only after best-effort cache cleanup, and malformed request URLs and fixture mtimes are handled deterministically.

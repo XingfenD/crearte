@@ -68,6 +68,20 @@
     font-weight: 800;
     box-shadow: var(--shadow-hard-sm);
   }
+  .btn-surface {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    border: 2px solid var(--color-ink);
+    background: var(--color-surface);
+    color: var(--color-ink);
+    padding: 0.5rem 1rem;
+    font-size: 0.875rem;
+    font-weight: 800;
+    box-shadow: var(--shadow-hard-sm);
+  }
+  .btn-surface:hover { background: var(--color-paper); }
 }
 
 @media (prefers-reduced-motion: reduce) {
