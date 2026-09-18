@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import { RouterLink } from 'vue-router'
+import { RouterLink, useRouter } from 'vue-router'
 import { PhArrowLeft, PhArrowSquareOut } from '@phosphor-icons/vue'
 import { NotFoundError, repo, type Game } from '@/data'
 import { useAsync } from '@/composables/useAsync'
@@ -8,8 +8,10 @@ import { renderMarkdown } from '@/lib/markdown'
 import { durationText } from '@/lib/labels'
 import GameCover from '@/components/GameCover.vue'
 import StatePanel from '@/components/StatePanel.vue'
+import GameHost from '../../runtime/host/GameHost.vue'
 
 const props = defineProps<{ id: string }>()
+const router = useRouter()
 const { data: game, error, loading, reload } = useAsync<Game>(
   () => repo.getGame(props.id),
   [computed(() => props.id)]
@@ -17,6 +19,10 @@ const { data: game, error, loading, reload } = useAsync<Game>(
 
 const notFound = computed(() => error.value instanceof NotFoundError)
 const introHtml = computed(() => (game.value?.intro ? renderMarkdown(game.value.intro) : ''))
+const playable = computed(() => game.value?.runtime === 'virtual' || game.value?.runtime === 'hosted')
+function onExit(): void {
+  router.push('/')
+}
 </script>
 
 <template>
@@ -64,7 +70,9 @@ const introHtml = computed(() => (game.value?.intro ? renderMarkdown(game.value.
         </div>
       </div>
 
+      <GameHost v-if="playable" :game="game" @exit="onExit" />
       <a
+        v-else
         :href="game.url"
         target="_blank"
         rel="noopener noreferrer"
