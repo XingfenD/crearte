@@ -81,28 +81,69 @@ function emitReady(win: Window): void {
   document.documentElement.dataset.runtimeReady = '1'
 }
 
+const hardenedTargets = new WeakSet<object>()
+
 function denyServiceWorker(win: Window): void {
+  let proxy: ReturnType<typeof createServiceWorkerDenial> | undefined
+  hardenProperty(win.navigator, 'serviceWorker', () => (proxy ??= createServiceWorkerDenial()))
+}
+
+function createServiceWorkerDenial() {
   const deny = () => { throw new DOMException('运行时已禁用游戏自注册 Service Worker', 'SecurityError') }
   // ready 保持 rejected 语义；预先挂 catch 避免无人消费时触发 unhandledrejection 被自身上报为 game:error
   const ready = Promise.reject(new Error('disabled'))
   void ready.catch(() => undefined)
-  const proxy = {
+  return Object.freeze({
     register: deny,
     unregister: deny,
     getRegistrations: async () => [],
     getRegistration: async () => undefined,
     controller: null,
     ready
-  }
-  try {
-    Object.defineProperty(win.navigator, 'serviceWorker', { configurable: true, get: () => proxy })
-  } catch { /* navigator 被冻结时忽略 */ }
+  })
 }
 
 function denyDocumentDomain(win: Window): void {
+  hardenProperty(win.document, 'domain', () => win.location.hostname, () => {})
+}
+
+// 把补丁下移到原型（configurable: false），避免 delete 实例影子或直取原型 getter 绕过
+function hardenProperty(owner: object, key: string, get: () => unknown, set?: (value: unknown) => void): void {
+  const proto: object | null = Object.getPrototypeOf(owner)
+  const dedicatedProto = proto && !isSharedPrototype(proto) ? proto : null
+  const marker = dedicatedProto ?? owner
+  // 影子属性每次都要清理（幂等提前返回前），否则重复安装后新加的可配置影子会绕过原型补丁
+  deleteConfigurableShadow(owner, key)
+  if (hardenedTargets.has(marker)) return
+  const descriptor: PropertyDescriptor = { configurable: false, get }
+  if (set) descriptor.set = set
+  // 链上所有自己拥有该属性的原型都加固，阻断直取祖先原型 descriptor 的绕过
+  const immediateOwn = dedicatedProto ? Object.getOwnPropertyDescriptor(dedicatedProto, key) : undefined
+  for (let cursor = dedicatedProto; cursor && !isSharedPrototype(cursor); cursor = Object.getPrototypeOf(cursor)) {
+    if (Object.getOwnPropertyDescriptor(cursor, key)) tryDefineProperty(cursor, key, descriptor)
+  }
+  if (!immediateOwn && (!dedicatedProto || !tryDefineProperty(dedicatedProto, key, descriptor))) {
+    tryDefineProperty(owner, key, descriptor)
+  }
+  hardenedTargets.add(marker)
+}
+
+function isSharedPrototype(proto: object): boolean {
+  return proto === Object.prototype || proto === Function.prototype || proto === Array.prototype
+}
+
+function deleteConfigurableShadow(owner: object, key: string): void {
+  const descriptor = Object.getOwnPropertyDescriptor(owner, key)
+  if (descriptor?.configurable) Reflect.deleteProperty(owner, key)
+}
+
+function tryDefineProperty(target: object, key: string, descriptor: PropertyDescriptor): boolean {
   try {
-    Object.defineProperty(win.document, 'domain', { configurable: true, get: () => win.location.hostname, set: () => {} })
-  } catch { /* noop */ }
+    Object.defineProperty(target, key, descriptor)
+    return true
+  } catch {
+    return false
+  }
 }
 
 export function wrapStorage(win: Window, onchange: () => void): () => void {
