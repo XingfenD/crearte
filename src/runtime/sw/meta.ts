@@ -1,9 +1,12 @@
+import type { FeatureFlags } from '../bridge/protocol'
+
 export interface RuntimeMeta {
   id: string
   version: string
   entry: string
   hostOrigin: string
   installedAt: number
+  features?: Partial<FeatureFlags>
 }
 
 const META_CACHE = 'runtime-meta'

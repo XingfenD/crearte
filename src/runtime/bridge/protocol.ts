@@ -36,7 +36,7 @@ export type GameEvent =
   | { type: 'game:snapshot'; id: string; data: string; bytes: number; truncated: boolean }
 
 export type ShellMessage =
-  | { type: 'runtime:install'; id: string; version: string; entry: string; bundleUrl: string; sha256: string; token?: string; hostOrigin: string }
+  | { type: 'runtime:install'; id: string; version: string; entry: string; bundleUrl: string; sha256: string; token?: string; hostOrigin: string; features?: Partial<FeatureFlags> }
   | { type: 'runtime:progress'; received: number; total: number }
   | { type: 'runtime:ready'; version: string }
   | { type: 'runtime:error'; message: string }
@@ -46,6 +46,15 @@ export type ShellSignal = { type: 'runtime:degrade'; message: string }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null
+}
+
+const FEATURE_KEYS: Record<keyof FeatureFlags, true> = {
+  eval: true, inlineScript: true, inlineStyle: true, wasm: true, coop: true, fullscreen: true, gamepad: true
+}
+
+function isPartialFeatures(value: unknown): value is Partial<FeatureFlags> {
+  if (!isRecord(value) || Array.isArray(value)) return false
+  return Object.entries(value).every(([key, flag]) => Object.hasOwn(FEATURE_KEYS, key) && typeof flag === 'boolean')
 }
 
 export function isHostCommand(value: unknown): value is HostCommand {
@@ -98,7 +107,8 @@ export function isShellMessage(value: unknown): value is ShellMessage {
     case 'runtime:install':
       return typeof value.id === 'string' && typeof value.version === 'string' && typeof value.entry === 'string' &&
         typeof value.bundleUrl === 'string' && /^[0-9a-f]{64}$/.test(String(value.sha256)) &&
-        typeof value.hostOrigin === 'string' && (value.token === undefined || typeof value.token === 'string')
+        typeof value.hostOrigin === 'string' && (value.token === undefined || typeof value.token === 'string') &&
+        (value.features === undefined || isPartialFeatures(value.features))
     case 'runtime:progress':
       return typeof value.received === 'number' && typeof value.total === 'number'
     case 'runtime:ready':

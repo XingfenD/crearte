@@ -26,6 +26,13 @@ describe('protocol guards', () => {
     expect(isShellMessage({ type: 'runtime:install', id: 'a', version: 'v', entry: 'index.html', bundleUrl: 'https://x/b.zip', sha256: 'a'.repeat(64), hostOrigin: 'https://h' })).toBe(true)
     expect(isShellMessage({ type: 'runtime:install', id: 'a' })).toBe(false)
   })
+  test('install 的 features 仅接受已知键的 boolean', () => {
+    const install = { type: 'runtime:install', id: 'a', version: 'v', entry: 'index.html', bundleUrl: 'https://x/b.zip', sha256: 'a'.repeat(64), hostOrigin: 'https://h' }
+    expect(isShellMessage({ ...install, features: { eval: true } })).toBe(true)
+    expect(isShellMessage({ ...install, features: { eval: true, gamepad: false } })).toBe(true)
+    expect(isShellMessage({ ...install, features: { eval: 'yes' } })).toBe(false)
+    expect(isShellMessage({ ...install, features: { nope: true } })).toBe(false)
+  })
   test('shell 降级信号', () => {
     expect(isShellSignal({ type: 'runtime:degrade', message: 'sha 校验失败' })).toBe(true)
     expect(isShellSignal({ type: 'runtime:degrade' })).toBe(false)

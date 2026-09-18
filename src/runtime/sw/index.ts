@@ -6,9 +6,8 @@ import { DEFAULT_FEATURES, isShellMessage, type FeatureFlags } from '../bridge/p
 import { readMeta, writeMeta, type RuntimeMeta } from './meta'
 import { extractZip, ZIP_LIMITS, ZipError } from './unzip'
 
-declare const self: ServiceWorkerGlobalScope & { __FEATURES__?: FeatureFlags }
+declare const self: ServiceWorkerGlobalScope
 
-const FEATURES: FeatureFlags = { ...DEFAULT_FEATURES }
 const AGENT_SOURCE_URL = '/agent.js'
 const BOOTSTRAP_URL = '/__bootstrap'
 
@@ -96,7 +95,7 @@ async function installBundle(message: Extract<import('../bridge/protocol').Shell
         headers: { 'Content-Type': contentTypeFor(path), 'Cache-Control': 'no-store' }
       }))
     }
-    const meta: RuntimeMeta = { id: message.id, version: message.version, entry: message.entry, hostOrigin: message.hostOrigin, installedAt: Date.now() }
+    const meta: RuntimeMeta = { id: message.id, version: message.version, entry: message.entry, hostOrigin: message.hostOrigin, installedAt: Date.now(), features: message.features }
     await writeMeta(meta, origin)
     tell({ type: 'runtime:ready', version: message.version })
     // 仅保留当前版本缓存，避免旧包累积
@@ -143,7 +142,8 @@ async function handle(event: FetchEvent): Promise<Response> {
     return new Response(null, { status: 404 })
   }
 
-  const headers = new Headers(securityHeaders(FEATURES, meta!.hostOrigin))
+  const features: FeatureFlags = { ...DEFAULT_FEATURES, ...(meta?.features ?? {}) }
+  const headers = new Headers(securityHeaders(features, meta!.hostOrigin))
   headers.set('Content-Type', contentTypeFor(decision.path))
   const etag = `"${meta!.version}:${decision.path}"`
   headers.set('ETag', etag)
