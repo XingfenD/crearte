@@ -103,9 +103,15 @@ export function useGameFrame(options: GameFrameOptions) {
 
   function handleEvent(event: GameEvent): void {
     options.onEvent?.(event)
-    if (event.type === 'agent:hello-ack') { clearTimeout(); clearBridgeWarn(); state.value.phase = 'ready' }
-    else if (event.type === 'game:ready') { clearTimeout(); clearBridgeWarn(); state.value.phase = 'ready' }
-    else if (event.type === 'game:error') { state.value.error = event.message }
+    // 崩溃后可能还会收到排队的 game:ready（文档仍会 load），不能让 error 面板被顶掉
+    if (event.type === 'agent:hello-ack') { clearTimeout(); clearBridgeWarn(); if (state.value.phase !== 'error') state.value.phase = 'ready' }
+    else if (event.type === 'game:ready') { clearTimeout(); clearBridgeWarn(); if (state.value.phase !== 'error') state.value.phase = 'ready' }
+    else if (event.type === 'game:error') {
+      clearTimeout()
+      clearBridgeWarn()
+      state.value.phase = 'error'
+      state.value.error = event.message
+    }
     else if (event.type === 'game:score') { state.value.score = event.score }
     else if (event.type === 'game:storage-changed') { state.value.storageKeys = event.keys; state.value.storageBytes = event.bytes }
     else if (event.type === 'game:exit-request') { options.onExternal('__exit__') }

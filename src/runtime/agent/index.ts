@@ -16,10 +16,12 @@ export interface AgentOptions {
   port: MessagePort | null
 }
 let activePort: MessagePort | null = null
+let pendingEvents: GameEvent[] = []
 let booted = false
 
 export function installAgent(win: Window, opts: AgentOptions): void {
   activePort = opts.port
+  pendingEvents = []
   denyServiceWorker(win)
   denyDocumentDomain(win)
   wrapStorage(win, debounce(() => emit({ type: 'game:storage-changed', keys: storageKeys(win).length, bytes: storageBytes(win) }), 200))
@@ -47,9 +49,11 @@ export function installAgent(win: Window, opts: AgentOptions): void {
       activePort = helloPort
       attachPort(helloPort)
       emit({ type: 'agent:hello-ack', v: PROTOCOL_VERSION })
+      flushPending()
     })
   } else {
     attachPort(opts.port)
+    flushPending()
   }
   if (!booted) {
     booted = true
@@ -79,7 +83,15 @@ function dispatchHook(name: string): void {
 }
 
 function emit(event: GameEvent): void {
-  activePort?.postMessage(event)
+  // port 要等宿主 hello 回包才存在；先缓存，attach 后按序补发，避免丢失启动期错误
+  if (activePort) activePort.postMessage(event)
+  else pendingEvents.push(event)
+}
+
+function flushPending(): void {
+  const queued = pendingEvents
+  pendingEvents = []
+  for (const event of queued) activePort?.postMessage(event)
 }
 
 function emitReady(win: Window): void {

@@ -29,6 +29,8 @@ describe('installAgent', () => {
   beforeEach(() => {
     document.body.innerHTML = ''
     window.__GAME_HOST__ = undefined
+    delete document.documentElement.dataset.gameId
+    delete document.documentElement.dataset.gameVersion
   })
 
   test('暴露 __GAME_HOST__ 且 reportScore 走桥', () => {
@@ -55,6 +57,36 @@ describe('installAgent', () => {
   test('剥夺 serviceWorker.register', () => {
     installAgent(window, { hostOrigin: 'https://host.test', parent: window, port: null })
     expect(() => navigator.serviceWorker.register('/sw.js')).toThrowError()
+  })
+
+  test('getMeta 读取注入的 data-game-id/version', () => {
+    document.documentElement.dataset.gameId = 'demo'
+    document.documentElement.dataset.gameVersion = 'v3'
+    installAgent(window, { hostOrigin: 'https://host.test', parent: window, port: null })
+    expect(window.__GAME_HOST__!.getMeta()).toEqual({ id: 'demo', version: 'v3', locale: navigator.language })
+  })
+
+  test('port 建立前的事件按序缓存并在 attach 后补发', () => {
+    const port = { postMessage: vi.fn(), onmessage: null, start: vi.fn(), close: vi.fn() } as unknown as MessagePort
+    installAgent(window, { hostOrigin: 'https://host.test', parent: window, port: null })
+    window.dispatchEvent(new ErrorEvent('error', { message: 'early-1' }))
+    window.dispatchEvent(new ErrorEvent('error', { message: 'early-2' }))
+    window.dispatchEvent(new MessageEvent('message', {
+      origin: 'https://host.test',
+      source: window,
+      data: { type: 'host:hello', v: 1, locale: 'zh', capabilities: { save: true, score: true }, port }
+    }))
+    const calls = vi.mocked(port.postMessage).mock.calls.map(([message]) => message as { type: string; message?: string })
+    // 同一 happy-dom window 会累积此前测试安装的监听器，只断言本用例事件的相对顺序
+    const early = calls.filter((message) => message.type === 'game:error' && message.message?.startsWith('early'))
+    expect(early.length).toBeGreaterThan(0)
+    const lastEarly1 = early.map((message) => message.message).lastIndexOf('early-1')
+    const firstEarly2 = early.map((message) => message.message).indexOf('early-2')
+    expect(lastEarly1).toBeGreaterThanOrEqual(0)
+    expect(firstEarly2).toBeGreaterThan(lastEarly1)
+    const ackIndex = calls.findIndex((message) => message.type === 'agent:hello-ack')
+    expect(ackIndex).toBeGreaterThanOrEqual(0)
+    expect(ackIndex).toBeLessThan(calls.indexOf(early[0]))
   })
 
   test('报告 ready 与 error', async () => {
