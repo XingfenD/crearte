@@ -25,7 +25,7 @@ const introHtml = computed(() =>
 )
 const playable = computed(() => game.value?.runtime === 'virtual' || game.value?.runtime === 'hosted')
 function onExit(): void {
-  router.push('/')
+  router.push('/games')
 }
 </script>
 
@@ -34,12 +34,12 @@ function onExit(): void {
     <div v-if="notFound" class="border-2 border-dashed border-ink p-10 text-center">
       <p class="font-mono text-[0.6875rem] tracking-[0.05em] text-ink-soft">GAME NOT FOUND</p>
       <h1 class="mt-3 text-lg font-extrabold">该游戏不存在或已移除。</h1>
-      <RouterLink to="/" class="btn-ink lift mt-5 hover:shadow-hard active:shadow-none">返回目录</RouterLink>
+      <RouterLink to="/games" class="btn-ink lift mt-5 hover:shadow-hard active:shadow-none">返回目录</RouterLink>
     </div>
 
     <article v-else-if="game" class="mx-auto w-full space-y-6" :class="playable ? 'max-w-5xl' : 'max-w-3xl'">
       <RouterLink
-        to="/"
+        to="/games"
         class="inline-flex items-center gap-1.5 font-mono text-xs text-accent-ink underline decoration-2 underline-offset-2"
       >
         <PhArrowLeft :size="14" weight="bold" aria-hidden="true" />返回目录
