@@ -220,7 +220,7 @@ git commit -m "feat: add pickFeatured balanced type sampling"
 - 创建：`src/app/views/LandingView.vue`
 - 修改：`src/app/router/index.ts`
 - 修改：`src/app/components/AppHeader.vue:1-33`（判定拆分 + 导航「游戏」改指 `/games`）
-- 修改：`src/app/views/GameView.vue:37,42`（两处「返回目录」改指 `/games`）
+- 修改：`src/app/views/GameView.vue:28,37,42`（「退出游戏」的程序化导航 + 两处「返回目录」改指 `/games`）
 - 修改：`src/app/views/NotFoundView.vue:14`（「返回目录」改指 `/games`）
 - 测试：`src/e2e/landing.spec.ts`
 
@@ -280,20 +280,28 @@ const sticker = computed(() => {
 
 模板**不动**（导航 `:class` 继续用 `onCatalog`，`:aria-current` 条件也不动）。
 
-- [ ] **步骤 4：把所有「回目录」的链接改指 `/games`**
+- [ ] **步骤 4：把所有「回目录」的导航改指 `/games`**
 
-`/` 的语义从「目录」变成「落地页」，四处标签写着「游戏」或「返回目录」、但 `to` 仍是 `/` 的链接必须一起改，否则点下去回的是落地页：
+`/` 的语义从「目录」变成「落地页」，五处语义为「回目录」的导航必须一起改，否则点下去回的是落地页。注意最后一行是**程序化导航**，写在 `<script>` 里，`grep 'to="/"'` 看不见：
 
 ```
-app/components/AppHeader.vue:36   to="/"  →  to="/games"
-app/views/GameView.vue:37         to="/"  →  to="/games"
-app/views/GameView.vue:42         to="/"  →  to="/games"
-app/views/NotFoundView.vue:14     to="/"  →  to="/games"
+app/components/AppHeader.vue:36   to="/"              →  to="/games"
+app/views/GameView.vue:37         to="/"              →  to="/games"
+app/views/GameView.vue:42         to="/"              →  to="/games"
+app/views/NotFoundView.vue:14     to="/"              →  to="/games"
+app/views/GameView.vue:28         router.push('/')     →  router.push('/games')
 ```
 
-`AppHeader.vue:31` 的品牌 `crearte` 贴纸保持 `to="/"`（落地页就是首页）。
+两处**保持 `/` 不动**（语义是「回首页」而非「回目录」）：
+- `AppHeader.vue:31` 品牌 `crearte` 贴纸
+- `OutboundView.vue:42` `goBack()` 无历史时的兜底 `router.replace('/')`
 
-预期：`grep -rn 'to="/"' src/app` 只剩 `AppHeader.vue:31` 一处。
+验收判据（先 `grep`，再复核语义）：
+
+```bash
+grep -rn 'to="/"' src/app      # 预期只剩 AppHeader.vue:31
+grep -rn "push('/')" src/app   # 预期无输出
+```
 
 - [ ] **步骤 5：创建落地页（hero + 统计条）**
 
@@ -376,6 +384,9 @@ test('回目录的链接都指向 /games', async ({ page }) => {
   await expect(page.getByRole('link', { name: '返回目录' })).toHaveAttribute('href', '/games')
 
   await page.goto('http://localhost:4173/no-such-page')
+  await expect(page.getByRole('link', { name: '返回目录' })).toHaveAttribute('href', '/games')
+
+  await page.goto('http://localhost:4173/games/does-not-exist')
   await expect(page.getByRole('link', { name: '返回目录' })).toHaveAttribute('href', '/games')
 })
 

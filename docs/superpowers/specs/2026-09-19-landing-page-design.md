@@ -97,7 +97,11 @@ hero 内部自上而下：
 | `GameView.vue` 未找到分支的「返回目录」 | `to="/"` | `to="/games"` |
 | `GameView.vue` 详情页顶部的「返回目录」 | `to="/"` | `to="/games"` |
 | `NotFoundView.vue` 的「返回目录」 | `to="/"` | `to="/games"` |
+| `GameView.vue` 站内运行时的「退出游戏」（`onExit` → `router.push('/')`） | 回目录 | `router.push('/games')` |
 | `AppHeader.vue` 品牌 `crearte` 贴纸 | `to="/"` | **不变**（落地页就是首页） |
+| `OutboundView.vue` 的 `goBack()` 无历史兜底 `router.replace('/')` | 回站内首页 | **不变**（语义是「回首页」，不是「回目录」） |
+
+**验收判据是语义而非 `grep`**：导航不一定写在模板里——`router.push('/')` 这类程序化导航，`grep 'to="/"'` 是看不见的。判据是「凡是语义为『回目录』的导航都指向 `/games`」，不是「`grep` 只剩一处」。
 
 落地页自身的两个入口（hero 主 CTA「进入游戏目录」、精选区「查看全部 N 款 →」）本来就指向 `/games`。
 
@@ -233,6 +237,8 @@ src/app/
 - 点「进入游戏目录」→ URL 为 `/games`，且目录的搜索框可见
 - 页头导航「游戏」在 `/` 与 `/games` 上的 `href` 均为 `/games`（防它退回指向落地页）
 - `/games/2048`（详情页）与未知路径（catch-all 落到 `NotFoundView`）上的「返回目录」`href` 为 `/games`
+- `/games/does-not-exist`（详情页的「游戏不存在」分支）上的「返回目录」`href` 为 `/games`
+- `GameView.vue` 的「退出游戏」（`onExit`）改走 `/games`：这需要跑站内运行时，不做 e2e，由代码审查覆盖
 - 点「查看全部 N 款 →」→ 同上
 - 投稿卡邮箱：断言锚点 `href` 以 `mailto:` 开头（**不点击**，避免唤起邮件客户端），且**未**被改写成 `/out`
 - 数据失败：`page.route` 拦 `/data/index.json` 返回 500 → 断言 hero 文案与双卡**仍在**、精选区显示错误态与重试按钮
