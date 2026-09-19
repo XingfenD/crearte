@@ -186,7 +186,8 @@ hero：
 - 全部沿用平面海报令牌：主 CTA 用 `.btn-ink`、次 CTA 用 `.btn-surface`，卡片沿用 `shadow-hard` + `.lift`；零渐变、全直角由 `app/lib/no-gradient.test.ts` 守卫
 - 字体：hero 大标题用 `--font-display`（`@font-face` 只声明了 **900** 一个字重，大字必须用 900）；标语与统计条用 `--font-mono`；定位语与卡片正文用 `--font-sans`
 - 响应式：hero 大标题 `text-4xl sm:text-5xl md:text-6xl`（要求窄屏不溢出、不折断 `crearte` 这一串）；标语固定 `text-[0.6875rem]` + `tracking-[0.3em]`（与页头贴纸同级）；定位语 `text-sm`；精选网格沿用目录页断点 `sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4`；投稿/文档双卡窄屏堆叠、`sm` 起并排（`sm:grid-cols-2`）
-- 无障碍：全页唯一 `<h1>`（可见，即 hero 的 `crearte`）；精选区标题为 `<h2>`，双卡标题为 `<h3>`；标语与定位语为 `<p>`
+- 无障碍：全页唯一 `<h1>`（可见，即 hero 的 `crearte`）；精选区标题为 `<h2>`；精选卡名与入口卡标题都是 `<h3>`（比 `<h2>` 低一级）；两张入口卡包在一个带 `sr-only` `<h2>`「投稿与文档」的 `<section>` 里，给它们的 `<h3>` 一个父级；标语与定位语为 `<p>`
+  - 卡名层级由 `GameCard` 新增的**可选** prop `headingLevel` 控制（默认 `2`）：**落地页精选区传 `3`**，**目录页不传**、行为与改动前逐字相同；`sr-only` 的 `<h2>` 只为补齐大纲，视觉上不新增任何文字
 - 键盘可达：两个 CTA 与所有卡片均为原生 `<RouterLink>` / `<a>`，Tab 顺序即视觉顺序
 - 落地页**不引入**新的装饰元素（不加 photo、不加底色块、不加纹理）
 
@@ -198,6 +199,7 @@ src/app/
 ├── lib/featured.test.ts       # 新增
 ├── views/LandingView.vue      # 落地页（新增）
 ├── views/CatalogView.vue      # 目录（由 HomeView.vue 重命名，内容不改）
+├── components/GameCard.vue    # 修改：新增可选 `headingLevel`（默认 2），卡名标签按层级渲染
 ├── components/AppHeader.vue   # onCatalog / showGameCount 拆分 + 导航「游戏」改指 /games（既有文件）
 ├── views/GameView.vue         # 两处「返回目录」改指 /games（既有文件）
 ├── views/NotFoundView.vue     # 「返回目录」改指 /games（既有文件）

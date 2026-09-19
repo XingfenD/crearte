@@ -481,7 +481,7 @@ const stats = computed(() => {
     </div>
     <StatePanel :loading="loading" :error="error" @retry="reload">
       <div v-if="featured.length" class="mt-3 grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-        <GameCard v-for="game in featured" :key="game.id" :game="game" />
+        <GameCard v-for="game in featured" :key="game.id" :game="game" :heading-level="3" />
       </div>
       <p v-else class="mt-3 border-2 border-dashed border-ink p-10 text-center text-sm text-ink-soft">
         还没有收录游戏。
@@ -491,6 +491,8 @@ const stats = computed(() => {
 ```
 
 要点：`StatePanel` 只包精选区，hero 与统计条在它之外；空态措辞与目录页一致；「查看全部」只在有精选时渲染；错误态的兜底是 hero 里那个「进入游戏目录」主 CTA，**不在错误框里重复加同义按钮**。
+
+层级：落地页精选区的卡名必须比 `精选 · SELECTED` 低一级，所以传 `:heading-level="3"`——`GameCard` 新增可选 prop `headingLevel`（默认 `2`），不传就是目录页的 `<h2>`，目录页行为逐字不变；若承默认 `2`，落地页会出现「卡名 `h2` 与精选标题同级 + 任务 4 的入口卡 `h3` 悬空」的扁平大纲。
 
 - [ ] **步骤 2：扩展 e2e**
 
@@ -577,7 +579,8 @@ const CONTACT_EMAIL = 'xingfen.fendy@outlook.com'
 模板在精选区 `</section>` **之后**插入：
 
 ```vue
-  <div class="mt-8 flex flex-col gap-4 sm:flex-row">
+  <section class="mt-8 flex flex-col gap-4 sm:flex-row">
+    <h2 class="sr-only">投稿与文档</h2>
     <section class="flex-1 border-2 border-ink bg-surface p-4 shadow-hard-sm">
       <h3 class="text-sm font-black">想被收录？</h3>
       <p class="mt-2 text-xs leading-relaxed text-ink-soft">
@@ -592,10 +595,10 @@ const CONTACT_EMAIL = 'xingfen.fendy@outlook.com'
         <RouterLink to="/docs" class="underline">文档</RouterLink>。
       </p>
     </section>
-  </div>
+  </section>
 ```
 
-要点：邮箱是普通 `mailto:` 锚点，**不经 `/out` 中间页**（与中间页规格 §4.3 一致）；两块不依赖数据，任何状态都渲染。
+要点：邮箱是普通 `mailto:` 锚点，**不经 `/out` 中间页**（与中间页规格 §4.3 一致）；两块不依赖数据，任何状态都渲染。外层容器用 `<section>`（不是 `<div>`）并在其内**最前面**放一个 `<h2 class="sr-only">投稿与文档</h2>`，给两张卡的 `<h3>` 一个父级；`sr-only` 保证视觉上不出现新文字。
 
 ⚠️ 本卡的「文档」链接与页头导航的同名链接（都在页面上，但页头在 `<main>` 之外）会让任务 2 里未加作用域的 `getByRole('link', { name: '文档', exact: true })` 命中 2 个元素、触发 Playwright strict mode violation。因此该断言同步加作用域 `page.getByRole('navigation')...`（意图「页头导航」本就该限定在导航内，语义更准）。
 
