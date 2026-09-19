@@ -95,15 +95,22 @@
 	}
 ```
 
-在 `TestLoadRejectsBadDatabaseAndAuth` 末尾加：
+在 `TestLoadRejectsBadDatabaseAndAuth` 末尾加（`validEnv(t)` **不重置 `TRUSTED_PROXIES`**，而 `applyBase` 先解析 proxies 再解析 origins——不显式清空 `TRUSTED_PROXIES` 会让该函数在前面 `not-an-ip` 处先行失败返回，此断言即空转：
 
 ```go
 	validEnv(t)
+	t.Setenv("TRUSTED_PROXIES", "")
 	t.Setenv("CORS_ALLOWED_ORIGINS", "not-a-url")
 	if _, err := Load(); err == nil {
 		t.Fatal("expected error for invalid CORS_ALLOWED_ORIGINS")
+	} else if !strings.Contains(err.Error(), "CORS_ALLOWED_ORIGINS") {
+		t.Fatalf("error = %v, want CORS_ALLOWED_ORIGINS mention", err)
 	}
 ```
+
+- [ ] **步骤 1a：补 import**
+
+`config_test.go` 现有 import 为 `encoding/base64`、`testing`、`time`，本任务起需要 import 增加 `strings`。
 
 - [ ] **步骤 2：运行测试确认失败**
 
