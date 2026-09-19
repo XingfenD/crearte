@@ -6,6 +6,19 @@ All notable changes to this template should be documented in this file.
 The format loosely follows Keep a Changelog and can be adapted to the team's habits.
 本文档参考了 Keep a Changelog 的思路，也可以根据团队习惯调整。
 
+## [0.7.1] - 2026-09-20
+
+### Changed / 变更
+
+- Replaced the slogan with `HOST YOUR CREATIONS` and the hero Chinese line with 「托管你的创意」, synced across the landing hero, header sticker and footer.
+- 更换标语为 `HOST YOUR CREATIONS`，hero 中文定位语改为「托管你的创意」，落地页、页头贴纸与页脚同步。
+
+- Styled the landing wordmark: the `art` in `crearte` is set in accent red on a slightly tilted yellow label with a hard shadow.
+- 落地页字标艺术化：`crearte` 中的 `art` 用 accent 红字，做成带硬阴影的斜贴黄标签。
+
+- Added a scroll-driven assembly to the landing wordmark: the page holds its own scroll until the wheel / touch / keyboard input has turned `create` into `crearte` (reversible while held; scrolling back to the top rewinds it and scrolling down replays; reduced motion shows the assembled state without the hold).
+- 落地页字标新增滚动拼装：拼装完成前页面锁住实际滚动，由滚轮 / 触摸 / 键盘输入把 `create` 拼成 `crearte`（锁定期间可逆；回到顶部自动回退、再次下滑重播；reduced motion 不锁滚动、直接显示完成态）。
+
 ## [0.7.0] - 2026-09-19
 
 ### Added / 新增
