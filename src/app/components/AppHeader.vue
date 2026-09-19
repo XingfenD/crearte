@@ -33,7 +33,7 @@ const sticker = computed(() => {
       </RouterLink>
       <nav class="flex gap-4 text-sm font-bold">
         <RouterLink
-          to="/"
+          to="/games"
           class="border-b-[3px] pb-0.5 text-sm font-bold"
           :class="onCatalog ? 'border-b-accent-ink text-accent-ink' : 'border-b-transparent text-ink-soft'"
           :aria-current="onCatalog ? 'page' : undefined"

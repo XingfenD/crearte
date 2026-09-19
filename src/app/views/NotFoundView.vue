@@ -11,6 +11,6 @@ import { RouterLink } from 'vue-router'
       PAGE NOT FOUND
     </p>
     <p class="text-sm text-ink-soft">页面不存在。</p>
-    <RouterLink to="/" class="btn-ink lift hover:shadow-hard active:shadow-none">返回目录</RouterLink>
+    <RouterLink to="/games" class="btn-ink lift hover:shadow-hard active:shadow-none">返回目录</RouterLink>
   </div>
 </template>
