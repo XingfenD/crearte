@@ -10,7 +10,7 @@
     "build": "vue-tsc --noEmit && vite build && node scripts/build-runtime.mjs",
     "build:runtime": "node scripts/build-runtime.mjs",
     "build:fixtures": "node scripts/build-fixtures.mjs",
-    "build:e2e": "node scripts/build-fixtures.mjs && node scripts/build-data.mjs --with-fixtures && VITE_GAMES_BASE_DOMAIN=localhost:4173 VITE_HOST_ORIGIN=http://localhost:4173 vite build && VITE_GAMES_BASE_DOMAIN=localhost:4173 VITE_HOST_ORIGIN=http://localhost:4173 node scripts/build-runtime.mjs",
+    "build:e2e": "node scripts/build-fixtures.mjs && node scripts/build-data.mjs --with-fixtures && VITE_GAMES_BASE_DOMAIN=localhost:4173 VITE_HOST_ORIGIN=http://localhost:4173 VITE_API_BASE_URL=http://localhost:8080 vite build && VITE_GAMES_BASE_DOMAIN=localhost:4173 VITE_HOST_ORIGIN=http://localhost:4173 VITE_API_BASE_URL=http://localhost:8080 node scripts/build-runtime.mjs",
     "serve:runtime": "node scripts/serve-runtime.mjs",
     "prebuild": "node scripts/build-data.mjs",
     "preview": "vite preview",
