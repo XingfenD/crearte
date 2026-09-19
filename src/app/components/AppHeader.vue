@@ -3,6 +3,7 @@ import { computed } from 'vue'
 import { RouterLink, useRoute } from 'vue-router'
 import { repo, type DocMeta, type GameSummary } from '@/data'
 import { useAsync } from '@/composables/useAsync'
+import { session } from '@/auth'
 
 const route = useRoute()
 const onCatalog = computed(() => route.name === 'home')
@@ -22,6 +23,12 @@ const sticker = computed(() => {
   if (onDocs.value && docs.value) return `共 ${docs.value.length} 篇`
   return 'STATIC WEB GAMES'
 })
+
+const user = computed(() => session.state.user)
+
+function logout(): void {
+  session.logout()
+}
 </script>
 
 <template>
@@ -47,6 +54,20 @@ const sticker = computed(() => {
       <span
         class="ml-auto hidden border-2 border-ink bg-highlight px-2 py-0.5 font-mono text-[0.6875rem] tracking-[0.05em] sm:inline-block"
       >{{ sticker }}</span>
+
+      <RouterLink
+        v-if="!user"
+        to="/login"
+        class="border-2 border-ink bg-surface px-2 py-1 text-xs font-bold"
+      >登录</RouterLink>
+
+      <details v-else class="relative">
+        <summary class="cursor-pointer border-2 border-ink bg-surface px-2 py-1 text-xs font-bold">{{ user.display_name }}</summary>
+        <div class="absolute right-0 z-50 mt-1 w-32 border-2 border-ink bg-surface shadow-hard">
+          <RouterLink to="/account" class="block px-3 py-2 text-xs font-bold hover:bg-paper">我的账号</RouterLink>
+          <button type="button" class="block w-full border-t-2 border-ink px-3 py-2 text-left text-xs font-bold hover:bg-paper" @click="logout">登出</button>
+        </div>
+      </details>
     </div>
   </header>
 </template>
