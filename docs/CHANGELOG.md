@@ -6,12 +6,17 @@ All notable changes to this template should be documented in this file.
 The format loosely follows Keep a Changelog and can be adapted to the team's habits.
 本文档参考了 Keep a Changelog 的思路，也可以根据团队习惯调整。
 
-## [0.3.0] - 2026-09-19
+## [0.7.0] - 2026-09-19
 
 ### Added / 新增
 
 - Added the account system UI: register, login, account page with password change and logout-all, plus a three-state header entry backed by a local-JWT-aware session store.
 - 新增账号系统界面：注册、登录、账号页（改密与登出全部设备），以及基于本地凭证会话的 header 三态入口。
+
+### Changed / 变更
+
+- The account entry is now optional: without `VITE_API_BASE_URL` the login entry is hidden, auth routes redirect home and no auth requests are sent; added an `e2e:noauth` suite covering the disabled build.
+- 账号入口改为可选：未配置 `VITE_API_BASE_URL` 时隐藏登录入口、auth 路由重定向首页且不发起 auth 请求；新增 `e2e:noauth` 套件覆盖关闭态构建。
 
 ## [0.2.0] - 2026-09-18
 
