@@ -6,6 +6,13 @@ All notable changes to this template should be documented in this file.
 The format loosely follows Keep a Changelog and can be adapted to the team's habits.
 本文档参考了 Keep a Changelog 的思路，也可以根据团队习惯调整。
 
+## [0.3.0] - 2026-09-19
+
+### Added / 新增
+
+- Added the account system UI: register, login, account page with password change and logout-all, plus a three-state header entry backed by a local-JWT-aware session store.
+- 新增账号系统界面：注册、登录、账号页（改密与登出全部设备），以及基于本地凭证会话的 header 三态入口。
+
 ## [0.2.0] - 2026-09-18
 
 ### Added / 新增

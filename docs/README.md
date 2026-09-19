@@ -76,3 +76,17 @@ docker run --rm -p 8080:80 crearte:local
 Copyright (C) 2026 XingfenD
 
 设计文档：[`docs/superpowers/specs/2026-09-17-webgame-collection-design.md`](./superpowers/specs/2026-09-17-webgame-collection-design.md)
+
+## 环境变量
+
+| 变量 | 用途 | 例子 |
+| --- | --- | --- |
+| `VITE_API_BASE_URL` | 后端 API 基地址（无尾斜杠） | 生产 `https://api.crearte.yoresee.cc`；dev 见 `src/.env.development` |
+| `VITE_HOST_ORIGIN` | 宿主站 origin（游戏运行时用） | `https://crearte.yoresee.cc` |
+| `VITE_GAMES_BASE_DOMAIN` | 游戏子域基域 | `crearte-games.yoresee.cc` |
+
+## 账号系统本地联调
+
+1. 起后端依赖与后端：`cd crearte-server && docker compose -f deploy/docker-compose.dev.yml up -d`，再按该仓 `docs/README.md` 起 `go run ./cmd serve`
+2. 后端 `.env`：`DATABASE_URL`、`AUTH_TOKEN_SECRET`、`BUNDLE_KEK_*` 三项必备；跨域联调时把 `CORS_ALLOWED_ORIGINS` 设为前端 dev 地址（如 `http://localhost:5173`）
+3. 前端：`cd src && npm install && npm run dev`，默认读 `src/.env.development` 直连 `http://localhost:8080`
