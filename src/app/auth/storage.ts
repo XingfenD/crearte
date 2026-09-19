@@ -44,15 +44,35 @@ export function parseSession(raw: string | null, nowMs: number): Session | null 
 export function createSessionStore(storage: StorageLike, now: () => number = Date.now): SessionStore {
   return {
     read() {
-      const session = parseSession(storage.getItem(SESSION_STORAGE_KEY), now())
-      if (!session) storage.removeItem(SESSION_STORAGE_KEY)
+      let session: Session | null = null
+      try {
+        session = parseSession(storage.getItem(SESSION_STORAGE_KEY), now())
+      } catch {
+        // 存储访问失败（隐私模式 / 配额满抛 QuotaExceededError / SecurityError）一律降级为未登录
+        session = null
+      }
+      if (!session) {
+        try {
+          storage.removeItem(SESSION_STORAGE_KEY)
+        } catch {
+          // 清除失败静默吞掉
+        }
+      }
       return session
     },
     write(session: Session) {
-      storage.setItem(SESSION_STORAGE_KEY, JSON.stringify(session))
+      try {
+        storage.setItem(SESSION_STORAGE_KEY, JSON.stringify(session))
+      } catch {
+        // 写失败静默吞掉：不让登录流程因存储不可用而抛异常
+      }
     },
     clear() {
-      storage.removeItem(SESSION_STORAGE_KEY)
+      try {
+        storage.removeItem(SESSION_STORAGE_KEY)
+      } catch {
+        // 清除失败静默吞掉
+      }
     }
   }
 }

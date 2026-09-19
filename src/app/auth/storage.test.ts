@@ -63,4 +63,53 @@ describe('auth 凭证存储', () => {
   it('parseSession 对时间非法串返回 null', () => {
     expect(parseSession(JSON.stringify({ ...session, expiresAt: 'soon' }), NOW)).toBeNull()
   })
+
+  describe('存储访问容错（隐私模式 / 配额满）', () => {
+    class ThrowingStorage {
+      throwOnRead = false
+      throwOnWrite = false
+      throwOnRemove = false
+      getItem(_key: string) {
+        if (this.throwOnRead) throw new DOMException('denied', 'SecurityError')
+        return null
+      }
+      setItem(_key: string, _value: string) {
+        if (this.throwOnWrite) throw new DOMException('quota', 'QuotaExceededError')
+      }
+      removeItem(_key: string) {
+        if (this.throwOnRemove) throw new DOMException('denied', 'SecurityError')
+      }
+    }
+
+    it('read 出错返回 null 不抛，且尽力清除', () => {
+      const failing = new ThrowingStorage()
+      failing.throwOnRead = true
+      const store = createSessionStore(failing, () => NOW)
+      expect(() => store.read()).not.toThrow()
+      expect(store.read()).toBeNull()
+    })
+
+    it('read 出错且清除也失败时不抛', () => {
+      const failing = new ThrowingStorage()
+      failing.throwOnRead = true
+      failing.throwOnRemove = true
+      const store = createSessionStore(failing, () => NOW)
+      expect(() => store.read()).not.toThrow()
+      expect(store.read()).toBeNull()
+    })
+
+    it('write 出错不抛（吞掉）', () => {
+      const failing = new ThrowingStorage()
+      failing.throwOnWrite = true
+      const store = createSessionStore(failing, () => NOW)
+      expect(() => store.write(session)).not.toThrow()
+    })
+
+    it('clear 出错不抛（吞掉）', () => {
+      const failing = new ThrowingStorage()
+      failing.throwOnRemove = true
+      const store = createSessionStore(failing, () => NOW)
+      expect(() => store.clear()).not.toThrow()
+    })
+  })
 })

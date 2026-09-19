@@ -502,6 +502,55 @@ describe('auth 凭证存储', () => {
   it('parseSession 对时间非法串返回 null', () => {
     expect(parseSession(JSON.stringify({ ...session, expiresAt: 'soon' }), NOW)).toBeNull()
   })
+
+  describe('存储访问容错（隐私模式 / 配额满）', () => {
+    class ThrowingStorage {
+      throwOnRead = false
+      throwOnWrite = false
+      throwOnRemove = false
+      getItem(_key: string) {
+        if (this.throwOnRead) throw new DOMException('denied', 'SecurityError')
+        return null
+      }
+      setItem(_key: string, _value: string) {
+        if (this.throwOnWrite) throw new DOMException('quota', 'QuotaExceededError')
+      }
+      removeItem(_key: string) {
+        if (this.throwOnRemove) throw new DOMException('denied', 'SecurityError')
+      }
+    }
+
+    it('read 出错返回 null 不抛，且尽力清除', () => {
+      const failing = new ThrowingStorage()
+      failing.throwOnRead = true
+      const store = createSessionStore(failing, () => NOW)
+      expect(() => store.read()).not.toThrow()
+      expect(store.read()).toBeNull()
+    })
+
+    it('read 出错且清除也失败时不抛', () => {
+      const failing = new ThrowingStorage()
+      failing.throwOnRead = true
+      failing.throwOnRemove = true
+      const store = createSessionStore(failing, () => NOW)
+      expect(() => store.read()).not.toThrow()
+      expect(store.read()).toBeNull()
+    })
+
+    it('write 出错不抛（吞掉）', () => {
+      const failing = new ThrowingStorage()
+      failing.throwOnWrite = true
+      const store = createSessionStore(failing, () => NOW)
+      expect(() => store.write(session)).not.toThrow()
+    })
+
+    it('clear 出错不抛（吞掉）', () => {
+      const failing = new ThrowingStorage()
+      failing.throwOnRemove = true
+      const store = createSessionStore(failing, () => NOW)
+      expect(() => store.clear()).not.toThrow()
+    })
+  })
 })
 ```
 
@@ -511,6 +560,8 @@ describe('auth 凭证存储', () => {
 预期：FAIL，`Failed to resolve import "./storage"`
 
 - [ ] **步骤 3：实现**
+
+> 存储访问必须容错：失败一律降级为未登录/静默。隐私模式或配额满会让 `getItem`/`setItem`/`removeItem` 抛 `SecurityError`/`QuotaExceededError`，`createSessionStore` 返回的三个方法各自包 `try/catch`：`read()` 出错返回 `null` 并尽力清除（清除失败也吞掉），`write()`/`clear()` 出错静默吞掉；不得改变成功路径语义，也不得改动 `parseSession` 的纯函数行为。
 
 ```ts
 import type { AuthUser, Session } from './types'
@@ -559,15 +610,35 @@ export function parseSession(raw: string | null, nowMs: number): Session | null 
 export function createSessionStore(storage: StorageLike, now: () => number = Date.now): SessionStore {
   return {
     read() {
-      const session = parseSession(storage.getItem(SESSION_STORAGE_KEY), now())
-      if (!session) storage.removeItem(SESSION_STORAGE_KEY)
+      let session: Session | null = null
+      try {
+        session = parseSession(storage.getItem(SESSION_STORAGE_KEY), now())
+      } catch {
+        // 存储访问失败（隐私模式 / 配额满抛 QuotaExceededError / SecurityError）一律降级为未登录
+        session = null
+      }
+      if (!session) {
+        try {
+          storage.removeItem(SESSION_STORAGE_KEY)
+        } catch {
+          // 清除失败静默吞掉
+        }
+      }
       return session
     },
     write(session: Session) {
-      storage.setItem(SESSION_STORAGE_KEY, JSON.stringify(session))
+      try {
+        storage.setItem(SESSION_STORAGE_KEY, JSON.stringify(session))
+      } catch {
+        // 写失败静默吞掉：不让登录流程因存储不可用而抛异常
+      }
     },
     clear() {
-      storage.removeItem(SESSION_STORAGE_KEY)
+      try {
+        storage.removeItem(SESSION_STORAGE_KEY)
+      } catch {
+        // 清除失败静默吞掉
+      }
     }
   }
 }
