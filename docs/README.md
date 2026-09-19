@@ -47,10 +47,14 @@ docker run --rm -p 8080:80 crearte:local
 
 ## 部署
 
-1. 本机构建并推送镜像（首次需把 Package 可见性设为 public）：
+1. 本机构建并推送镜像（首次需把 Package 可见性设为 public；构建参数按实际值注入，`VITE_API_BASE_URL` 留空则不启用账号入口）：
 
    ```bash
-   docker build -f deploy/Dockerfile -t ghcr.io/xingfend/crearte:latest .
+   docker build -f deploy/Dockerfile \
+     --build-arg VITE_API_BASE_URL=https://api.crearte.yoresee.cc \
+     --build-arg VITE_GAMES_BASE_DOMAIN=crearte-games.yoresee.cc \
+     --build-arg VITE_HOST_ORIGIN=https://crearte.yoresee.cc \
+     -t ghcr.io/xingfend/crearte:latest .
    docker push ghcr.io/xingfend/crearte:latest
    ```
 2. k3s：`kubectl apply -f deploy/k8s/`（镜像固定为 `ghcr.io/xingfend/crearte:latest`）；集群未装 ingress controller，Service 为 NodePort，访问 `http://<节点IP>:30080`
@@ -64,14 +68,20 @@ docker run --rm -p 8080:80 crearte:local
 1. DNS：把 `*.games.example.com` 泛解析到节点 IP（或前端代理地址）。
 2. 访问：集群未装 ingress controller，Service 走 NodePort 30080，即 `http://<节点IP>:30080`；生产建议由前端代理按 Host 转发。
 3. TLS：集群内不终止 TLS；需要 HTTPS 时在前端代理用 `*.games.example.com` 通配证书终止，或后续补装 ingress controller 再导入通配证书（DNS-01 签发，如 acme.sh `dns_ali` 或 cert-manager）。
-4. 构建变量：`VITE_GAMES_BASE_DOMAIN`（默认 `games.example.com`）决定子域后缀，`VITE_HOST_ORIGIN`（默认 `https://games.example.com`）为宿主站来源；构建镜像前按实际域名覆盖。
+4. 构建变量：`VITE_GAMES_BASE_DOMAIN`（默认 `games.example.com`）决定子域后缀，`VITE_HOST_ORIGIN`（默认 `https://games.example.com`）为宿主站来源；构建镜像时用 `--build-arg` 覆盖（见「部署」）。
 5. 运行时三件套固定为 `dist/bootstrap/index.html`、`dist/sw.js`、`dist/agent.js`，由 nginx 通配 server block 精确暴露为 `/__bootstrap`、`/sw.js`、`/agent.js`（均 `no-store`），其余路径返回 404；主站 `/data/bundles/` 带 `Access-Control-Allow-Origin: *` 供子域拉取 bundle。
 
-## 许可与商业授权
+## 许可、开放边界与商业授权
 
-本仓库（前端与运行时）以 [AGPL-3.0-only](https://www.gnu.org/licenses/agpl-3.0.html) 开源：可自由使用、修改、自建部署；但**修改后通过网络向用户提供服务时，必须按 AGPL 第 13 条向这些用户提供修改版的完整源码**。如需在闭源条件下使用（如商业集成），可联系作者获取商业授权。
+本仓库是 crearte 的**官方前端**（Vue 3 静态站点 + 游戏运行时），以 [AGPL-3.0-only](https://www.gnu.org/licenses/agpl-3.0.html) 开源：可自由使用、修改、自建部署；但**修改后通过网络向用户提供服务时，必须按 AGPL 第 13 条向这些用户提供修改版的完整源码**。如需在闭源条件下使用（如商业集成），可联系作者获取商业授权。
 
-服务端与运营相关内容不开源，单独私有维护。字体（SIL OFL，见 `src/assets/fonts/OFL.txt`）与第三方依赖遵循各自许可。
+开放边界：
+
+- **可自建（当前能力，非长期承诺）**：用本仓构建静态目录站——浏览 / 筛选 / 以子域或外链方式运行游戏；域名、DNS、TLS 等运行时配置见上文「运行时运维配置」。
+- **不可自建**：账号、上传、审核等依赖官方后端的能力。服务端与运营相关内容不开源，单独私有维护（`crearte-server`）；账号能力在本仓默认构建中关闭（未注入后端地址时不显示入口）。
+- 本仓是官方客户端：社区无法仅凭本仓运行完整服务。
+
+贡献：游戏数据 PR 与代码 PR 均适用[贡献者许可协议](./CLA.md)。字体（SIL OFL，见 `src/assets/fonts/OFL.txt`）与第三方依赖遵循各自许可。
 
 Copyright (C) 2026 XingfenD
 

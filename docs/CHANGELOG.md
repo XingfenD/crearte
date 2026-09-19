@@ -6,6 +6,18 @@ All notable changes to this template should be documented in this file.
 The format loosely follows Keep a Changelog and can be adapted to the team's habits.
 本文档参考了 Keep a Changelog 的思路，也可以根据团队习惯调整。
 
+## [0.6.0] - 2026-09-19
+
+### Changed / 变更
+
+- Scoped the open-source promise: this repository is the official frontend; the static catalog stays self-hostable, while account, upload and moderation features depend on the private backend.
+- 明确开源边界：本仓为官方前端，静态目录仍可自建，账号 / 上传 / 审核等能力依赖私有后端。
+
+### Added / 新增
+
+- Added the contributor license agreement (CLA) for code and data contributions, and documented the `VITE_API_BASE_URL` / `VITE_GAMES_BASE_DOMAIN` / `VITE_HOST_ORIGIN` build args in the deploy flow.
+- 新增贡献者许可协议（CLA，代码与数据均适用），并在部署流程中记录 `VITE_API_BASE_URL` / `VITE_GAMES_BASE_DOMAIN` / `VITE_HOST_ORIGIN` 构建参数。
+
 ## [0.5.1] - 2026-09-19
 
 ### Added / 新增
