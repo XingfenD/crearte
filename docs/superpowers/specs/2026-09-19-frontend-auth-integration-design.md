@@ -148,7 +148,7 @@ src/app/
 
 - 跨域直连依赖后端 CORS 白名单正确配置（见 §9）；后端预检已返回 `204` 且允许 `Authorization, Content-Type`，前端不需要自定义请求头
 - **后端需 `Access-Control-Expose-Headers: Retry-After`**：429 的 `Retry-After` 属于需显式 expose 的响应头，后端未 expose 时前端跨域读不到，限流提示会退化为缺省 60 秒
-- **生产构建需注入 `VITE_API_BASE_URL`**（`.env.development` 只管 dev；`build:e2e` 自带注入；生产走 `VITE_API_BASE_URL=https://api.crearte.yoresee.cc` 或部署侧注入）。**2026-09-19 语义变更**：空值不再退化为同源 `/api`，而是**关闭账号能力**（隐藏登录入口、auth 路由回首页、不发起 auth 请求），见 `2026-09-19-open-source-boundary-design.md` §9
+- **生产构建如需账号能力，需注入 `VITE_API_BASE_URL`**（`.env.development` 只管 dev；`build:e2e` 自带注入；生产走 `VITE_API_BASE_URL=https://api.crearte.yoresee.cc` 或部署侧注入）。**2026-09-19 语义变更**：空值不再退化为同源 `/api`，而是**关闭账号能力**（隐藏登录入口、auth 路由回首页、不发起 auth 请求），见 `2026-09-19-open-source-boundary-design.md` §9
 - 运维前置（不在本仓实现，仅记录）：`api.crearte.yoresee.cc` 的 DNS 与证书指向后端；后端环境变量 `CORS_ALLOWED_ORIGINS` 填宿主域
 - dev 联调：后端本地跑在 `:8080`（`deploy/docker-compose.dev.yml` 起 PG），前端 `npm run dev` 直连
 
