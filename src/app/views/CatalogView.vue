@@ -25,7 +25,7 @@ function clearSearch(): void {
 
 <template>
   <StatePanel :loading="loading" :error="error" @retry="reload">
-    <h1 class="sr-only">crearte · 游戏目录</h1>
+    <h1 class="sr-only">crearte 创艺 · 游戏目录</h1>
     <div class="flex flex-1 items-start gap-6">
       <aside class="relative hidden w-[215px] shrink-0 self-stretch lg:block">
         <div class="absolute inset-0">

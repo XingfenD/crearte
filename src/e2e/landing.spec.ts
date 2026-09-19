@@ -3,7 +3,10 @@ import { expect, test } from '@playwright/test'
 test('首页是落地页：hero 文案与统计条', async ({ page }) => {
   await page.goto('http://localhost:4173/')
 
+  await expect(page).toHaveTitle('crearte 创艺')
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('crearte')
+  await expect(page.locator('main').getByText('创艺', { exact: true })).toBeVisible()
+  await expect(page.getByRole('link', { name: 'crearte 创艺' })).toBeVisible()
   await expect(page.getByText('收集可直接开玩的静态网页游戏 · 打开即玩、无需安装')).toBeVisible()
   await expect(page.getByText('收录 15 款')).toBeVisible()
   await expect(page.getByText('4 种类型')).toBeVisible()
