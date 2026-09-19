@@ -51,7 +51,7 @@ const stats = computed(() => {
     </div>
     <StatePanel :loading="loading" :error="error" @retry="reload">
       <div v-if="featured.length" class="mt-3 grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-        <GameCard v-for="game in featured" :key="game.id" :game="game" />
+        <GameCard v-for="game in featured" :key="game.id" :game="game" :heading-level="3" />
       </div>
       <p v-else class="mt-3 border-2 border-dashed border-ink p-10 text-center text-sm text-ink-soft">
         还没有收录游戏。
@@ -59,7 +59,8 @@ const stats = computed(() => {
     </StatePanel>
   </section>
 
-  <div class="mt-8 flex flex-col gap-4 sm:flex-row">
+  <section class="mt-8 flex flex-col gap-4 sm:flex-row">
+    <h2 class="sr-only">投稿与文档</h2>
     <section class="flex-1 border-2 border-ink bg-surface p-4 shadow-hard-sm">
       <h3 class="text-sm font-black">想被收录？</h3>
       <p class="mt-2 text-xs leading-relaxed text-ink-soft">
@@ -74,5 +75,5 @@ const stats = computed(() => {
         <RouterLink to="/docs" class="underline">文档</RouterLink>。
       </p>
     </section>
-  </div>
+  </section>
 </template>

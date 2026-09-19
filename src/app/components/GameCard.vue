@@ -5,7 +5,9 @@ import type { GameSummary } from '@/data/types'
 import { GAME_TYPE_LABELS, durationText } from '@/lib/labels'
 import GameCover from './GameCover.vue'
 
-const props = defineProps<{ game: GameSummary }>()
+const props = withDefaults(defineProps<{ game: GameSummary; headingLevel?: number }>(), { headingLevel: 2 })
+
+const headingTag = computed(() => `h${props.headingLevel}`)
 
 const MAX_TAGS = 2
 const visibleTags = computed(() => props.game.tags.slice(0, MAX_TAGS))
@@ -24,7 +26,7 @@ const hiddenTags = computed(() => props.game.tags.slice(MAX_TAGS))
       >{{ GAME_TYPE_LABELS[game.type] }}</span>
     </div>
     <div class="space-y-2 p-3">
-      <h2 class="truncate font-display text-[0.875rem] font-black">{{ game.name }}</h2>
+      <component :is="headingTag" class="truncate font-display text-[0.875rem] font-black">{{ game.name }}</component>
       <p class="line-clamp-2 text-xs leading-relaxed text-ink-soft">{{ game.description }}</p>
       <div class="flex flex-wrap items-center gap-1.5">
         <span class="border-[1.5px] border-ink px-1 py-0.5 font-mono text-[0.625rem]">
