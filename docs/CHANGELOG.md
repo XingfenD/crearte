@@ -6,6 +6,13 @@ All notable changes to this template should be documented in this file.
 The format loosely follows Keep a Changelog and can be adapted to the team's habits.
 本文档参考了 Keep a Changelog 的思路，也可以根据团队习惯调整。
 
+## [0.7.5] - 2026-09-20
+
+### Added / 新增
+
+- Added same-origin `/api` proxying for the Docker stacks: the Vite dev server proxies `/api` when `VITE_API_PROXY_TARGET` is set, and the production nginx config reverse-proxies `/api/` to the `api` service, so the browser no longer needs an exposed API port.
+- 为 Docker 部署新增同源 `/api` 代理：设置 `VITE_API_PROXY_TARGET` 时 Vite dev server 会代理 `/api`，生产 nginx 把 `/api/` 反代到 `api` 服务，浏览器不再需要暴露的 API 端口。
+
 ## [0.7.4] - 2026-09-20
 
 ### Fixed / 修复
