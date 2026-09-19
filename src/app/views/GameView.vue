@@ -5,6 +5,7 @@ import { PhArrowLeft, PhArrowSquareOut } from '@phosphor-icons/vue'
 import { NotFoundError, repo, type Game } from '@/data'
 import { useAsync } from '@/composables/useAsync'
 import { renderMarkdown } from '@/lib/markdown'
+import { toInterstitial } from '@/lib/externalLink'
 import { durationText } from '@/lib/labels'
 import GameCover from '@/components/GameCover.vue'
 import StatePanel from '@/components/StatePanel.vue'
@@ -53,9 +54,9 @@ function onExit(): void {
           作者：
           <a
             v-if="game.author.url"
-            :href="game.author.url"
+            :href="toInterstitial(game.author.url)"
             target="_blank"
-            rel="noopener noreferrer"
+            rel="noopener"
             class="text-accent-ink underline decoration-2 underline-offset-2"
           >{{ game.author.name }}</a>
           <span v-else>{{ game.author.name }}</span>
@@ -75,9 +76,9 @@ function onExit(): void {
       <GameHost v-if="playable" :game="game" @exit="onExit" />
       <a
         v-else
-        :href="game.url"
+        :href="toInterstitial(game.url, 'game')"
         target="_blank"
-        rel="noopener noreferrer"
+        rel="noopener"
         class="lift inline-flex items-center gap-2 border-2 border-ink bg-ink px-5 py-2.5 font-extrabold text-paper shadow-hard-accent hover:shadow-hard-accent-lg active:shadow-none"
       >
         开始游戏
