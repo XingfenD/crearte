@@ -21,7 +21,7 @@ watchEffect(() => {
   if (!props.slug && docs.value?.length) void router.replace(`/docs/${docs.value[0].slug}`)
 })
 
-const html = computed(() => (doc.value ? renderMarkdown(doc.value.content) : ''))
+const html = computed(() => (doc.value ? renderMarkdown(doc.value.content, location.origin) : ''))
 const toc = computed(() => (doc.value ? extractToc(doc.value.content) : []))
 </script>
 
