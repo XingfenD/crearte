@@ -165,6 +165,16 @@ export function buildIndex(games, generatedAt) {
   }
 }
 
+const OUT_DIRS = ['games', 'bundles', 'assets']
+
+// 只清内容、保留目录本身：宿主侧重建 public/data 后，dev 容器里的 Vite 对挂载目录视图会陈旧（macOS 绑定挂载）
+async function emptyDir(dir) {
+  await mkdir(dir, { recursive: true })
+  for (const entry of await readdir(dir)) {
+    await rm(path.join(dir, entry), { recursive: true, force: true })
+  }
+}
+
 export async function generate({ srcRoot = SRC_ROOT, check = false, withFixtures = false, now = new Date() } = {}) {
   const gamesDir = path.join(srcRoot, 'games')
   const docsDir = path.join(srcRoot, 'docs')
@@ -179,8 +189,13 @@ export async function generate({ srcRoot = SRC_ROOT, check = false, withFixtures
   if (check) return { ok: true, errors: [], games: games.length, docs: docs.length }
 
   const generatedAt = now.toISOString()
-  await rm(outDir, { recursive: true, force: true })
-  await mkdir(path.join(outDir, 'games'), { recursive: true })
+  await mkdir(outDir, { recursive: true })
+  for (const name of OUT_DIRS) await emptyDir(path.join(outDir, name))
+  for (const entry of await readdir(outDir, { withFileTypes: true })) {
+    if (entry.isDirectory() && !OUT_DIRS.includes(entry.name)) {
+      await rm(path.join(outDir, entry.name), { recursive: true, force: true })
+    }
+  }
   if (withFixtures) {
     const fixtureDir = path.join(srcRoot, 'fixtures', 'generated', 'games')
     try {

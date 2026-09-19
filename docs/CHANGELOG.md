@@ -6,6 +6,13 @@ All notable changes to this template should be documented in this file.
 The format loosely follows Keep a Changelog and can be adapted to the team's habits.
 本文档参考了 Keep a Changelog 的思路，也可以根据团队习惯调整。
 
+## [0.7.3] - 2026-09-20
+
+### Fixed / 修复
+
+- Stopped the data build from deleting and recreating `public/data`: it now empties the directories in place, so the dev container keeps serving `games/*.json` and `bundles/*.zip` after a host-side rebuild (macOS bind mounts kept a stale view of the recreated directories, and JSON requests fell through to the SPA fallback).
+- 数据构建不再删除重建 `public/data`：改为清空内容、保留目录本身，宿主侧重构建后 dev 容器仍能正确提供 `games/*.json` 与 `bundles/*.zip`（此前 macOS 绑定挂载对重建目录的视图陈旧，JSON 请求会落到 SPA 回退）。
+
 ## [0.7.2] - 2026-09-20
 
 ### Changed / 变更
