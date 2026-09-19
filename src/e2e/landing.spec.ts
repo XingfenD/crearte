@@ -7,7 +7,7 @@ test('首页是落地页：hero 文案与统计条', async ({ page }) => {
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('crearte')
   await expect(page.locator('main').getByText('创艺', { exact: true })).toBeVisible()
   await expect(page.getByRole('link', { name: 'crearte 创艺' })).toBeVisible()
-  await expect(page.getByText('收集可直接开玩的静态网页游戏 · 打开即玩、无需安装')).toBeVisible()
+  await expect(page.getByText('托管你的创意')).toBeVisible()
   await expect(page.getByText('收录 15 款')).toBeVisible()
   await expect(page.getByText('4 种类型')).toBeVisible()
   await expect(page.getByText('更新 2026-09-17')).toBeVisible()
@@ -82,7 +82,7 @@ test('数据失败时 hero 仍在、精选区显示错误态', async ({ page }) 
   await page.goto('http://localhost:4173/')
 
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('crearte')
-  await expect(page.getByText('收集可直接开玩的静态网页游戏 · 打开即玩、无需安装')).toBeVisible()
+  await expect(page.getByText('托管你的创意')).toBeVisible()
   await expect(page.getByText('加载失败')).toBeVisible()
   await expect(page.getByRole('button', { name: '重试' })).toBeVisible()
 })
@@ -133,4 +133,45 @@ test('落地页标题大纲层级正确', async ({ page }) => {
   await expect(page.getByRole('heading', { level: 2, name: '投稿与文档' })).toBeVisible()
   await expect(page.getByRole('heading', { level: 3, name: '想被收录？' })).toBeVisible()
   await expect(page.getByRole('heading', { level: 3, name: '文档' })).toBeVisible()
+})
+
+test('字标拼装完成前页面不实际滚动', async ({ page }) => {
+  await page.goto('http://localhost:4173/')
+
+  const label = page.locator('.wordmark-label')
+  await expect(label).toHaveCSS('background-color', 'rgba(0, 0, 0, 0)')
+
+  await page.mouse.wheel(0, 40)
+  await page.waitForFunction(() => getComputedStyle(document.querySelector('.wordmark-label')!).animationDelay !== '0s')
+  expect(await page.evaluate(() => window.scrollY)).toBe(0)
+  await expect(label).toHaveCSS('background-color', 'rgba(0, 0, 0, 0)')
+
+  await page.mouse.wheel(0, -40)
+  await expect(label).toHaveCSS('animation-delay', '0s')
+
+  await page.mouse.wheel(0, 300)
+  await expect(label).toHaveCSS('background-color', 'rgb(245, 197, 24)')
+  expect(await page.evaluate(() => window.scrollY)).toBe(0)
+
+  await page.mouse.wheel(0, 300)
+  await expect.poll(() => page.evaluate(() => window.scrollY)).toBeGreaterThan(0)
+
+  await page.evaluate(() => window.scrollTo(0, 0))
+  await expect(label).toHaveCSS('background-color', 'rgba(0, 0, 0, 0)')
+
+  await page.mouse.wheel(0, 40)
+  await page.waitForFunction(() => getComputedStyle(document.querySelector('.wordmark-label')!).animationDelay !== '0s')
+  expect(await page.evaluate(() => window.scrollY)).toBe(0)
+})
+
+test.describe('reduced motion', () => {
+  test.use({ reducedMotion: 'reduce' })
+
+  test('字标直接显示完成态且不接管滚动', async ({ page }) => {
+    await page.goto('http://localhost:4173/')
+
+    await expect(page.locator('.wordmark-label')).toHaveCSS('background-color', 'rgb(245, 197, 24)')
+    await page.mouse.wheel(0, 300)
+    await expect.poll(() => page.evaluate(() => window.scrollY)).toBeGreaterThan(0)
+  })
 })

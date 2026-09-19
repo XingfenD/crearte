@@ -1,14 +1,15 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { RouterLink } from 'vue-router'
 import { repo, type GameSummary } from '@/data'
 import { useAsync } from '@/composables/useAsync'
 import { pickFeatured } from '@/lib/featured'
+import { setupWordmarkAssembly } from '@/lib/wordmark'
 import GameCard from '@/components/GameCard.vue'
 import StatePanel from '@/components/StatePanel.vue'
 
-const SLOGAN = 'STATIC WEB GAMES'
-const TAGLINE = '收集可直接开玩的静态网页游戏 · 打开即玩、无需安装'
+const SLOGAN = 'HOST YOUR CREATIONS'
+const TAGLINE = '托管你的创意'
 const CONTACT_EMAIL = 'xingfen.fendy@outlook.com'
 const FEATURED_LIMIT = 6
 
@@ -16,6 +17,13 @@ const { data: games, error, loading, reload } = useAsync<GameSummary[]>(() => re
 
 const total = computed(() => games.value?.length ?? 0)
 const featured = computed(() => pickFeatured(games.value ?? [], FEATURED_LIMIT))
+
+const titleRef = ref<HTMLElement | null>(null)
+let disposeWordmark = () => {}
+onMounted(() => {
+  if (titleRef.value) disposeWordmark = setupWordmarkAssembly(titleRef.value)
+})
+onBeforeUnmount(() => disposeWordmark())
 
 const stats = computed(() => {
   const list = games.value ?? []
@@ -28,7 +36,7 @@ const stats = computed(() => {
 <template>
   <section class="border-[3px] border-ink bg-surface px-6 py-10 text-center shadow-hard sm:px-10 sm:py-14">
     <span class="inline-block bg-ink px-2 py-1 text-[0.6875rem] font-bold tracking-[0.3em] text-paper">创艺</span>
-    <h1 class="mt-3 font-display text-4xl leading-none font-black tracking-tight sm:text-5xl md:text-6xl">crearte</h1>
+    <h1 ref="titleRef" aria-label="crearte" class="mt-3 font-display text-4xl leading-none font-black tracking-tight sm:text-5xl md:text-6xl">cre<span class="wordmark-label">a<span class="wordmark-r">r</span>t</span>e</h1>
     <p class="mt-3 font-mono text-[0.6875rem] tracking-[0.3em] text-ink-soft">{{ SLOGAN }}</p>
     <div class="mx-auto my-5 h-[3px] w-16 bg-ink"></div>
     <p class="text-sm text-ink-soft">{{ TAGLINE }}</p>

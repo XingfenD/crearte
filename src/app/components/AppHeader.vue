@@ -27,7 +27,7 @@ const { data: docs } = useAsync<DocMeta[] | null>(
 const sticker = computed(() => {
   if (showGameCount.value && games.value) return `共 ${games.value.length} 款`
   if (onDocs.value && docs.value) return `共 ${docs.value.length} 篇`
-  return 'STATIC WEB GAMES'
+  return 'HOST YOUR CREATIONS'
 })
 
 const user = computed(() => session.state.user)
