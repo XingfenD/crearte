@@ -13,7 +13,7 @@ function queryValue(value: unknown): string | null {
 
 const kind = computed(() => normalizeKind(queryValue(route.query.kind)))
 const heading = computed(() =>
-  kind.value === 'game' ? '即将前往第三方站点开始游戏' : '即将离开本站'
+  kind.value === 'game' ? '即将前往第三方站点开始体验' : '即将离开本站'
 )
 
 const state = computed(() => {
@@ -81,10 +81,10 @@ function goBack(): void {
 
       <template v-if="kind === 'game'">
         <p class="mt-4 text-sm leading-[1.8] text-ink-soft">
-          该游戏由第三方提供并托管在其站点，本站仅收录链接与介绍。
+          该作品由第三方提供并托管在其站点，本站仅收录链接与介绍。
         </p>
         <p class="mt-3 text-sm leading-[1.8] text-ink-soft">
-          游戏内容<strong class="font-extrabold text-ink">可能与其被收录时不同</strong>，也可能随时变更、下架或停止服务；内容、版权与数据均由第三方负责，与本站无关。
+          作品内容<strong class="font-extrabold text-ink">可能与其被收录时不同</strong>，也可能随时变更、下架或停止服务；内容、版权与数据均由第三方负责，与本站无关。
         </p>
         <p class="mt-3 text-sm leading-[1.8] text-ink-soft">
           如发现违规、侵权或不适内容，请通过邮件反馈，或查看「关于本站」了解处理流程，我们会尽快核实处理。

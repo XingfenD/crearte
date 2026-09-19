@@ -29,5 +29,5 @@ test('离线且未安装时给出可理解提示', async ({ page, context }) => 
   })
   await context.setOffline(true)
   await page.goto(`${GAME_ORIGIN}/`)
-  await expect(page.getByText('该游戏尚未安装，无法离线运行')).toBeVisible()
+  await expect(page.getByText('该作品尚未安装，无法离线运行')).toBeVisible()
 })

@@ -1,13 +1,13 @@
 # crearte
 
-收集**静态网页游戏**（打开网页即玩、无需服务端）的开源目录站。
+收集**纯静态的网页作品**（游戏、测评、小工具等，打开网页即用、无需服务端）的开源目录站。
 
 - 站点：Vue 3 静态构建；目录页支持搜索、按类型/时长/标签筛选与排序
 - 详情页：简介（支持 Markdown）与外链跳转
 - 文档：内置 Markdown 渲染，带文档目录（TOC）
 - 部署：GitHub Actions 构建镜像 → GHCR → keel.sh webhook → k3s 滚动更新
 
-## 提交一个游戏
+## 提交一个作品
 
 1. 在 `src/games/` 新增 `<id>.json`（`id` 仅含小写字母、数字、连字符，且与文件名一致）
 2. 本地校验：`cd src && npm install && npm run validate:data`
@@ -63,7 +63,7 @@ docker run --rm -p 8080:80 crearte:local
 
 ## 运行时运维配置
 
-游戏以 `<id>.games.example.com` 子域运行，运维侧需要：
+作品以 `<id>.games.example.com` 子域运行，运维侧需要：
 
 1. DNS：把 `*.games.example.com` 泛解析到节点 IP（或前端代理地址）。
 2. 访问：集群未装 ingress controller，Service 走 NodePort 30080，即 `http://<节点IP>:30080`；生产建议由前端代理按 Host 转发。
@@ -73,15 +73,15 @@ docker run --rm -p 8080:80 crearte:local
 
 ## 许可、开放边界与商业授权
 
-本仓库是 crearte 的**官方前端**（Vue 3 静态站点 + 游戏运行时），以 [AGPL-3.0-only](https://www.gnu.org/licenses/agpl-3.0.html) 开源：可自由使用、修改、自建部署；但**修改后通过网络向用户提供服务时，必须按 AGPL 第 13 条向这些用户提供修改版的完整源码**。如需在闭源条件下使用（如商业集成），可联系作者获取商业授权。
+本仓库是 crearte 的**官方前端**（Vue 3 静态站点 + 作品运行时），以 [AGPL-3.0-only](https://www.gnu.org/licenses/agpl-3.0.html) 开源：可自由使用、修改、自建部署；但**修改后通过网络向用户提供服务时，必须按 AGPL 第 13 条向这些用户提供修改版的完整源码**。如需在闭源条件下使用（如商业集成），可联系作者获取商业授权。
 
 开放边界：
 
-- **可自建（当前能力，非长期承诺）**：用本仓构建静态目录站——浏览 / 筛选 / 以子域或外链方式运行游戏；域名、DNS、TLS 等运行时配置见上文「运行时运维配置」。
+- **可自建（当前能力，非长期承诺）**：用本仓构建静态目录站——浏览 / 筛选 / 以子域或外链方式运行作品；域名、DNS、TLS 等运行时配置见上文「运行时运维配置」。
 - **不可自建**：账号、上传、审核等依赖官方后端的能力。服务端与运营相关内容不开源，单独私有维护（`crearte-server`）；账号能力在本仓默认构建中关闭（未注入后端地址时不显示入口）。
 - 本仓是官方客户端：社区无法仅凭本仓运行完整服务。
 
-贡献：游戏数据 PR 与代码 PR 均适用[贡献者许可协议](./CLA.md)。字体（SIL OFL，见 `src/assets/fonts/OFL.txt`）与第三方依赖遵循各自许可。
+贡献：作品数据 PR 与代码 PR 均适用[贡献者许可协议](./CLA.md)。字体（SIL OFL，见 `src/assets/fonts/OFL.txt`）与第三方依赖遵循各自许可。
 
 Copyright (C) 2026 XingfenD
 
@@ -92,8 +92,8 @@ Copyright (C) 2026 XingfenD
 | 变量 | 用途 | 例子 |
 | --- | --- | --- |
 | `VITE_API_BASE_URL` | 后端 API 基地址（无尾斜杠） | 生产 `https://api.crearte.yoresee.cc`；dev 见 `src/.env.development` |
-| `VITE_HOST_ORIGIN` | 宿主站 origin（游戏运行时用） | `https://crearte.yoresee.cc` |
-| `VITE_GAMES_BASE_DOMAIN` | 游戏子域基域 | `crearte-games.yoresee.cc` |
+| `VITE_HOST_ORIGIN` | 宿主站 origin（作品运行时用） | `https://crearte.yoresee.cc` |
+| `VITE_GAMES_BASE_DOMAIN` | 作品子域基域 | `crearte-games.yoresee.cc` |
 
 > **生产构建如需账号能力，必须注入 `VITE_API_BASE_URL`**：`.env.development` 只管 dev；`build:e2e` 自带注入；生产走 `VITE_API_BASE_URL=https://api.crearte.yoresee.cc` 或部署侧注入；空值表示**关闭账号能力**（隐藏登录入口、auth 路由回首页、不发起 auth 请求）。
 >

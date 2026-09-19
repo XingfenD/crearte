@@ -15,6 +15,6 @@ export function runtimeConfig(): RuntimeConfig {
 const LABEL = /^[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?$/
 
 export function derivePlayOrigin(id: string, baseDomain: string, protocol: string): string {
-  if (!LABEL.test(id)) throw new Error(`非法游戏 id: ${id}`)
+  if (!LABEL.test(id)) throw new Error(`非法的作品 id: ${id}`)
   return `${protocol}//${id}.${baseDomain}`
 }

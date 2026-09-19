@@ -15,7 +15,7 @@ const activeCount = computed(
 
 <template>
   <div class="flex items-center gap-3">
-    <p class="shrink-0 text-[0.9375rem] font-extrabold" aria-live="polite">{{ count }} 款游戏</p>
+    <p class="shrink-0 text-[0.9375rem] font-extrabold" aria-live="polite">{{ count }} 款作品</p>
     <div class="h-0 flex-1 border-t-2 border-ink" aria-hidden="true" />
     <PhArrowsDownUp :size="14" weight="bold" aria-hidden="true" class="hidden shrink-0 text-ink-soft sm:block" />
     <label for="catalog-sort" class="sr-only">排序</label>

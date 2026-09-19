@@ -15,12 +15,12 @@ test('详情页开始游戏先经中间页，确认后才离开本站', async ({
 
   const [tab] = await Promise.all([
     page.waitForEvent('popup'),
-    page.getByRole('link', { name: '开始游戏' }).click()
+    page.getByRole('link', { name: '开始体验' }).click()
   ])
   await tab.waitForLoadState()
 
   await expect(tab).toHaveURL(/\/out\?kind=game&to=https%3A%2F%2Fplay2048\.co%2F/)
-  await expect(tab.getByRole('heading', { name: '即将前往第三方站点开始游戏' })).toBeVisible()
+  await expect(tab.getByRole('heading', { name: '即将前往第三方站点开始体验' })).toBeVisible()
   await expect(tab.getByText('play2048.co', { exact: true })).toBeVisible()
   await expect(tab.getByText('https://play2048.co/', { exact: true })).toBeVisible()
 

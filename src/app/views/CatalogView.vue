@@ -25,7 +25,7 @@ function clearSearch(): void {
 
 <template>
   <StatePanel :loading="loading" :error="error" @retry="reload">
-    <h1 class="sr-only">crearte 创艺 · 游戏目录</h1>
+    <h1 class="sr-only">crearte 创艺 · 作品目录</h1>
     <div class="flex flex-1 items-start gap-6">
       <aside class="relative hidden w-[215px] shrink-0 self-stretch lg:block">
         <div class="absolute inset-0">
@@ -37,7 +37,7 @@ function clearSearch(): void {
 
       <div class="min-w-0 flex-1 space-y-4">
         <div class="relative">
-          <label for="game-search" class="sr-only">搜索游戏</label>
+          <label for="game-search" class="sr-only">搜索作品</label>
           <PhMagnifyingGlass
             :size="16"
             weight="bold"
@@ -49,7 +49,7 @@ function clearSearch(): void {
             ref="searchInput"
             :value="state.q"
             type="search"
-            placeholder="搜索游戏名、简介、作者或标签…"
+            placeholder="搜索作品名、简介、作者或标签…"
             class="w-full appearance-none border-2 border-ink bg-surface py-2.5 pl-10 pr-12 text-sm shadow-hard-sm"
             @input="update({ q: ($event.target as HTMLInputElement).value })"
           />
@@ -72,7 +72,7 @@ function clearSearch(): void {
         <div v-else class="border-2 border-dashed border-ink p-10 text-center">
           <p class="font-mono text-[0.6875rem] tracking-[0.05em] text-ink-soft">NO MATCH · 0 款</p>
           <p class="mt-3 text-sm text-ink-soft">
-            {{ (games?.length ?? 0) > 0 ? '没有匹配的游戏，试试调整筛选条件。' : '还没有收录游戏。' }}
+            {{ (games?.length ?? 0) > 0 ? '没有匹配的作品，试试调整筛选条件。' : '还没有收录作品。' }}
           </p>
           <button
             v-if="(games?.length ?? 0) > 0"
