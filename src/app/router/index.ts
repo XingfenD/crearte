@@ -7,6 +7,7 @@ export const router = createRouter({
     { path: '/games/:id', name: 'game', component: () => import('@/views/GameView.vue'), props: true },
     { path: '/docs', name: 'docs', component: () => import('@/views/DocsView.vue') },
     { path: '/docs/:slug', name: 'doc', component: () => import('@/views/DocsView.vue'), props: true },
+    { path: '/out', name: 'outbound', component: () => import('@/views/OutboundView.vue') },
     { path: '/:pathMatch(.*)*', name: 'not-found', component: () => import('@/views/NotFoundView.vue') }
   ],
   scrollBehavior(to, _from, savedPosition) {
