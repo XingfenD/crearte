@@ -5,12 +5,13 @@ import { repo, type DocMeta, type GameSummary } from '@/data'
 import { useAsync } from '@/composables/useAsync'
 
 const route = useRoute()
-const onCatalog = computed(() => route.name === 'home')
+const onCatalog = computed(() => route.name === 'catalog')
+const showGameCount = computed(() => route.name === 'catalog' || route.name === 'home')
 const onDocs = computed(() => route.name === 'docs' || route.name === 'doc')
 
 const { data: games } = useAsync<GameSummary[] | null>(
-  () => (onCatalog.value ? repo.listGames() : Promise.resolve(null)),
-  [onCatalog]
+  () => (showGameCount.value ? repo.listGames() : Promise.resolve(null)),
+  [showGameCount]
 )
 const { data: docs } = useAsync<DocMeta[] | null>(
   () => (onDocs.value ? repo.listDocs() : Promise.resolve(null)),
@@ -18,7 +19,7 @@ const { data: docs } = useAsync<DocMeta[] | null>(
 )
 
 const sticker = computed(() => {
-  if (onCatalog.value && games.value) return `共 ${games.value.length} 款`
+  if (showGameCount.value && games.value) return `共 ${games.value.length} 款`
   if (onDocs.value && docs.value) return `共 ${docs.value.length} 篇`
   return 'STATIC WEB GAMES'
 })
