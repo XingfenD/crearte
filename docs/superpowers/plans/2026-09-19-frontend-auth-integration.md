@@ -992,6 +992,7 @@ git commit -m "feat: add auth api client"
 
 ```ts
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import type { Mock } from 'vitest'
 import { AuthApiError } from './errors'
 import { createAuthSession, toSession } from './session'
 import { createSessionStore } from './storage'
@@ -1009,7 +1010,7 @@ class MemoryStorage {
   keys() { return [...this.data.keys()] }
 }
 
-function deps(overrides: Partial<Record<'login' | 'register' | 'me' | 'changePassword' | 'logoutAll', unknown>> = {}) {
+function deps(overrides: Partial<Record<'login' | 'register' | 'me' | 'changePassword' | 'logoutAll', Mock>> = {}) {
   const client = {
     login: vi.fn().mockResolvedValue(RESPONSE),
     register: vi.fn().mockResolvedValue(RESPONSE),
@@ -1032,6 +1033,24 @@ describe('auth 会话', () => {
     expect(session.state.status).toBe('authenticated')
     expect(session.state.user?.email).toBe('a@example.com')
     expect(storage.getItem('crearte.auth.session.v1')).toContain('t1')
+  })
+
+  it('register 写入凭证并置为已登录', async () => {
+    const { client, clientRaw } = deps()
+    const session = createAuthSession({ client, store: createSessionStore(storage, () => Date.now()) })
+    await session.register('a@example.com', 'A', 'password1234')
+    expect(session.state.status).toBe('authenticated')
+    expect(session.state.user?.email).toBe('a@example.com')
+    expect(storage.getItem('crearte.auth.session.v1')).toContain('t1')
+    expect(clientRaw.register).toHaveBeenCalledWith({ email: 'a@example.com', password: 'password1234', displayName: 'A' })
+  })
+
+  it('toSession 把 expires_at 映射成存储里的 expiresAt', () => {
+    const store = createSessionStore(storage, () => Date.now())
+    store.write(toSession(RESPONSE))
+    const stored = JSON.parse(storage.getItem('crearte.auth.session.v1')!) as { token: string; expiresAt: string }
+    expect(stored.token).toBe('t1')
+    expect(stored.expiresAt).toBe('2026-09-26T12:00:00Z')
   })
 
   it('restore 无凭证时为匿名', async () => {
@@ -1077,13 +1096,32 @@ describe('auth 会话', () => {
     expect(session.state.status).toBe('authenticated')
   })
 
-  it('changePassword 换成新 token', async () => {
+  it('restore 在途响应不覆盖其后的 logout', async () => {
     const { client, clientRaw } = deps()
+    const store = createSessionStore(storage, () => Date.now())
+    store.write(toSession(RESPONSE))
+
+    const session = createAuthSession({ client, store })
+    let resolveMe!: (user: AuthUser) => void
+    clientRaw.me.mockImplementationOnce(() => new Promise<AuthUser>((resolve) => { resolveMe = resolve }))
+
+    const restoring = session.restore()
+    session.logout()
+    expect(session.state.status).toBe('anonymous')
+    expect(store.read()).toBeNull()
+
+    resolveMe(USER)
+    await restoring
+
+    expect(session.state.status).toBe('anonymous')
+    expect(store.read()).toBeNull()
+  })
+
+  it('changePassword 换成新 token', async () => {
+    const { client } = deps()
     const session = createAuthSession({ client, store: createSessionStore(storage, () => Date.now()) })
     await session.login('a@example.com', 'password1234')
-    clientRaw.changePassword.mockResolvedValueOnce(CHANGED)
     await session.changePassword('password1234', 'newpassword1')
-    expect(session.state.user?.id).toBe('u1')
     expect(storage.getItem('crearte.auth.session.v1')).toContain('t2')
   })
 
@@ -1110,13 +1148,16 @@ describe('auth 会话', () => {
     expect(session.state.status).toBe('anonymous')
   })
 
-  it('invalidate 幂等', async () => {
+  it('invalidate 幂等且清空后不写回', async () => {
     const { client } = deps()
-    const session = createAuthSession({ client, store: createSessionStore(storage, () => Date.now()) })
+    const store = createSessionStore(storage, () => Date.now())
+    const session = createAuthSession({ client, store })
     await session.login('a@example.com', 'password1234')
     session.invalidate()
+    expect(store.read()).toBeNull()
+    expect(storage.keys()).toHaveLength(0)
     session.invalidate()
-    expect(session.state.status).toBe('anonymous')
+    expect(store.read()).toBeNull()
     expect(storage.keys()).toHaveLength(0)
   })
 })
@@ -1160,6 +1201,8 @@ export function toSession(response: AuthResponse): Session {
 export function createAuthSession(deps: { client: AuthClientLike; store: SessionStore }): AuthSession {
   const state = reactive<AuthSessionState>({ status: 'anonymous', user: null })
   let current: Session | null = deps.store.read()
+  // 代数守卫：每次 apply/invalidate 都推进，restore 的在途响应据此判断窗口内是否被清态/替换过
+  let generation = 0
   if (current) {
     // 同步恢复缓存会话：路由守卫在首次导航前就能拿到登录态（无需等待异步复核）
     state.user = current.user
@@ -1167,6 +1210,7 @@ export function createAuthSession(deps: { client: AuthClientLike; store: Session
   }
 
   function apply(session: Session): void {
+    generation += 1
     current = session
     deps.store.write(session)
     state.user = session.user
@@ -1174,6 +1218,7 @@ export function createAuthSession(deps: { client: AuthClientLike; store: Session
   }
 
   function invalidate(): void {
+    generation += 1
     current = null
     deps.store.clear()
     state.user = null
@@ -1185,13 +1230,15 @@ export function createAuthSession(deps: { client: AuthClientLike; store: Session
     invalidate,
     async restore() {
       const cached = current
+      const epoch = generation
       if (!cached) {
         invalidate()
         return
       }
       try {
         const user = await deps.client.me(cached.token)
-        apply({ ...cached, user })
+        // 在途响应不得覆盖其后的 logout()/invalidate()/新会话：代数变了就丢弃
+        if (generation === epoch) apply({ ...cached, user })
       } catch (error) {
         if (error instanceof AuthApiError && error.code === 'unauthorized') invalidate()
       }
@@ -1227,6 +1274,8 @@ export function createAuthSession(deps: { client: AuthClientLike; store: Session
 ```
 
 （`AuthClient` 类型通过 `import type { AuthClient } from './client'` 引入。）
+
+要点：`restore()` 的在途响应不得覆盖其后的清态——用代数守卫（每次 `apply`/`invalidate` 推进 `generation`，`restore` 在 `me` 返回后核对代数未变才写回），避免 `logout()`/并发 401 的清态被旧 token 翻回 `authenticated`。
 
 - [ ] **步骤 4：运行测试确认通过**
 

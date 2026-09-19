@@ -29,6 +29,8 @@ export function toSession(response: AuthResponse): Session {
 export function createAuthSession(deps: { client: AuthClientLike; store: SessionStore }): AuthSession {
   const state = reactive<AuthSessionState>({ status: 'anonymous', user: null })
   let current: Session | null = deps.store.read()
+  // 代数守卫：每次 apply/invalidate 都推进，restore 的在途响应据此判断窗口内是否被清态/替换过
+  let generation = 0
   if (current) {
     // 同步恢复缓存会话：路由守卫在首次导航前就能拿到登录态（无需等待异步复核）
     state.user = current.user
@@ -36,6 +38,7 @@ export function createAuthSession(deps: { client: AuthClientLike; store: Session
   }
 
   function apply(session: Session): void {
+    generation += 1
     current = session
     deps.store.write(session)
     state.user = session.user
@@ -43,6 +46,7 @@ export function createAuthSession(deps: { client: AuthClientLike; store: Session
   }
 
   function invalidate(): void {
+    generation += 1
     current = null
     deps.store.clear()
     state.user = null
@@ -54,13 +58,15 @@ export function createAuthSession(deps: { client: AuthClientLike; store: Session
     invalidate,
     async restore() {
       const cached = current
+      const epoch = generation
       if (!cached) {
         invalidate()
         return
       }
       try {
         const user = await deps.client.me(cached.token)
-        apply({ ...cached, user })
+        // 在途响应不得覆盖其后的 logout()/invalidate()/新会话：代数变了就丢弃
+        if (generation === epoch) apply({ ...cached, user })
       } catch (error) {
         if (error instanceof AuthApiError && error.code === 'unauthorized') invalidate()
       }

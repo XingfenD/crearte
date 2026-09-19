@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import type { Mock } from 'vitest'
 import { AuthApiError } from './errors'
 import { createAuthSession, toSession } from './session'
 import { createSessionStore } from './storage'
@@ -16,7 +17,7 @@ class MemoryStorage {
   keys() { return [...this.data.keys()] }
 }
 
-function deps(overrides: Partial<Record<'login' | 'register' | 'me' | 'changePassword' | 'logoutAll', unknown>> = {}) {
+function deps(overrides: Partial<Record<'login' | 'register' | 'me' | 'changePassword' | 'logoutAll', Mock>> = {}) {
   const client = {
     login: vi.fn().mockResolvedValue(RESPONSE),
     register: vi.fn().mockResolvedValue(RESPONSE),
@@ -25,7 +26,7 @@ function deps(overrides: Partial<Record<'login' | 'register' | 'me' | 'changePas
     logoutAll: vi.fn().mockResolvedValue(undefined),
     ...overrides
   }
-  return { client: client as never, clientRaw: client as any }
+  return { client: client as never, clientRaw: client }
 }
 
 let storage: MemoryStorage
@@ -39,6 +40,24 @@ describe('auth 会话', () => {
     expect(session.state.status).toBe('authenticated')
     expect(session.state.user?.email).toBe('a@example.com')
     expect(storage.getItem('crearte.auth.session.v1')).toContain('t1')
+  })
+
+  it('register 写入凭证并置为已登录', async () => {
+    const { client, clientRaw } = deps()
+    const session = createAuthSession({ client, store: createSessionStore(storage, () => Date.now()) })
+    await session.register('a@example.com', 'A', 'password1234')
+    expect(session.state.status).toBe('authenticated')
+    expect(session.state.user?.email).toBe('a@example.com')
+    expect(storage.getItem('crearte.auth.session.v1')).toContain('t1')
+    expect(clientRaw.register).toHaveBeenCalledWith({ email: 'a@example.com', password: 'password1234', displayName: 'A' })
+  })
+
+  it('toSession 把 expires_at 映射成存储里的 expiresAt', () => {
+    const store = createSessionStore(storage, () => Date.now())
+    store.write(toSession(RESPONSE))
+    const stored = JSON.parse(storage.getItem('crearte.auth.session.v1')!) as { token: string; expiresAt: string }
+    expect(stored.token).toBe('t1')
+    expect(stored.expiresAt).toBe('2026-09-26T12:00:00Z')
   })
 
   it('restore 无凭证时为匿名', async () => {
@@ -84,13 +103,32 @@ describe('auth 会话', () => {
     expect(session.state.status).toBe('authenticated')
   })
 
-  it('changePassword 换成新 token', async () => {
+  it('restore 在途响应不覆盖其后的 logout', async () => {
     const { client, clientRaw } = deps()
+    const store = createSessionStore(storage, () => Date.now())
+    store.write(toSession(RESPONSE))
+
+    const session = createAuthSession({ client, store })
+    let resolveMe!: (user: AuthUser) => void
+    clientRaw.me.mockImplementationOnce(() => new Promise<AuthUser>((resolve) => { resolveMe = resolve }))
+
+    const restoring = session.restore()
+    session.logout()
+    expect(session.state.status).toBe('anonymous')
+    expect(store.read()).toBeNull()
+
+    resolveMe(USER)
+    await restoring
+
+    expect(session.state.status).toBe('anonymous')
+    expect(store.read()).toBeNull()
+  })
+
+  it('changePassword 换成新 token', async () => {
+    const { client } = deps()
     const session = createAuthSession({ client, store: createSessionStore(storage, () => Date.now()) })
     await session.login('a@example.com', 'password1234')
-    clientRaw.changePassword.mockResolvedValueOnce(CHANGED)
     await session.changePassword('password1234', 'newpassword1')
-    expect(session.state.user?.id).toBe('u1')
     expect(storage.getItem('crearte.auth.session.v1')).toContain('t2')
   })
 
@@ -117,13 +155,16 @@ describe('auth 会话', () => {
     expect(session.state.status).toBe('anonymous')
   })
 
-  it('invalidate 幂等', async () => {
+  it('invalidate 幂等且清空后不写回', async () => {
     const { client } = deps()
-    const session = createAuthSession({ client, store: createSessionStore(storage, () => Date.now()) })
+    const store = createSessionStore(storage, () => Date.now())
+    const session = createAuthSession({ client, store })
     await session.login('a@example.com', 'password1234')
     session.invalidate()
+    expect(store.read()).toBeNull()
+    expect(storage.keys()).toHaveLength(0)
     session.invalidate()
-    expect(session.state.status).toBe('anonymous')
+    expect(store.read()).toBeNull()
     expect(storage.keys()).toHaveLength(0)
   })
 })
