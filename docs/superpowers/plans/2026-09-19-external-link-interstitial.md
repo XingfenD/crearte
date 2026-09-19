@@ -607,7 +607,7 @@ git commit -m "feat: add the outbound interstitial view"
 在 `src/app/views/GameView.vue` 的 `import { renderMarkdown } from '@/lib/markdown'` 下一行加：
 
 ```ts
-import { toInterstitial } from '@/lib/externalLink'
+import { toInterstitialIfExternal } from '@/lib/externalLink'
 ```
 
 - [ ] **步骤 2：改作者主页链接**
@@ -617,7 +617,7 @@ import { toInterstitial } from '@/lib/externalLink'
 ```vue
           <a
             v-if="game.author.url"
-            :href="toInterstitial(game.author.url)"
+            :href="toInterstitialIfExternal(game.author.url, location.origin)"
             target="_blank"
             rel="noopener"
             class="text-accent-ink underline decoration-2 underline-offset-2"
@@ -631,7 +631,7 @@ import { toInterstitial } from '@/lib/externalLink'
 ```vue
       <a
         v-else
-        :href="toInterstitial(game.url, 'game')"
+        :href="toInterstitialIfExternal(game.url, location.origin, 'game')"
         target="_blank"
         rel="noopener"
         class="lift inline-flex items-center gap-2 border-2 border-ink bg-ink px-5 py-2.5 font-extrabold text-paper shadow-hard-accent hover:shadow-hard-accent-lg active:shadow-none"
@@ -641,7 +641,7 @@ import { toInterstitial } from '@/lib/externalLink'
       </a>
 ```
 
-（站内可玩的 `playable` 分支走 `<GameHost>`，不受影响；`rel` 由 `noopener noreferrer` 收窄为 `noopener`，referrer 由中间页那次跳转决定，见规格 §7。）
+（站内可玩的 `playable` 分支走 `<GameHost>`，不受影响；`rel` 由 `noopener noreferrer` 收窄为 `noopener`，referrer 由中间页那次跳转决定，见规格 §7。详情页两处入口改为「仅外链才套中间页」——`toInterstitialIfExternal` 内部先做 `isExternalHref` 判定，非外链（站内路径、锚点、相对路径、`mailto:`/`tel:`、空值）原样直链。）
 
 - [ ] **步骤 4：类型检查 + 构建**
 
@@ -710,7 +710,7 @@ git commit -m "docs: add the feedback email to the about page"
   "id": "abs-paths",
   "name": "绝对路径夹具",
   "url": "https://example.com/abs",
-  "author": { "name": "test" },
+  "author": { "name": "test", "url": "mailto:test@example.com" },
   "description": "fixture",
   "intro": "夹具简介，外链：[示例站](https://example.com/intro-link)。",
   "durationMinutes": { "min": 1, "max": 1 },
@@ -729,6 +729,13 @@ git commit -m "docs: add the feedback email to the about page"
 
 ```ts
 import { expect, test } from '@playwright/test'
+
+test('非外链作者主页不被套中间页', async ({ page }) => {
+  await page.goto('http://localhost:4173/games/abs-paths')
+
+  const authorLink = page.getByRole('link', { name: 'test', exact: true })
+  await expect(authorLink).toHaveAttribute('href', 'mailto:test@example.com')
+})
 
 test('详情页开始游戏先经中间页，确认后才离开本站', async ({ page, context }) => {
   await context.route('https://play2048.co/**', (route) =>
@@ -794,7 +801,7 @@ test('缺省 kind 按普通版处理', async ({ page }) => {
 
 运行：`cd /root/crearte_mono/crearte/src && lsof -ti:4173 | xargs -r kill; npm run e2e`
 （必须先清掉可能残留的 4173 服务：`playwright.config.ts` 配了 `reuseExistingServer`，会复用旧构建导致测到过期产物。）
-预期：`5 passed`，且既有 20 条仍然通过（合计 `25 passed`）。
+预期：`6 passed`，且既有 20 条仍然通过（合计 `26 passed`）。
 
 - [ ] **步骤 4：Commit**
 
@@ -838,7 +845,7 @@ git commit -m "test: cover the outbound interstitial with e2e"
 - [ ] **步骤 3：全量 e2e**
 
 运行：`cd /root/crearte_mono/crearte/src && lsof -ti:4173 | xargs -r kill; npm run e2e`
-预期：`25 passed`（既有 20 + 新增 5）。
+预期：`26 passed`（既有 20 + 新增 6）。
 
 - [ ] **步骤 4：Commit**
 
@@ -861,7 +868,7 @@ git status --short && git log --oneline master..HEAD
 
 ## 完成标准
 
-- `npm run check` 与 `npm run e2e` 全绿（e2e 共 25 条）。
+- `npm run check` 与 `npm run e2e` 全绿（e2e 共 26 条）。
 - 详情页两处入口、markdown 渲染出的外链，全部指向 `/out`；站内链接与锚点不受影响。
 - `/out` 在 `to` 非法/缺失时只显示错误态，任何情况下都不自动跳转。
 - 无新增运行期依赖；`src/app/data/**` 一行未改。

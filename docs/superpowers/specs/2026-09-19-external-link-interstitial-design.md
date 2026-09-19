@@ -53,8 +53,8 @@
 
 | 入口 | 现状 | 改动后 |
 |---|---|---|
-| 详情页「开始游戏」（`game.url`） | 直接 `target="_blank"` 外链 | `/out?kind=game&to=…` |
-| 详情页作者主页（`author.url`） | 直接 `target="_blank"` 外链 | `/out?kind=link&to=…` |
+| 详情页「开始游戏」（`game.url`） | 直接 `target="_blank"` 外链 | `/out?kind=game&to=…`（仅当 `isExternalHref` 成立；否则保持原样直链） |
+| 详情页作者主页（`author.url`） | 直接 `target="_blank"` 外链 | `/out?kind=link&to=…`（仅当 `isExternalHref` 成立；否则保持原样直链） |
 | 文档正文外链（markdown 链接 + `linkify` 裸 URL） | 同标签直接离站，无 `rel` | 渲染期统一改写为 `/out?kind=link&to=…`，并补 `target="_blank" rel="noopener"` |
 | 站内其它外链（关于页/页脚等后续新增） | — | 一律经统一改写入口 |
 
@@ -130,14 +130,14 @@ src/app/
 ├── lib/markdown.ts            # 渲染期改写 <a>（link_open 规则）为 /out?kind=link&to=…
 ├── lib/markdown.test.ts       # 追加改写用例（既有文件）
 ├── views/OutboundView.vue     # 中间页（三种态：game / link / invalid）
-├── views/GameView.vue         # 两处外链 <a> 改经 toInterstitial()（既有文件）
+├── views/GameView.vue         # 两处外链 <a> 改经 toInterstitialIfExternal()（既有文件）
 └── router/index.ts            # + { path: '/out', name: 'outbound', component: OutboundView }
 ```
 
 另需改动：`src/docs/about.md` 免责声明补邮箱反馈渠道（见 §6.4）。
 
 - `externalLink.ts` 只依赖 `URL` 与 `location`（location 以参数注入，便于测试）
-- 详情页两处 `<a>` 改为经 `toInterstitial()` 生成 href；文档渲染改写集中在 `markdown.ts` 一处
+- 详情页两处 `<a>` 改为经 `toInterstitialIfExternal()` 生成 href：仅当 `isExternalHref(href, location.origin)` 成立才套中间页，非外链（站内路径、锚点、相对路径、`mailto:`/`tel:`、空值）原样直链；文档渲染改写集中在 `markdown.ts` 一处
 - 不新增依赖
 
 ## 9. 测试与验收
