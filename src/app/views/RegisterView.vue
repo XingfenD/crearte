@@ -10,14 +10,26 @@ const email = ref('')
 const displayName = ref('')
 const password = ref('')
 const error = ref<string | null>(null)
+const errorField = ref<'email' | 'name' | 'password' | null>(null)
 const busy = ref(false)
 
 async function submit(): Promise<void> {
   if (busy.value) return
   error.value = null
-  const code = validateEmail(email.value) ?? validateDisplayName(displayName.value) ?? validatePassword(password.value)
-  if (code) {
-    error.value = AUTH_ERROR_MESSAGES[code]
+  errorField.value = null
+  if (validateEmail(email.value)) {
+    error.value = AUTH_ERROR_MESSAGES.invalid_email
+    errorField.value = 'email'
+    return
+  }
+  if (validateDisplayName(displayName.value)) {
+    error.value = AUTH_ERROR_MESSAGES.invalid_display_name
+    errorField.value = 'name'
+    return
+  }
+  if (validatePassword(password.value)) {
+    error.value = AUTH_ERROR_MESSAGES.weak_password
+    errorField.value = 'password'
     return
   }
   busy.value = true
@@ -26,6 +38,7 @@ async function submit(): Promise<void> {
     await router.replace('/')
   } catch (e) {
     error.value = toUserMessage(e)
+    errorField.value = null
   } finally {
     busy.value = false
   }
@@ -44,7 +57,8 @@ async function submit(): Promise<void> {
           type="email"
           autocomplete="email"
           class="w-full border-2 border-ink bg-surface px-3 py-2"
-          :aria-invalid="Boolean(error)"
+          :aria-invalid="errorField === 'email'"
+          :aria-describedby="errorField === 'email' ? 'register-error' : undefined"
         >
       </div>
       <div class="space-y-1.5">
@@ -56,7 +70,8 @@ async function submit(): Promise<void> {
           autocomplete="nickname"
           maxlength="60"
           class="w-full border-2 border-ink bg-surface px-3 py-2"
-          :aria-invalid="Boolean(error)"
+          :aria-invalid="errorField === 'name'"
+          :aria-describedby="errorField === 'name' ? 'register-error' : undefined"
         >
       </div>
       <div class="space-y-1.5">
@@ -67,10 +82,11 @@ async function submit(): Promise<void> {
           type="password"
           autocomplete="new-password"
           class="w-full border-2 border-ink bg-surface px-3 py-2"
-          :aria-invalid="Boolean(error)"
+          :aria-invalid="errorField === 'password'"
+          :aria-describedby="errorField === 'password' ? 'register-error' : undefined"
         >
       </div>
-      <p v-if="error" role="alert" aria-live="polite" class="border-2 border-ink bg-highlight px-3 py-2 text-xs font-bold">{{ error }}</p>
+      <p v-if="error" id="register-error" role="alert" aria-live="polite" class="border-2 border-ink bg-highlight px-3 py-2 text-xs font-bold">{{ error }}</p>
       <button type="submit" class="btn-ink lift w-full disabled:opacity-50" :disabled="busy">
         {{ busy ? '注册中…' : '注册' }}
       </button>

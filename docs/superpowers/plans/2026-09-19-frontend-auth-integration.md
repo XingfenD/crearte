@@ -15,6 +15,7 @@
 - 环境：Node v24 / npm 11（`/root/.nvm/versions/node/v24.18.0/bin`）；`src/` 下先 `npm install`（仓库未提交 `node_modules`）
 - 所有命令在 `crearte/src/` 下运行（`git` 命令在仓库根 `crearte/`）；**禁止在 `master` 提交**，本计划全程在分支 `feat/auth-integration`
 - 视觉令牌只用现有平面海报体系（`.lift`、`.btn-ink`、`border-ink`、`bg-surface`、`shadow-hard`、`font-mono`）；零渐变、全直角
+- **字段级无障碍**：出错字段才带 `aria-invalid="true"` 与 `aria-describedby`（指向错误文案元素的 `id`），非出错字段 `aria-invalid="false"`（或不绑）；服务端级错误（`toUserMessage`）不标具体字段（`errorField` 置 `null`）
 - 契约细节以规格 §6 为准：`Authorization: Bearer <jwt>`，不用 cookie；错误体 `{error:{code,message}}`；401 → `unauthorized` 才清会话（`invalid_credentials` 是登录失败，**不能**清热会话）；429 读 `Retry-After`
 - `ContentRepository`（`src/app/data/**`）在本计划中**一行不改**
 - 每个任务结束运行 `npx vitest run`（或该任务指定的子集）+ `npm run typecheck`，必须全绿；提交信息用各任务给出的原文
@@ -1434,18 +1435,22 @@ const router = useRouter()
 const email = ref('')
 const password = ref('')
 const error = ref<string | null>(null)
+const errorField = ref<'email' | 'password' | null>(null)
 const busy = ref(false)
 
 async function submit(): Promise<void> {
   if (busy.value) return
   error.value = null
+  errorField.value = null
   const emailError = validateEmail(email.value)
   if (emailError) {
     error.value = AUTH_ERROR_MESSAGES[emailError]
+    errorField.value = 'email'
     return
   }
   if (password.value === '') {
     error.value = '请输入密码'
+    errorField.value = 'password'
     return
   }
   busy.value = true
@@ -1454,6 +1459,7 @@ async function submit(): Promise<void> {
     await router.replace(sanitizeNext(route.query.next))
   } catch (e) {
     error.value = toUserMessage(e)
+    errorField.value = null
     password.value = ''
   } finally {
     busy.value = false
@@ -1473,7 +1479,8 @@ async function submit(): Promise<void> {
           type="email"
           autocomplete="email"
           class="w-full border-2 border-ink bg-surface px-3 py-2"
-          :aria-invalid="Boolean(error)"
+          :aria-invalid="errorField === 'email'"
+          :aria-describedby="errorField === 'email' ? 'login-error' : undefined"
         >
       </div>
       <div class="space-y-1.5">
@@ -1484,10 +1491,11 @@ async function submit(): Promise<void> {
           type="password"
           autocomplete="current-password"
           class="w-full border-2 border-ink bg-surface px-3 py-2"
-          :aria-invalid="Boolean(error)"
+          :aria-invalid="errorField === 'password'"
+          :aria-describedby="errorField === 'password' ? 'login-error' : undefined"
         >
       </div>
-      <p v-if="error" role="alert" aria-live="polite" class="border-2 border-ink bg-highlight px-3 py-2 text-xs font-bold">{{ error }}</p>
+      <p v-if="error" id="login-error" role="alert" aria-live="polite" class="border-2 border-ink bg-highlight px-3 py-2 text-xs font-bold">{{ error }}</p>
       <button type="submit" class="btn-ink lift w-full disabled:opacity-50" :disabled="busy">
         {{ busy ? '登录中…' : '登录' }}
       </button>
@@ -1580,14 +1588,26 @@ const email = ref('')
 const displayName = ref('')
 const password = ref('')
 const error = ref<string | null>(null)
+const errorField = ref<'email' | 'name' | 'password' | null>(null)
 const busy = ref(false)
 
 async function submit(): Promise<void> {
   if (busy.value) return
   error.value = null
-  const code = validateEmail(email.value) ?? validateDisplayName(displayName.value) ?? validatePassword(password.value)
-  if (code) {
-    error.value = AUTH_ERROR_MESSAGES[code]
+  errorField.value = null
+  if (validateEmail(email.value)) {
+    error.value = AUTH_ERROR_MESSAGES.invalid_email
+    errorField.value = 'email'
+    return
+  }
+  if (validateDisplayName(displayName.value)) {
+    error.value = AUTH_ERROR_MESSAGES.invalid_display_name
+    errorField.value = 'name'
+    return
+  }
+  if (validatePassword(password.value)) {
+    error.value = AUTH_ERROR_MESSAGES.weak_password
+    errorField.value = 'password'
     return
   }
   busy.value = true
@@ -1596,6 +1616,7 @@ async function submit(): Promise<void> {
     await router.replace('/')
   } catch (e) {
     error.value = toUserMessage(e)
+    errorField.value = null
   } finally {
     busy.value = false
   }
@@ -1614,7 +1635,8 @@ async function submit(): Promise<void> {
           type="email"
           autocomplete="email"
           class="w-full border-2 border-ink bg-surface px-3 py-2"
-          :aria-invalid="Boolean(error)"
+          :aria-invalid="errorField === 'email'"
+          :aria-describedby="errorField === 'email' ? 'register-error' : undefined"
         >
       </div>
       <div class="space-y-1.5">
@@ -1626,7 +1648,8 @@ async function submit(): Promise<void> {
           autocomplete="nickname"
           maxlength="60"
           class="w-full border-2 border-ink bg-surface px-3 py-2"
-          :aria-invalid="Boolean(error)"
+          :aria-invalid="errorField === 'name'"
+          :aria-describedby="errorField === 'name' ? 'register-error' : undefined"
         >
       </div>
       <div class="space-y-1.5">
@@ -1637,10 +1660,11 @@ async function submit(): Promise<void> {
           type="password"
           autocomplete="new-password"
           class="w-full border-2 border-ink bg-surface px-3 py-2"
-          :aria-invalid="Boolean(error)"
+          :aria-invalid="errorField === 'password'"
+          :aria-describedby="errorField === 'password' ? 'register-error' : undefined"
         >
       </div>
-      <p v-if="error" role="alert" aria-live="polite" class="border-2 border-ink bg-highlight px-3 py-2 text-xs font-bold">{{ error }}</p>
+      <p v-if="error" id="register-error" role="alert" aria-live="polite" class="border-2 border-ink bg-highlight px-3 py-2 text-xs font-bold">{{ error }}</p>
       <button type="submit" class="btn-ink lift w-full disabled:opacity-50" :disabled="busy">
         {{ busy ? '注册中…' : '注册' }}
       </button>
@@ -1696,35 +1720,43 @@ import type { UserRole } from '@/auth/types'
 
 const router = useRouter()
 const user = computed(() => session.state.user)
-const roleLabel = computed(() => (user.value ? ROLE_LABELS[user.value.role] : ''))
+const roleLabel = computed(() => (user.value ? (ROLE_LABELS[user.value.role] ?? user.value.role) : ''))
 
 const ROLE_LABELS: Record<UserRole, string> = { user: '普通用户', admin: '管理员' }
 
 const currentPassword = ref('')
 const newPassword = ref('')
 const error = ref<string | null>(null)
+const errorField = ref<'current' | 'new' | null>(null)
 const notice = ref<string | null>(null)
 const busy = ref(false)
 const confirmingLogoutAll = ref(false)
+// 主动登出/登出全部时置位：让 watch 不把这次离开当成"被踢出"去抢导航
+const leaving = ref(false)
 
 watch(
   () => session.state.status,
   (status) => {
-    if (status !== 'authenticated') void router.replace({ name: 'login', query: { next: '/account' } })
+    if (status !== 'authenticated' && !leaving.value) {
+      void router.replace({ name: 'login', query: { next: '/account' } })
+    }
   }
 )
 
 async function changePassword(): Promise<void> {
   if (busy.value || !user.value) return
   error.value = null
+  errorField.value = null
   notice.value = null
   const code = validatePassword(newPassword.value)
   if (code) {
     error.value = AUTH_ERROR_MESSAGES[code]
+    errorField.value = 'new'
     return
   }
   if (currentPassword.value === '') {
     error.value = '请输入当前密码'
+    errorField.value = 'current'
     return
   }
   busy.value = true
@@ -1735,6 +1767,7 @@ async function changePassword(): Promise<void> {
     notice.value = '密码已更新，其他设备需要重新登录。'
   } catch (e) {
     error.value = toUserMessage(e)
+    errorField.value = null
   } finally {
     busy.value = false
   }
@@ -1742,8 +1775,10 @@ async function changePassword(): Promise<void> {
 
 async function logoutAll(): Promise<void> {
   if (busy.value) return
+  leaving.value = true
   busy.value = true
   error.value = null
+  notice.value = null
   try {
     await session.logoutAll()
     confirmingLogoutAll.value = false
@@ -1754,6 +1789,7 @@ async function logoutAll(): Promise<void> {
 }
 
 function logout(): void {
+  leaving.value = true
   session.logout()
   void router.replace('/')
 }
@@ -1782,13 +1818,13 @@ function logout(): void {
       <h2 class="font-display text-lg font-black">修改密码</h2>
       <div class="space-y-1.5">
         <label class="font-mono text-[0.6875rem] tracking-[0.05em]" for="account-current">当前密码</label>
-        <input id="account-current" v-model="currentPassword" type="password" autocomplete="current-password" class="w-full border-2 border-ink bg-surface px-3 py-2">
+        <input id="account-current" v-model="currentPassword" type="password" autocomplete="current-password" class="w-full border-2 border-ink bg-surface px-3 py-2" :aria-invalid="errorField === 'current'" :aria-describedby="errorField === 'current' ? 'account-error' : undefined">
       </div>
       <div class="space-y-1.5">
         <label class="font-mono text-[0.6875rem] tracking-[0.05em]" for="account-new">新密码（10–128 个字符）</label>
-        <input id="account-new" v-model="newPassword" type="password" autocomplete="new-password" class="w-full border-2 border-ink bg-surface px-3 py-2">
+        <input id="account-new" v-model="newPassword" type="password" autocomplete="new-password" class="w-full border-2 border-ink bg-surface px-3 py-2" :aria-invalid="errorField === 'new'" :aria-describedby="errorField === 'new' ? 'account-error' : undefined">
       </div>
-      <p v-if="error" role="alert" aria-live="polite" class="border-2 border-ink bg-highlight px-3 py-2 text-xs font-bold">{{ error }}</p>
+      <p v-if="error" id="account-error" role="alert" aria-live="polite" class="border-2 border-ink bg-highlight px-3 py-2 text-xs font-bold">{{ error }}</p>
       <p v-if="notice" role="status" aria-live="polite" class="border-2 border-ink bg-surface px-3 py-2 text-xs">{{ notice }}</p>
       <button type="submit" class="btn-ink lift disabled:opacity-50" :disabled="busy">更新密码</button>
     </form>
@@ -1806,6 +1842,8 @@ function logout(): void {
   </section>
 </template>
 ```
+
+> 主动登出/登出全部必须置 `leaving`：`logout()`/`logoutAll()` 入口先 `leaving.value = true`，watch 回调在 `leaving` 为真时不跳转。否则 `session.logout()`/`logoutAll()` 内部同步 `invalidate()` 把 `status` 置为 `anonymous`，触发 watch 抢走导航，把用户落到 `login?next=/account`（登出全部时也会多一次被 abort 的冗余导航）。
 
 - [ ] **步骤 2：加路由（带 `requiresAuth`）**
 

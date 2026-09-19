@@ -10,18 +10,22 @@ const router = useRouter()
 const email = ref('')
 const password = ref('')
 const error = ref<string | null>(null)
+const errorField = ref<'email' | 'password' | null>(null)
 const busy = ref(false)
 
 async function submit(): Promise<void> {
   if (busy.value) return
   error.value = null
+  errorField.value = null
   const emailError = validateEmail(email.value)
   if (emailError) {
     error.value = AUTH_ERROR_MESSAGES[emailError]
+    errorField.value = 'email'
     return
   }
   if (password.value === '') {
     error.value = '请输入密码'
+    errorField.value = 'password'
     return
   }
   busy.value = true
@@ -30,6 +34,7 @@ async function submit(): Promise<void> {
     await router.replace(sanitizeNext(route.query.next))
   } catch (e) {
     error.value = toUserMessage(e)
+    errorField.value = null
     password.value = ''
   } finally {
     busy.value = false
@@ -49,7 +54,8 @@ async function submit(): Promise<void> {
           type="email"
           autocomplete="email"
           class="w-full border-2 border-ink bg-surface px-3 py-2"
-          :aria-invalid="Boolean(error)"
+          :aria-invalid="errorField === 'email'"
+          :aria-describedby="errorField === 'email' ? 'login-error' : undefined"
         >
       </div>
       <div class="space-y-1.5">
@@ -60,10 +66,11 @@ async function submit(): Promise<void> {
           type="password"
           autocomplete="current-password"
           class="w-full border-2 border-ink bg-surface px-3 py-2"
-          :aria-invalid="Boolean(error)"
+          :aria-invalid="errorField === 'password'"
+          :aria-describedby="errorField === 'password' ? 'login-error' : undefined"
         >
       </div>
-      <p v-if="error" role="alert" aria-live="polite" class="border-2 border-ink bg-highlight px-3 py-2 text-xs font-bold">{{ error }}</p>
+      <p v-if="error" id="login-error" role="alert" aria-live="polite" class="border-2 border-ink bg-highlight px-3 py-2 text-xs font-bold">{{ error }}</p>
       <button type="submit" class="btn-ink lift w-full disabled:opacity-50" :disabled="busy">
         {{ busy ? '登录中…' : '登录' }}
       </button>
