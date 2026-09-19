@@ -1,5 +1,12 @@
 import { expect, test } from '@playwright/test'
 
+test('非外链作者主页不被套中间页', async ({ page }) => {
+  await page.goto('http://localhost:4173/games/abs-paths')
+
+  const authorLink = page.getByRole('link', { name: 'test', exact: true })
+  await expect(authorLink).toHaveAttribute('href', 'mailto:test@example.com')
+})
+
 test('详情页开始游戏先经中间页，确认后才离开本站', async ({ page, context }) => {
   await context.route('https://play2048.co/**', (route) =>
     route.fulfill({ status: 200, contentType: 'text/html', body: '<h1 id="target">目标站</h1>' })

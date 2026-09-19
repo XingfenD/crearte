@@ -4,7 +4,8 @@ import {
   isExternalHref,
   normalizeKind,
   parseTarget,
-  toInterstitial
+  toInterstitial,
+  toInterstitialIfExternal
 } from './externalLink'
 
 const ORIGIN = 'https://crearte.yoresee.cc'
@@ -60,6 +61,40 @@ describe('toInterstitial', () => {
     expect(toInterstitial('https://example.com/搜 索')).toBe(
       '/out?kind=link&to=https%3A%2F%2Fexample.com%2F%E6%90%9C%20%E7%B4%A2'
     )
+  })
+})
+
+describe('toInterstitialIfExternal', () => {
+  it('跨域 http(s) 套中间页，kind 可显式指定', () => {
+    expect(toInterstitialIfExternal('https://example.com/a', ORIGIN)).toBe(
+      '/out?kind=link&to=https%3A%2F%2Fexample.com%2Fa'
+    )
+    expect(toInterstitialIfExternal('http://example.com/a', ORIGIN, 'game')).toBe(
+      '/out?kind=game&to=http%3A%2F%2Fexample.com%2Fa'
+    )
+  })
+
+  it('同源绝对地址原样返回，不套中间页', () => {
+    expect(toInterstitialIfExternal(`${ORIGIN}/games/2048`, ORIGIN)).toBe(
+      `${ORIGIN}/games/2048`
+    )
+  })
+
+  it('mailto/tel 原样返回', () => {
+    expect(toInterstitialIfExternal('mailto:test@example.com', ORIGIN)).toBe(
+      'mailto:test@example.com'
+    )
+    expect(toInterstitialIfExternal('tel:+8613800000000', ORIGIN)).toBe('tel:+8613800000000')
+  })
+
+  it('相对路径、站内路径与锚点原样返回', () => {
+    expect(toInterstitialIfExternal('/games/2048', ORIGIN)).toBe('/games/2048')
+    expect(toInterstitialIfExternal('./x', ORIGIN)).toBe('./x')
+    expect(toInterstitialIfExternal('#toc', ORIGIN)).toBe('#toc')
+  })
+
+  it('空串原样返回空串', () => {
+    expect(toInterstitialIfExternal('', ORIGIN)).toBe('')
   })
 })
 

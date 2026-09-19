@@ -5,7 +5,7 @@ import { PhArrowLeft, PhArrowSquareOut } from '@phosphor-icons/vue'
 import { NotFoundError, repo, type Game } from '@/data'
 import { useAsync } from '@/composables/useAsync'
 import { renderMarkdown } from '@/lib/markdown'
-import { toInterstitial } from '@/lib/externalLink'
+import { toInterstitialIfExternal } from '@/lib/externalLink'
 import { durationText } from '@/lib/labels'
 import GameCover from '@/components/GameCover.vue'
 import StatePanel from '@/components/StatePanel.vue'
@@ -13,6 +13,7 @@ import GameHost from '../../runtime/host/GameHost.vue'
 
 const props = defineProps<{ id: string }>()
 const router = useRouter()
+const origin = location.origin
 const { data: game, error, loading, reload } = useAsync<Game>(
   () => repo.getGame(props.id),
   [computed(() => props.id)]
@@ -54,7 +55,7 @@ function onExit(): void {
           作者：
           <a
             v-if="game.author.url"
-            :href="toInterstitial(game.author.url)"
+            :href="toInterstitialIfExternal(game.author.url, origin)"
             target="_blank"
             rel="noopener"
             class="text-accent-ink underline decoration-2 underline-offset-2"
@@ -76,7 +77,7 @@ function onExit(): void {
       <GameHost v-if="playable" :game="game" @exit="onExit" />
       <a
         v-else
-        :href="toInterstitial(game.url, 'game')"
+        :href="toInterstitialIfExternal(game.url, origin, 'game')"
         target="_blank"
         rel="noopener"
         class="lift inline-flex items-center gap-2 border-2 border-ink bg-ink px-5 py-2.5 font-extrabold text-paper shadow-hard-accent hover:shadow-hard-accent-lg active:shadow-none"

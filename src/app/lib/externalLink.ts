@@ -25,6 +25,14 @@ export function toInterstitial(href: string, kind: InterstitialKind = 'link'): s
   return `/out?kind=${kind}&to=${encodeURIComponent(href)}`
 }
 
+export function toInterstitialIfExternal(
+  href: string,
+  origin: string,
+  kind: InterstitialKind = 'link'
+): string {
+  return isExternalHref(href, origin) ? toInterstitial(href, kind) : href
+}
+
 export function normalizeKind(raw: string | null | undefined): InterstitialKind {
   return raw === 'game' ? 'game' : 'link'
 }
