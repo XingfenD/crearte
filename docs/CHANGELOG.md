@@ -6,6 +6,13 @@ All notable changes to this template should be documented in this file.
 The format loosely follows Keep a Changelog and can be adapted to the team's habits.
 本文档参考了 Keep a Changelog 的思路，也可以根据团队习惯调整。
 
+## [0.7.4] - 2026-09-20
+
+### Fixed / 修复
+
+- Pointed the dev container's `VITE_API_BASE_URL` at the local backend port (`http://localhost:8081`, matching `crearte-server/deploy/docker-compose.local.yml`) instead of `http://localhost:8080`; the browser previously posted `/api/auth/*` back to the frontend itself and got 404.
+- 修正 dev 容器的 `VITE_API_BASE_URL` 指向本地后端端口（`http://localhost:8081`，与 `crearte-server/deploy/docker-compose.local.yml` 对齐）：此前浏览器把 `/api/auth/*` 发回 8080 的前端自身，返回 404。
+
 ## [0.7.3] - 2026-09-20
 
 ### Fixed / 修复
