@@ -1,4 +1,6 @@
 import { createRouter, createWebHistory } from 'vue-router'
+import { authEnabled, session } from '@/auth'
+import { resolveNavigation } from './guards'
 
 export const router = createRouter({
   history: createWebHistory(),
@@ -9,6 +11,9 @@ export const router = createRouter({
     { path: '/docs', name: 'docs', component: () => import('@/views/DocsView.vue') },
     { path: '/docs/:slug', name: 'doc', component: () => import('@/views/DocsView.vue'), props: true },
     { path: '/out', name: 'outbound', component: () => import('@/views/OutboundView.vue') },
+    { path: '/login', name: 'login', component: () => import('@/views/LoginView.vue') },
+    { path: '/register', name: 'register', component: () => import('@/views/RegisterView.vue') },
+    { path: '/account', name: 'account', component: () => import('@/views/AccountView.vue'), meta: { requiresAuth: true } },
     { path: '/:pathMatch(.*)*', name: 'not-found', component: () => import('@/views/NotFoundView.vue') }
   ],
   scrollBehavior(to, _from, savedPosition) {
@@ -17,3 +22,10 @@ export const router = createRouter({
     return { top: 0 }
   }
 })
+
+router.beforeEach((to) =>
+  resolveNavigation(to, {
+    authEnabled,
+    authenticated: session.state.status === 'authenticated'
+  })
+)
