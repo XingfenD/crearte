@@ -45,7 +45,7 @@ webgame-collection/            # 仓库根
 │  ├─ CONTRIBUTING.md          # GitHub 也会识别 docs/CONTRIBUTING.md
 │  └─ superpowers/specs/       # 设计文档与实施计划
 ├─ deploy/                     # Dockerfile、nginx.conf、k8s manifests
-├─ LICENSE                     # MIT
+├─ LICENSE                     # AGPL-3.0-only（初版计划为 MIT，2026-09-19 改定，见 2026-09-19-open-source-boundary-design.md）
 ├─ .gitignore                  # node_modules、src/dist、src/public/data 等
 └─ .github/workflows/          # validate.yml（PR 校验）、publish.yml（构建发布）
 ```
