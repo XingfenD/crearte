@@ -29,7 +29,7 @@ const sticker = computed(() => {
   <header class="sticky top-0 z-40 border-b-[3px] border-ink bg-paper">
     <div class="mx-auto flex h-14 w-full max-w-6xl items-center gap-6 px-4">
       <RouterLink to="/" class="bg-ink px-2 py-1 text-sm font-extrabold tracking-[0.04em] text-paper">
-        crearte
+        crearte <span class="text-[0.6875rem] tracking-[0.2em]">创艺</span>
       </RouterLink>
       <nav class="flex gap-4 text-sm font-bold">
         <RouterLink
