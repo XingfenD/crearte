@@ -68,7 +68,7 @@ export function createAuthSession(deps: { client: AuthClientLike; store: Session
         // 在途响应不得覆盖其后的 logout()/invalidate()/新会话：代数变了就丢弃
         if (generation === epoch) apply({ ...cached, user })
       } catch (error) {
-        if (error instanceof AuthApiError && error.code === 'unauthorized') invalidate()
+        if (error instanceof AuthApiError && error.code === 'unauthorized' && generation === epoch) invalidate()
       }
     },
     async login(email, password) {

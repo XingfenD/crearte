@@ -1001,6 +1001,8 @@ import type { AuthResponse, AuthUser } from './types'
 const USER: AuthUser = { id: 'u1', email: 'a@example.com', display_name: 'A', role: 'user' }
 const RESPONSE: AuthResponse = { token: 't1', expires_at: '2026-09-26T12:00:00Z', user: USER }
 const CHANGED: AuthResponse = { token: 't2', expires_at: '2026-09-26T13:00:00Z', user: USER }
+const NEW_SESSION: AuthResponse = { token: 't-new', expires_at: '2026-09-27T12:00:00Z', user: USER }
+const NOW = Date.parse('2026-09-19T12:00:00Z')
 
 class MemoryStorage {
   private data = new Map<string, string>()
@@ -1028,7 +1030,7 @@ beforeEach(() => { storage = new MemoryStorage() })
 describe('auth 会话', () => {
   it('login 写入凭证并置为已登录', async () => {
     const { client } = deps()
-    const session = createAuthSession({ client, store: createSessionStore(storage, () => Date.now()) })
+    const session = createAuthSession({ client, store: createSessionStore(storage, () => NOW) })
     await session.login('a@example.com', 'password1234')
     expect(session.state.status).toBe('authenticated')
     expect(session.state.user?.email).toBe('a@example.com')
@@ -1037,7 +1039,7 @@ describe('auth 会话', () => {
 
   it('register 写入凭证并置为已登录', async () => {
     const { client, clientRaw } = deps()
-    const session = createAuthSession({ client, store: createSessionStore(storage, () => Date.now()) })
+    const session = createAuthSession({ client, store: createSessionStore(storage, () => NOW) })
     await session.register('a@example.com', 'A', 'password1234')
     expect(session.state.status).toBe('authenticated')
     expect(session.state.user?.email).toBe('a@example.com')
@@ -1046,7 +1048,7 @@ describe('auth 会话', () => {
   })
 
   it('toSession 把 expires_at 映射成存储里的 expiresAt', () => {
-    const store = createSessionStore(storage, () => Date.now())
+    const store = createSessionStore(storage, () => NOW)
     store.write(toSession(RESPONSE))
     const stored = JSON.parse(storage.getItem('crearte.auth.session.v1')!) as { token: string; expiresAt: string }
     expect(stored.token).toBe('t1')
@@ -1055,7 +1057,7 @@ describe('auth 会话', () => {
 
   it('restore 无凭证时为匿名', async () => {
     const { client } = deps()
-    const session = createAuthSession({ client, store: createSessionStore(storage, () => Date.now()) })
+    const session = createAuthSession({ client, store: createSessionStore(storage, () => NOW) })
     await session.restore()
     expect(session.state.status).toBe('anonymous')
     expect(session.state.user).toBeNull()
@@ -1063,7 +1065,7 @@ describe('auth 会话', () => {
 
   it('restore 乐观渲染（创建时同步恢复），复核成功后用服务端 user 覆盖', async () => {
     const { client, clientRaw } = deps()
-    const store = createSessionStore(storage, () => Date.now())
+    const store = createSessionStore(storage, () => NOW)
     store.write(toSession(RESPONSE))
     clientRaw.me.mockResolvedValueOnce({ ...USER, display_name: '新名字' })
 
@@ -1075,7 +1077,7 @@ describe('auth 会话', () => {
 
   it('restore 复核 401 时清态', async () => {
     const { client, clientRaw } = deps()
-    const store = createSessionStore(storage, () => Date.now())
+    const store = createSessionStore(storage, () => NOW)
     store.write(toSession(RESPONSE))
     clientRaw.me.mockRejectedValueOnce(new AuthApiError(401, 'unauthorized', 'x'))
 
@@ -1087,7 +1089,7 @@ describe('auth 会话', () => {
 
   it('restore 网络失败保留乐观状态', async () => {
     const { client, clientRaw } = deps()
-    const store = createSessionStore(storage, () => Date.now())
+    const store = createSessionStore(storage, () => NOW)
     store.write(toSession(RESPONSE))
     clientRaw.me.mockRejectedValueOnce(new AuthApiError(0, 'network', 'x'))
 
@@ -1098,7 +1100,7 @@ describe('auth 会话', () => {
 
   it('restore 在途响应不覆盖其后的 logout', async () => {
     const { client, clientRaw } = deps()
-    const store = createSessionStore(storage, () => Date.now())
+    const store = createSessionStore(storage, () => NOW)
     store.write(toSession(RESPONSE))
 
     const session = createAuthSession({ client, store })
@@ -1117,9 +1119,31 @@ describe('auth 会话', () => {
     expect(store.read()).toBeNull()
   })
 
+  it('restore 在途 401 不清掉其后的新会话', async () => {
+    const { client, clientRaw } = deps()
+    const store = createSessionStore(storage, () => NOW)
+    store.write(toSession(RESPONSE))
+
+    const session = createAuthSession({ client, store })
+    let rejectMe!: (error: AuthApiError) => void
+    clientRaw.me.mockImplementationOnce(() => new Promise<AuthUser>((_resolve, reject) => { rejectMe = reject }))
+
+    const restoring = session.restore()
+    clientRaw.login.mockResolvedValueOnce(NEW_SESSION)
+    await session.login('a@example.com', 'password1234')
+    expect(session.state.status).toBe('authenticated')
+    expect(store.read()?.token).toBe('t-new')
+
+    rejectMe(new AuthApiError(401, 'unauthorized', 'x'))
+    await restoring
+
+    expect(session.state.status).toBe('authenticated')
+    expect(store.read()?.token).toBe('t-new')
+  })
+
   it('changePassword 换成新 token', async () => {
     const { client } = deps()
-    const session = createAuthSession({ client, store: createSessionStore(storage, () => Date.now()) })
+    const session = createAuthSession({ client, store: createSessionStore(storage, () => NOW) })
     await session.login('a@example.com', 'password1234')
     await session.changePassword('password1234', 'newpassword1')
     expect(storage.getItem('crearte.auth.session.v1')).toContain('t2')
@@ -1127,7 +1151,7 @@ describe('auth 会话', () => {
 
   it('logout 只清本地,logoutAll 先调后端', async () => {
     const { client, clientRaw } = deps()
-    const session = createAuthSession({ client, store: createSessionStore(storage, () => Date.now()) })
+    const session = createAuthSession({ client, store: createSessionStore(storage, () => NOW) })
     await session.login('a@example.com', 'password1234')
     session.logout()
     expect(session.state.status).toBe('anonymous')
@@ -1141,7 +1165,7 @@ describe('auth 会话', () => {
 
   it('logoutAll 失败也清本地', async () => {
     const { client, clientRaw } = deps()
-    const session = createAuthSession({ client, store: createSessionStore(storage, () => Date.now()) })
+    const session = createAuthSession({ client, store: createSessionStore(storage, () => NOW) })
     await session.login('a@example.com', 'password1234')
     clientRaw.logoutAll.mockRejectedValueOnce(new AuthApiError(500, 'internal', 'x'))
     await expect(session.logoutAll()).resolves.toBeUndefined()
@@ -1150,7 +1174,7 @@ describe('auth 会话', () => {
 
   it('invalidate 幂等且清空后不写回', async () => {
     const { client } = deps()
-    const store = createSessionStore(storage, () => Date.now())
+    const store = createSessionStore(storage, () => NOW)
     const session = createAuthSession({ client, store })
     await session.login('a@example.com', 'password1234')
     session.invalidate()
@@ -1240,7 +1264,7 @@ export function createAuthSession(deps: { client: AuthClientLike; store: Session
         // 在途响应不得覆盖其后的 logout()/invalidate()/新会话：代数变了就丢弃
         if (generation === epoch) apply({ ...cached, user })
       } catch (error) {
-        if (error instanceof AuthApiError && error.code === 'unauthorized') invalidate()
+        if (error instanceof AuthApiError && error.code === 'unauthorized' && generation === epoch) invalidate()
       }
     },
     async login(email, password) {
@@ -1275,7 +1299,7 @@ export function createAuthSession(deps: { client: AuthClientLike; store: Session
 
 （`AuthClient` 类型通过 `import type { AuthClient } from './client'` 引入。）
 
-要点：`restore()` 的在途响应不得覆盖其后的清态——用代数守卫（每次 `apply`/`invalidate` 推进 `generation`，`restore` 在 `me` 返回后核对代数未变才写回），避免 `logout()`/并发 401 的清态被旧 token 翻回 `authenticated`。
+要点：`restore()` 的在途响应不得覆盖其后的状态变更——成功与失败响应都受代数守卫约束（每次 `apply`/`invalidate` 推进 `generation`，`restore` 在 `me` 返回后核对代数未变才写回/清态），避免 `logout()`/并发 401 的清态被旧 token 翻回 `authenticated`，也避免在途旧 `me` 失败清掉其后新建立的会话。测试用固定时钟（`const NOW = Date.parse('2026-09-19T12:00:00Z')`，注入 `createSessionStore(storage, () => NOW)`）保证 `expires_at: '2026-09-26T12:00:00Z'` 相对 `NOW` 永不过期，并补一条镜像竞态用例 `restore 在途 401 不清掉其后的新会话`。
 
 - [ ] **步骤 4：运行测试确认通过**
 
