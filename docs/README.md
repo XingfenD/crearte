@@ -85,6 +85,10 @@ Copyright (C) 2026 XingfenD
 | `VITE_HOST_ORIGIN` | 宿主站 origin（游戏运行时用） | `https://crearte.yoresee.cc` |
 | `VITE_GAMES_BASE_DOMAIN` | 游戏子域基域 | `crearte-games.yoresee.cc` |
 
+> **生产构建必须注入 `VITE_API_BASE_URL`**：`.env.development` 只管 dev；`build:e2e` 自带注入；生产走 `VITE_API_BASE_URL=https://api.crearte.yoresee.cc` 或部署侧注入，空值会退化为同源 `/api`。
+>
+> **后端 CORS 必须同时配置 `CORS_ALLOWED_ORIGINS` 放行前端 origin 并 expose `Retry-After`**（否则跨域下前端读不到 `Retry-After`，429 提示会退化为缺省 60 秒）。
+
 ## 账号系统本地联调
 
 1. 起后端依赖与后端：`cd crearte-server && docker compose -f deploy/docker-compose.dev.yml up -d`，再按该仓 `docs/README.md` 起 `go run ./cmd serve`

@@ -139,6 +139,7 @@ test('登录 429 显示倒计时提示', async ({ page }) => {
     route.fulfill({
       status: 429,
       contentType: 'application/json',
+      // 与后端 cors.go 的 Access-Control-Expose-Headers 保持一致：真实后端必须 expose Retry-After，跨域下前端才能读到
       headers: { 'Retry-After': '30', 'Access-Control-Expose-Headers': 'Retry-After' },
       body: JSON.stringify({ error: { code: 'rate_limited', message: 'too many requests' } })
     })

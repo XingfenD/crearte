@@ -146,7 +146,9 @@ src/app/
 | `VITE_HOST_ORIGIN` | 宿主站 origin（运行时用） | `https://crearte.yoresee.cc` |
 | `VITE_GAMES_BASE_DOMAIN` | 游戏子域基域 | `crearte-games.yoresee.cc` |
 
-- 跨域直连依赖后端 CORS 白名单正确配置（见 §9）；后端预检已返回 `204` 且允许 `Authorization, Content-Type`，前端不需要自定义请求头，也就无需额外 expose-headers
+- 跨域直连依赖后端 CORS 白名单正确配置（见 §9）；后端预检已返回 `204` 且允许 `Authorization, Content-Type`，前端不需要自定义请求头
+- **后端需 `Access-Control-Expose-Headers: Retry-After`**：429 的 `Retry-After` 属于需显式 expose 的响应头，后端未 expose 时前端跨域读不到，限流提示会退化为缺省 60 秒
+- **生产构建需注入 `VITE_API_BASE_URL`**（`.env.development` 只管 dev；`build:e2e` 自带注入；生产走 `VITE_API_BASE_URL=https://api.crearte.yoresee.cc` 或部署侧注入，空值退化为同源 `/api`）
 - 运维前置（不在本仓实现，仅记录）：`api.crearte.yoresee.cc` 的 DNS 与证书指向后端；后端环境变量 `CORS_ALLOWED_ORIGINS` 填宿主域
 - dev 联调：后端本地跑在 `:8080`（`deploy/docker-compose.dev.yml` 起 PG），前端 `npm run dev` 直连
 

@@ -17,6 +17,7 @@
 - 视觉令牌只用现有平面海报体系（`.lift`、`.btn-ink`、`border-ink`、`bg-surface`、`shadow-hard`、`font-mono`）；零渐变、全直角
 - **字段级无障碍**：出错字段才带 `aria-invalid="true"` 与 `aria-describedby`（指向错误文案元素的 `id`），非出错字段 `aria-invalid="false"`（或不绑）；服务端级错误（`toUserMessage`）不标具体字段（`errorField` 置 `null`）
 - 契约细节以规格 §6 为准：`Authorization: Bearer <jwt>`，不用 cookie；错误体 `{error:{code,message}}`；401 → `unauthorized` 才清会话（`invalid_credentials` 是登录失败，**不能**清热会话）；429 读 `Retry-After`
+- **跨域响应头需后端 expose（`Retry-After`）**：429 的 `Retry-After` 只有后端 CORS 通过 `Access-Control-Expose-Headers` 放行后，前端跨域才能读到，否则退化为缺省 60 秒
 - `ContentRepository`（`src/app/data/**`）在本计划中**一行不改**
 - 每个任务结束运行 `npx vitest run`（或该任务指定的子集）+ `npm run typecheck`，必须全绿；提交信息用各任务给出的原文
 - CHANGELOG 格式：同一条英文行后紧跟中文行，不同条目空行分隔（`docs/CHANGELOG.md`，高版本在上）
@@ -1877,16 +1878,24 @@ git commit -m "feat: add account view"
 `AppHeader.vue` 的 `<script setup>` 增加：
 
 ```ts
+import { computed, ref, watch } from 'vue'
 import { session } from '@/auth'
 
+const detailsRef = ref<HTMLDetailsElement | null>(null)
+
 const user = computed(() => session.state.user)
+
+// header 常驻，路由切换时收起下拉（移除 open 属性）
+watch(() => route.fullPath, () => {
+  if (detailsRef.value?.open) detailsRef.value.open = false
+})
 
 function logout(): void {
   session.logout()
 }
 ```
 
-（`computed` 已在原文件的 import 中。）
+（`computed` 已在原文件的 import 中；`ref`/`watch` 需补进 `vue` 的 import；`route` 已在原文件 `useRoute()`。）
 
 - [ ] **步骤 2：改 template**
 
@@ -1900,11 +1909,11 @@ function logout(): void {
       <RouterLink
         v-if="!user"
         to="/login"
-        class="border-2 border-ink bg-surface px-2 py-1 text-xs font-bold"
+        class="ml-auto border-2 border-ink bg-surface px-2 py-1 text-xs font-bold sm:ml-0"
       >登录</RouterLink>
 
-      <details v-else class="relative">
-        <summary class="cursor-pointer border-2 border-ink bg-surface px-2 py-1 text-xs font-bold">{{ user.display_name }}</summary>
+      <details v-else ref="detailsRef" class="relative ml-auto sm:ml-0">
+        <summary class="list-none cursor-pointer select-none border-2 border-ink bg-surface px-2 py-1 text-xs font-bold [&::-webkit-details-marker]:hidden">{{ user.display_name }} ▾</summary>
         <div class="absolute right-0 z-50 mt-1 w-32 border-2 border-ink bg-surface shadow-hard">
           <RouterLink to="/account" class="block px-3 py-2 text-xs font-bold hover:bg-paper">我的账号</RouterLink>
           <button type="button" class="block w-full border-t-2 border-ink px-3 py-2 text-left text-xs font-bold hover:bg-paper" @click="logout">登出</button>
@@ -2144,6 +2153,10 @@ VITE_API_BASE_URL=http://localhost:8080
 | `VITE_API_BASE_URL` | 后端 API 基地址（无尾斜杠） | 生产 `https://api.crearte.yoresee.cc`；dev 见 `src/.env.development` |
 | `VITE_HOST_ORIGIN` | 宿主站 origin（游戏运行时用） | `https://crearte.yoresee.cc` |
 | `VITE_GAMES_BASE_DOMAIN` | 游戏子域基域 | `crearte-games.yoresee.cc` |
+
+> **生产构建必须注入 `VITE_API_BASE_URL`**：`.env.development` 只管 dev；`build:e2e` 自带注入；生产走 `VITE_API_BASE_URL=https://api.crearte.yoresee.cc` 或部署侧注入，空值会退化为同源 `/api`。
+>
+> **后端 CORS 必须同时配置 `CORS_ALLOWED_ORIGINS` 放行前端 origin 并 expose `Retry-After`**（否则跨域下前端读不到 `Retry-After`，429 提示会退化为缺省 60 秒）。
 
 ## 账号系统本地联调
 
