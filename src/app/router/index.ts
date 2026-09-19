@@ -10,6 +10,7 @@ export const router = createRouter({
     { path: '/docs/:slug', name: 'doc', component: () => import('@/views/DocsView.vue'), props: true },
     { path: '/login', name: 'login', component: () => import('@/views/LoginView.vue') },
     { path: '/register', name: 'register', component: () => import('@/views/RegisterView.vue') },
+    { path: '/account', name: 'account', component: () => import('@/views/AccountView.vue'), meta: { requiresAuth: true } },
     { path: '/:pathMatch(.*)*', name: 'not-found', component: () => import('@/views/NotFoundView.vue') }
   ],
   scrollBehavior(to, _from, savedPosition) {
