@@ -6,6 +6,18 @@ All notable changes to this template should be documented in this file.
 The format loosely follows Keep a Changelog and can be adapted to the team's habits.
 本文档参考了 Keep a Changelog 的思路，也可以根据团队习惯调整。
 
+## [0.4.0] - 2026-09-19
+
+### Added / 新增
+
+- Added an outbound interstitial: every link that leaves the site now goes through `/out` with game and generic notice copy, an invalid-target error state, a strict http/https whitelist, and a render-time rewrite of external markdown links.
+- 新增外链中间页：所有离开本站的链接先经过 `/out`，含游戏版与普通版提示文案、非法目标错误态、严格 http/https 协议白名单，以及 markdown 外链的渲染期改写。
+
+### Changed / 变更
+
+- Game and author links on the detail page now open the interstitial first, and the about page documents the feedback email.
+- 详情页的游戏与作者链接改为先进入中间页；关于页补充邮箱反馈渠道。
+
 ## [0.2.0] - 2026-09-18
 
 ### Added / 新增
