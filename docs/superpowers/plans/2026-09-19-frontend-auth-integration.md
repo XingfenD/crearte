@@ -732,6 +732,8 @@ git commit -m "feat: add auth form validation"
 - 创建：`src/app/auth/client.ts`
 - 测试：`src/app/auth/client.test.ts`
 
+> 覆盖要点：改密端点必须断言 path（`/api/auth/change-password`）/method `POST`/`Bearer` 头/两个 snake_case 字段名（`current_password`、`new_password`）；`Retry-After` 缺失、非数字、`0`、负值一律回 `null`；非 JSON 错误体（如 502 HTML）走 `catch` 兜底 `internal`。
+
 - [ ] **步骤 1：写失败的测试**
 
 ```ts
@@ -799,6 +801,32 @@ describe('auth 客户端', () => {
       .rejects.toMatchObject({ status: 429, code: 'rate_limited', retryAfterSeconds: 42 })
   })
 
+  describe('Retry-After 边界', () => {
+    const cases: Array<[string, Record<string, string>]> = [
+      ['缺失该头', {}],
+      ['非数字', { 'Retry-After': 'abc' }],
+      ['0', { 'Retry-After': '0' }],
+      ['负值', { 'Retry-After': '-5' }]
+    ]
+
+    it.each(cases)('%s 一律回 null', async (_label, headers) => {
+      fetchMock.mockResolvedValueOnce(jsonResponse({ error: { code: 'rate_limited', message: 'slow down' } }, 429, headers))
+      await expect(client().login({ email: 'a@example.com', password: 'password1234' }))
+        .rejects.toMatchObject({ status: 429, code: 'rate_limited', retryAfterSeconds: null })
+    })
+  })
+
+  it('非 JSON 错误体兜底 internal 而不是抛 SyntaxError', async () => {
+    fetchMock.mockResolvedValueOnce({
+      ok: false,
+      status: 502,
+      headers: new Headers(),
+      json: async () => { throw new SyntaxError('bad json') }
+    } as unknown as Response)
+    await expect(client().login({ email: 'a@example.com', password: 'password1234' }))
+      .rejects.toMatchObject({ status: 502, code: 'internal' })
+  })
+
   it('401 unauthorized 触发钩子,invalid_credentials 不触发', async () => {
     const onUnauthorized = vi.fn()
     fetchMock.mockResolvedValueOnce(jsonResponse({ error: { code: 'unauthorized', message: 'x' } }, 401))
@@ -815,6 +843,22 @@ describe('auth 客户端', () => {
     await client().me('token-9')
     const init = fetchMock.mock.calls[0][1] as RequestInit
     expect((init.headers as Record<string, string>).Authorization).toBe('Bearer token-9')
+  })
+
+  it('changePassword 打对 path、Bearer 与两个 snake_case 字段名', async () => {
+    const auth = {
+      token: 't2',
+      expires_at: '2026-09-27T12:00:00Z',
+      user: { id: 'u1', email: 'a@example.com', display_name: 'A', role: 'user' }
+    }
+    fetchMock.mockResolvedValueOnce(jsonResponse(auth, 200))
+    const result = await client().changePassword('token-9', { currentPassword: 'old-password', newPassword: 'new-password' })
+    expect(fetchMock.mock.calls[0][0]).toBe(`${BASE}/api/auth/change-password`)
+    const init = fetchMock.mock.calls[0][1] as RequestInit
+    expect(init.method).toBe('POST')
+    expect((init.headers as Record<string, string>).Authorization).toBe('Bearer token-9')
+    expect(JSON.parse(String(init.body))).toEqual({ current_password: 'old-password', new_password: 'new-password' })
+    expect(result).toEqual(auth)
   })
 
   it('logoutAll 接受 204 空响应', async () => {
