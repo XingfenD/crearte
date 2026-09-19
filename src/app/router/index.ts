@@ -1,5 +1,6 @@
 import { createRouter, createWebHistory } from 'vue-router'
-import { session } from '@/auth'
+import { authEnabled, session } from '@/auth'
+import { resolveNavigation } from './guards'
 
 export const router = createRouter({
   history: createWebHistory(),
@@ -20,9 +21,9 @@ export const router = createRouter({
   }
 })
 
-router.beforeEach((to) => {
-  if (to.meta.requiresAuth === true && session.state.status !== 'authenticated') {
-    return { name: 'login', query: { next: to.fullPath } }
-  }
-  return true
-})
+router.beforeEach((to) =>
+  resolveNavigation(to, {
+    authEnabled,
+    authenticated: session.state.status === 'authenticated'
+  })
+)

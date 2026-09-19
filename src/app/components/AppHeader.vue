@@ -3,7 +3,7 @@ import { computed, ref, watch } from 'vue'
 import { RouterLink, useRoute } from 'vue-router'
 import { repo, type DocMeta, type GameSummary } from '@/data'
 import { useAsync } from '@/composables/useAsync'
-import { session } from '@/auth'
+import { authEnabled, session } from '@/auth'
 
 const route = useRoute()
 const detailsRef = ref<HTMLDetailsElement | null>(null)
@@ -60,19 +60,21 @@ function logout(): void {
         class="ml-auto hidden border-2 border-ink bg-highlight px-2 py-0.5 font-mono text-[0.6875rem] tracking-[0.05em] sm:inline-block"
       >{{ sticker }}</span>
 
-      <RouterLink
-        v-if="!user"
-        to="/login"
-        class="ml-auto border-2 border-ink bg-surface px-2 py-1 text-xs font-bold sm:ml-0"
-      >登录</RouterLink>
+      <template v-if="authEnabled">
+        <RouterLink
+          v-if="!user"
+          to="/login"
+          class="ml-auto border-2 border-ink bg-surface px-2 py-1 text-xs font-bold sm:ml-0"
+        >登录</RouterLink>
 
-      <details v-else ref="detailsRef" class="relative ml-auto sm:ml-0">
-        <summary class="list-none cursor-pointer select-none border-2 border-ink bg-surface px-2 py-1 text-xs font-bold [&::-webkit-details-marker]:hidden">{{ user.display_name }} ▾</summary>
-        <div class="absolute right-0 z-50 mt-1 w-32 border-2 border-ink bg-surface shadow-hard">
-          <RouterLink to="/account" class="block px-3 py-2 text-xs font-bold hover:bg-paper">我的账号</RouterLink>
-          <button type="button" class="block w-full border-t-2 border-ink px-3 py-2 text-left text-xs font-bold hover:bg-paper" @click="logout">登出</button>
-        </div>
-      </details>
+        <details v-else ref="detailsRef" class="relative ml-auto sm:ml-0">
+          <summary class="list-none cursor-pointer select-none border-2 border-ink bg-surface px-2 py-1 text-xs font-bold [&::-webkit-details-marker]:hidden">{{ user.display_name }} ▾</summary>
+          <div class="absolute right-0 z-50 mt-1 w-32 border-2 border-ink bg-surface shadow-hard">
+            <RouterLink to="/account" class="block px-3 py-2 text-xs font-bold hover:bg-paper">我的账号</RouterLink>
+            <button type="button" class="block w-full border-t-2 border-ink px-3 py-2 text-left text-xs font-bold hover:bg-paper" @click="logout">登出</button>
+          </div>
+        </details>
+      </template>
     </div>
   </header>
 </template>
