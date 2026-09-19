@@ -127,6 +127,8 @@ test('注册撞 409 提示已注册,登录成功后可回跳 /account', async ({
 
   // 页面同时存在 AppHeader 与注册表单底部的「登录」链接，取表单底部那一个
   await page.getByRole('link', { name: '登录' }).last().click()
+  // LoginView 是懒加载路由：必须等导航完成再填写，否则 fill 会落在注册页旧 DOM 上
+  await expect(page).toHaveURL(/\/login/)
   await page.getByLabel('邮箱').fill(EMAIL)
   await page.getByLabel('密码').fill(PASSWORD)
   await page.getByRole('button', { name: '登录' }).click()
