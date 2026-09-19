@@ -55,8 +55,10 @@
 |---|---|---|
 | 详情页「开始游戏」（`game.url`） | 直接 `target="_blank"` 外链 | `/out?kind=game&to=…` |
 | 详情页作者主页（`author.url`） | 直接 `target="_blank"` 外链 | `/out?kind=link&to=…` |
-| 文档正文外链（markdown 链接 + `linkify` 裸 URL） | 同标签直接离站，无 `rel` | 渲染期统一改写为 `/out?kind=link&to=…` |
+| 文档正文外链（markdown 链接 + `linkify` 裸 URL） | 同标签直接离站，无 `rel` | 渲染期统一改写为 `/out?kind=link&to=…`，并补 `target="_blank" rel="noopener"` |
 | 站内其它外链（关于页/页脚等后续新增） | — | 一律经统一改写入口 |
+
+实测补充：当前 `src/docs/*.md` 与各组件/视图里**没有任何外链**（全站 `target="_blank"` 只出现在 `GameView.vue` 两处）。文档正文的改写规则因此是**面向后续内容的防护**，不是对现存链接的修复。
 
 ### 4.3 判定规则
 
@@ -67,6 +69,7 @@
 - 站内路由路径与锚点（`/games/x`、`#toc`、空值）
 - 相对路径（`./x`、`x.md`）——它们在本站内解析
 - `mailto:` / `tel:`：不套中间页（不是"离站浏览"，且套上会破坏邮件客户端唤起）
+- 协议相对地址（`//evil.com`）**算外链**：`new URL('//evil.com', location.href)` 解析为当前协议 + 该 host，跨源，走中间页
 
 ## 5. 参数与安全
 
@@ -110,9 +113,10 @@
 
 ## 7. 交互与视觉
 
-- 入口链接：`<a href="/out?kind=…&to=…" target="_blank" rel="noopener">` —— 新标签打开，当前页（目录/文档）不被打断
-- 「继续访问」：`window.location.replace(target)`（不带 `noopener` 语义，`replace` 不新增历史项）
-- 「返回」：`history.back()`；若无可返回历史（直接打开中间页）则 `router.replace('/')`
+- 入口链接（`GameView.vue` 两处 + markdown 改写出的链接）：`<a href="/out?kind=…&to=…" target="_blank" rel="noopener">` —— 新标签打开，当前页（目录/文档）不被打断
+- 「继续访问」：`window.location.replace(target)`（`replace` 不新增历史项，中间页因此不留在历史里）
+- 「返回」：`history.back()`；无历史可回时 `router.replace('/')`。中间页固定在新标签打开，该标签的历史里只有中间页这一项，因此实际表现是回到站内首页——这是**有意接受的确定性行为**；**不使用 `window.close()`**：各浏览器对非脚本打开的标签限制不一，失败时静默无反应，比回首页更糟
+- **Referrer 策略**：用 `location.replace` 离开会让目标站收到 `Referer: <本站>/out?to=…`，原本入口上的 `rel="noreferrer"` 因此丢失。本期**不抑制**：`location.replace` 无法按次设置 `referrerpolicy`，而在 `index.html` 全局加 `<meta name="referrer">` 会波及整个 SPA 的所有导航与子资源。中间页 URL 不含隐私信息，且目标站本就知道自己的地址
 - 键盘可达：两个按钮为原生 `<button>`/`<a>`，Tab 顺序为 继续访问 → 返回；错误态只有一个按钮
 - 视觉沿用平面海报令牌（`.lift`、`.btn-ink`、零渐变、全直角），与现有 `StatePanel` 的错误态风格一致
 - 中间页为独立全页视图（`views/OutboundView.vue`），复用 `AppHeader`/`AppFooter`
@@ -121,13 +125,16 @@
 
 ```
 src/app/
-├── lib/
-│   ├── externalLink.ts        # isExternalHref / toInterstitial / parseTarget（纯函数）
-│   └── externalLink.test.ts
-├── views/OutboundView.vue     # 中间页（三种态：game / link / invalid）
+├── lib/externalLink.ts        # isExternalHref / toInterstitial / parseTarget（纯函数）
+├── lib/externalLink.test.ts
 ├── lib/markdown.ts            # 渲染期改写 <a>（link_open 规则）为 /out?kind=link&to=…
+├── lib/markdown.test.ts       # 追加改写用例（既有文件）
+├── views/OutboundView.vue     # 中间页（三种态：game / link / invalid）
+├── views/GameView.vue         # 两处外链 <a> 改经 toInterstitial()（既有文件）
 └── router/index.ts            # + { path: '/out', name: 'outbound', component: OutboundView }
 ```
+
+另需改动：`src/docs/about.md` 免责声明补邮箱反馈渠道（见 §6.4）。
 
 - `externalLink.ts` 只依赖 `URL` 与 `location`（location 以参数注入，便于测试）
 - 详情页两处 `<a>` 改为经 `toInterstitial()` 生成 href；文档渲染改写集中在 `markdown.ts` 一处
@@ -137,7 +144,7 @@ src/app/
 
 ### 9.1 单测（vitest）
 
-- `isExternalHref`：同源绝对地址 / 跨域 http(s) / 协议相对（`//evil.com`）/ 站内路径 / 锚点 / 空值 / `mailto:` / 非法串
+- `isExternalHref`：同源绝对地址（→ 否）/ 跨域 http(s)（→ 是）/ 协议相对 `//evil.com`（→ 是）/ 站内路径与锚点 / 空值 / `mailto:`（→ 否）/ 非法串
 - `toInterstitial`：正确编码（目标 URL 自带 query 与 `&`、`#`、中文、空格）；`kind` 缺省与非法值归一
 - `parseTarget`：`javascript:`、`data:`、`file:`、相对路径、空值、超长 → 无效；`http`/`https` → 通过；`host` 提取（含端口、IDN）
 - 同源目标：返回"直接导航"结果而非中间页
