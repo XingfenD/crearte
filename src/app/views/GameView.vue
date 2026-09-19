@@ -18,7 +18,9 @@ const { data: game, error, loading, reload } = useAsync<Game>(
 )
 
 const notFound = computed(() => error.value instanceof NotFoundError)
-const introHtml = computed(() => (game.value?.intro ? renderMarkdown(game.value.intro) : ''))
+const introHtml = computed(() =>
+  game.value?.intro ? renderMarkdown(game.value.intro, location.origin) : ''
+)
 const playable = computed(() => game.value?.runtime === 'virtual' || game.value?.runtime === 'hosted')
 function onExit(): void {
   router.push('/')

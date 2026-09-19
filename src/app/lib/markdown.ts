@@ -1,4 +1,5 @@
 import MarkdownIt, { type Token } from 'markdown-it'
+import { isExternalHref, toInterstitial } from './externalLink'
 
 const md = new MarkdownIt({ html: false, linkify: true })
 
@@ -6,6 +7,17 @@ md.renderer.rules.table_open = (tokens, idx, options, _env, self) =>
   `<div class="md-table-wrap">${self.renderToken(tokens, idx, options)}`
 md.renderer.rules.table_close = (tokens, idx, options, _env, self) =>
   `${self.renderToken(tokens, idx, options)}</div>`
+
+md.renderer.rules.link_open = (tokens, idx, options, env, self) => {
+  const href = tokens[idx].attrGet('href')
+  const origin = typeof env?.origin === 'string' ? env.origin : ''
+  if (typeof href === 'string' && isExternalHref(href, origin)) {
+    tokens[idx].attrSet('href', toInterstitial(href))
+    tokens[idx].attrSet('target', '_blank')
+    tokens[idx].attrSet('rel', 'noopener')
+  }
+  return self.renderToken(tokens, idx, options)
+}
 
 export interface TocItem {
   level: 2 | 3
@@ -44,8 +56,8 @@ function walkHeadings(tokens: Token[]): Array<{ token: Token; item: TocItem }> {
   return found
 }
 
-export function renderMarkdown(source: string): string {
-  const env: Record<string, unknown> = {}
+export function renderMarkdown(source: string, origin: string): string {
+  const env: Record<string, unknown> = { origin }
   const tokens = md.parse(source, env)
   for (const { token, item } of walkHeadings(tokens)) token.attrSet('id', item.id)
   return md.renderer.render(tokens, md.options, env)
