@@ -17,6 +17,7 @@ The format loosely follows Keep a Changelog and can be adapted to the team's hab
 
 - The account entry is now optional: without `VITE_API_BASE_URL` the login entry is hidden, auth routes redirect home and no auth requests are sent; added an `e2e:noauth` suite covering the disabled build.
 - 账号入口改为可选：未配置 `VITE_API_BASE_URL` 时隐藏登录入口、auth 路由重定向首页且不发起 auth 请求；新增 `e2e:noauth` 套件覆盖关闭态构建。
+
 ## [0.6.0] - 2026-09-19
 
 ### Changed / 变更

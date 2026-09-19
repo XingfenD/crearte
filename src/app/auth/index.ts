@@ -2,7 +2,7 @@ import { createAuthClient } from './client'
 import { createAuthSession, type AuthSession } from './session'
 import { createSessionStore, type SessionStore } from './storage'
 
-const baseUrl = import.meta.env.VITE_API_BASE_URL ?? ''
+const baseUrl = (import.meta.env.VITE_API_BASE_URL ?? '').trim()
 
 export const authEnabled = baseUrl !== ''
 
