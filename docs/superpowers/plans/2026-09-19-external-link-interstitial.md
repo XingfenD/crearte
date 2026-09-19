@@ -610,6 +610,12 @@ git commit -m "feat: add the outbound interstitial view"
 import { toInterstitialIfExternal } from '@/lib/externalLink'
 ```
 
+再在 `<script setup>` 里（`const playable = ...` 附近）加一行——Vue 模板作用域不把 `location` 列入可访问全局，直接在模板里写 `location.origin` 会被 `vue-tsc` 拒掉：
+
+```ts
+const origin = location.origin
+```
+
 - [ ] **步骤 2：改作者主页链接**
 
 把作者主页的 `<a>` 改成：
@@ -617,7 +623,7 @@ import { toInterstitialIfExternal } from '@/lib/externalLink'
 ```vue
           <a
             v-if="game.author.url"
-            :href="toInterstitialIfExternal(game.author.url, location.origin)"
+            :href="toInterstitialIfExternal(game.author.url, origin)"
             target="_blank"
             rel="noopener"
             class="text-accent-ink underline decoration-2 underline-offset-2"
@@ -631,7 +637,7 @@ import { toInterstitialIfExternal } from '@/lib/externalLink'
 ```vue
       <a
         v-else
-        :href="toInterstitialIfExternal(game.url, location.origin, 'game')"
+        :href="toInterstitialIfExternal(game.url, origin, 'game')"
         target="_blank"
         rel="noopener"
         class="lift inline-flex items-center gap-2 border-2 border-ink bg-ink px-5 py-2.5 font-extrabold text-paper shadow-hard-accent hover:shadow-hard-accent-lg active:shadow-none"
