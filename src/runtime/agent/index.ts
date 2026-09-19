@@ -107,7 +107,7 @@ function denyServiceWorker(win: Window): void {
 }
 
 function createServiceWorkerDenial() {
-  const deny = () => { throw new DOMException('运行时已禁用游戏自注册 Service Worker', 'SecurityError') }
+  const deny = () => { throw new DOMException('运行时已禁用自注册 Service Worker', 'SecurityError') }
   // ready 保持 rejected 语义；预先挂 catch 避免无人消费时触发 unhandledrejection 被自身上报为 game:error
   const ready = Promise.reject(new Error('disabled'))
   void ready.catch(() => undefined)

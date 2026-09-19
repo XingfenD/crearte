@@ -6,6 +6,13 @@ All notable changes to this template should be documented in this file.
 The format loosely follows Keep a Changelog and can be adapted to the team's habits.
 本文档参考了 Keep a Changelog 的思路，也可以根据团队习惯调整。
 
+## [0.7.2] - 2026-09-20
+
+### Changed / 变更
+
+- Dropped game-only wording from the site copy: catalog, detail, outbound and runtime messages now say 作品, and the docs (built-in pages and repo README) scope collections to static web works beyond games (assessments, small tools).
+- 站内文案去除「游戏」语义：目录、详情、外链中间页与运行时提示统一改为「作品」，内置文档与仓库 README 把收录范围扩展到游戏之外的静态网页作品（测评、小工具等）。
+
 ## [0.7.1] - 2026-09-20
 
 ### Changed / 变更

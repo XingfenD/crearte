@@ -60,7 +60,7 @@ export function useGameFrame(options: GameFrameOptions) {
     clearBridgeWarn()
     bridgeWarn = setTimeout(() => {
       bridgeWarn = null
-      console.warn(`[game-runtime] hosted 目标 ${url} 在 3s 内未收到 agent:boot，桥不可用；游戏仍可继续游玩`)
+      console.warn(`[game-runtime] hosted 目标 ${url} 在 3s 内未收到 agent:boot，桥不可用；作品仍可继续运行`)
     }, BRIDGE_WARN_MS)
   }
 

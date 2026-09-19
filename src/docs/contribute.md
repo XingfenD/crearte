@@ -3,7 +3,7 @@ title: 收录与提交
 order: 2
 ---
 
-## 提交一个游戏
+## 提交一个作品
 
 1. 在仓库 `src/games/` 目录新增 `<id>.json`，`id` 只能包含小写字母、数字与连字符，且与文件名一致
 2. 本地运行校验：`cd src && npm install && npm run validate:data`
@@ -13,8 +13,8 @@ order: 2
 
 | 字段 | 说明 |
 | --- | --- |
-| `name` | 游戏名（≤ 60 字） |
-| `url` | 游戏访问链接（仅 https） |
+| `name` | 作品名（≤ 60 字） |
+| `url` | 作品访问链接（仅 https） |
 | `author` | 作者或团队，`url` 可选 |
 | `description` | 一句话简介（≤ 140 字） |
 | `intro` | 可选，详情页 Markdown 长简介 |

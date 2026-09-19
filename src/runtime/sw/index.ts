@@ -9,7 +9,7 @@ import { extractZip, ZIP_LIMITS, ZipError } from './unzip'
 declare const self: ServiceWorkerGlobalScope
 
 const AGENT_SOURCE_URL = '/agent.js'
-const OFFLINE_BOOTSTRAP_HTML = '<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><title>游戏未安装</title></head><body><p>该游戏尚未安装，无法离线运行。请联网后重试。</p></body></html>'
+const OFFLINE_BOOTSTRAP_HTML = '<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><title>作品未安装</title></head><body><p>该作品尚未安装，无法离线运行。请联网后重试。</p></body></html>'
 
 // Chrome 会在 activate 的 waitUntil 结算前就解析 navigator.serviceWorker.ready，
 // shell 可能在 activate 期间就发来 runtime:install；激活清理必须先结算，安装再开始。

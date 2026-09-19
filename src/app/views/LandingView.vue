@@ -41,7 +41,7 @@ const stats = computed(() => {
     <div class="mx-auto my-5 h-[3px] w-16 bg-ink"></div>
     <p class="text-sm text-ink-soft">{{ TAGLINE }}</p>
     <div class="mt-6 flex flex-wrap justify-center gap-3">
-      <RouterLink to="/games" class="btn-ink lift hover:shadow-hard active:shadow-none">进入游戏目录</RouterLink>
+      <RouterLink to="/games" class="btn-ink lift hover:shadow-hard active:shadow-none">进入作品目录</RouterLink>
       <RouterLink to="/docs/about" class="btn-surface lift hover:shadow-hard active:shadow-none">关于本站</RouterLink>
     </div>
     <p v-if="stats" class="mt-6 flex flex-wrap justify-center gap-x-4 gap-y-1 font-mono text-[0.6875rem] tracking-[0.05em] text-ink-soft">
@@ -63,7 +63,7 @@ const stats = computed(() => {
         <GameCard v-for="game in featured" :key="game.id" :game="game" :heading-level="3" />
       </div>
       <p v-else class="mt-3 border-2 border-dashed border-ink p-10 text-center text-sm text-ink-soft">
-        还没有收录游戏。
+        还没有收录作品。
       </p>
     </StatePanel>
   </section>
