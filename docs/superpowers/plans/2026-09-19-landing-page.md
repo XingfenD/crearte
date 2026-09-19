@@ -672,7 +672,7 @@ git commit -m "feat: add submit and docs entry cards to the landing page"
 - [ ] **步骤 2：验证渲染位置**
 
 运行：`cd /root/crearte_mono/crearte && head -30 docs/CHANGELOG.md`
-预期：`0.5.0` 在最上，其下依次 `0.4.1`、`0.4.0`、`0.3.0`
+预期：`0.5.0` 在最上，其下依次 `0.4.1`、`0.4.0`、`0.2.0`（master 上**没有** `0.3.0`——该号预留给 `integration/backend` 线；本任务不得凭空补写它）
 
 - [ ] **步骤 3：Commit**
 
