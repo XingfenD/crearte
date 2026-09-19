@@ -18,7 +18,7 @@ export const AUTH_ERROR_MESSAGES: Record<AuthErrorCode, string> = {
   email_taken: '该邮箱已注册，可直接登录',
   invalid_credentials: '邮箱或密码不正确',
   unauthorized: '登录已过期，请重新登录',
-  rate_limited: '操作太频繁，请稍后重试',
+  rate_limited: '操作太频繁，请 60 秒后重试',
   internal: '服务暂时不可用，请稍后重试',
   network: '网络连接失败，请检查网络后重试'
 }

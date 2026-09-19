@@ -293,6 +293,8 @@ git commit -m "feat: add cors allowed origins"
 
 - [ ] **步骤 1：写失败的测试**
 
+说明：`rate_limited` 缺省文案为 60 秒（`操作太频繁，请 60 秒后重试`），与规格 §6.2 一致；`Retry-After` 存在时按响应值渲染秒数。
+
 ```ts
 import { describe, expect, it } from 'vitest'
 import { AUTH_ERROR_MESSAGES, AuthApiError, toUserMessage } from './errors'
@@ -306,6 +308,11 @@ describe('auth 错误映射', () => {
   it('rate_limited 带 Retry-After 时给出秒数', () => {
     expect(toUserMessage(new AuthApiError(429, 'rate_limited', 'x', 42))).toBe('操作太频繁，请 42 秒后重试')
     expect(toUserMessage(new AuthApiError(429, 'rate_limited', 'x'))).toBe(AUTH_ERROR_MESSAGES.rate_limited)
+  })
+
+  it('缺省限流文案固定为 60 秒', () => {
+    expect(AUTH_ERROR_MESSAGES.rate_limited).toBe('操作太频繁，请 60 秒后重试')
+    expect(toUserMessage(new AuthApiError(429, 'rate_limited', 'x'))).toBe('操作太频繁，请 60 秒后重试')
   })
 
   it('未知错误按网络失败兜底', () => {
@@ -370,7 +377,7 @@ export const AUTH_ERROR_MESSAGES: Record<AuthErrorCode, string> = {
   email_taken: '该邮箱已注册，可直接登录',
   invalid_credentials: '邮箱或密码不正确',
   unauthorized: '登录已过期，请重新登录',
-  rate_limited: '操作太频繁，请稍后重试',
+  rate_limited: '操作太频繁，请 60 秒后重试',
   internal: '服务暂时不可用，请稍后重试',
   network: '网络连接失败，请检查网络后重试'
 }

@@ -12,6 +12,11 @@ describe('auth 错误映射', () => {
     expect(toUserMessage(new AuthApiError(429, 'rate_limited', 'x'))).toBe(AUTH_ERROR_MESSAGES.rate_limited)
   })
 
+  it('缺省限流文案固定为 60 秒', () => {
+    expect(AUTH_ERROR_MESSAGES.rate_limited).toBe('操作太频繁，请 60 秒后重试')
+    expect(toUserMessage(new AuthApiError(429, 'rate_limited', 'x'))).toBe('操作太频繁，请 60 秒后重试')
+  })
+
   it('未知错误按网络失败兜底', () => {
     expect(toUserMessage(new Error('boom'))).toBe(AUTH_ERROR_MESSAGES.network)
     expect(toUserMessage('boom')).toBe(AUTH_ERROR_MESSAGES.network)
