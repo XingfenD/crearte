@@ -219,7 +219,9 @@ git commit -m "feat: add pickFeatured balanced type sampling"
 - 重命名：`src/app/views/HomeView.vue` → `src/app/views/CatalogView.vue`
 - 创建：`src/app/views/LandingView.vue`
 - 修改：`src/app/router/index.ts`
-- 修改：`src/app/components/AppHeader.vue:1-33`
+- 修改：`src/app/components/AppHeader.vue:1-33`（判定拆分 + 导航「游戏」改指 `/games`）
+- 修改：`src/app/views/GameView.vue:37,42`（两处「返回目录」改指 `/games`）
+- 修改：`src/app/views/NotFoundView.vue:14`（「返回目录」改指 `/games`）
 - 测试：`src/e2e/landing.spec.ts`
 
 - [ ] **步骤 1：重命名目录页文件（内容一行不改）**
@@ -278,7 +280,22 @@ const sticker = computed(() => {
 
 模板**不动**（导航 `:class` 继续用 `onCatalog`，`:aria-current` 条件也不动）。
 
-- [ ] **步骤 4：创建落地页（hero + 统计条）**
+- [ ] **步骤 4：把所有「回目录」的链接改指 `/games`**
+
+`/` 的语义从「目录」变成「落地页」，四处标签写着「游戏」或「返回目录」、但 `to` 仍是 `/` 的链接必须一起改，否则点下去回的是落地页：
+
+```
+app/components/AppHeader.vue:36   to="/"  →  to="/games"
+app/views/GameView.vue:37         to="/"  →  to="/games"
+app/views/GameView.vue:42         to="/"  →  to="/games"
+app/views/NotFoundView.vue:14     to="/"  →  to="/games"
+```
+
+`AppHeader.vue:31` 的品牌 `crearte` 贴纸保持 `to="/"`（落地页就是首页）。
+
+预期：`grep -rn 'to="/"' src/app` 只剩 `AppHeader.vue:31` 一处。
+
+- [ ] **步骤 5：创建落地页（hero + 统计条）**
 
 创建 `src/app/views/LandingView.vue`：
 
@@ -325,7 +342,7 @@ const stats = computed(() => {
 
 要点：`<h1>` 是**可见**的（目录页那个 `sr-only` h1 不动）；统计条在 `stats` 为 `null`（数据未就绪 / 失败 / 收录为空）时整条隐藏；hero 不包在 `StatePanel` 里，因此任何数据状态都渲染。
 
-- [ ] **步骤 5：编写 e2e**
+- [ ] **步骤 6：编写 e2e**
 
 创建 `src/e2e/landing.spec.ts`：
 
@@ -347,7 +364,19 @@ test('落地页上页头导航都不激活，但贴纸显示收录数', async ({
 
   await expect(page.getByRole('link', { name: '游戏', exact: true })).not.toHaveAttribute('aria-current', 'page')
   await expect(page.getByRole('link', { name: '文档', exact: true })).not.toHaveAttribute('aria-current', 'page')
+  await expect(page.getByRole('link', { name: '游戏', exact: true })).toHaveAttribute('href', '/games')
   await expect(page.getByText('共 15 款')).toBeVisible()
+})
+
+test('回目录的链接都指向 /games', async ({ page }) => {
+  await page.goto('http://localhost:4173/games')
+  await expect(page.getByRole('link', { name: '游戏', exact: true })).toHaveAttribute('href', '/games')
+
+  await page.goto('http://localhost:4173/games/2048')
+  await expect(page.getByRole('link', { name: '返回目录' })).toHaveAttribute('href', '/games')
+
+  await page.goto('http://localhost:4173/no-such-page')
+  await expect(page.getByRole('link', { name: '返回目录' })).toHaveAttribute('href', '/games')
 })
 
 test('目录迁到 /games 且导航激活', async ({ page }) => {
@@ -366,21 +395,21 @@ test('从落地页进入目录', async ({ page }) => {
 })
 ```
 
-- [ ] **步骤 6：类型检查与构建**
+- [ ] **步骤 7：类型检查与构建**
 
 运行：`cd src && npm run typecheck && npm run build`
 预期：`typecheck` 无输出；`build` 末尾出现 `✓ built in …` 与 `[build-runtime] dist/sw.js, dist/agent.js, dist/bootstrap/index.html (self-contained)`
 
-- [ ] **步骤 7：运行 e2e**
+- [ ] **步骤 8：运行 e2e**
 
 运行：`cd src && lsof -ti:4173 | xargs -r kill; npm run e2e`
-预期：**30 passed**（master 基线 26 + 本次新增 4）
+预期：**31 passed**（master 基线 26 + 本次新增 5）
 
-- [ ] **步骤 8：Commit**
+- [ ] **步骤 9：Commit**
 
 ```bash
 cd /root/crearte_mono/crearte
-git add src/app/views/CatalogView.vue src/app/views/HomeView.vue src/app/views/LandingView.vue src/app/router/index.ts src/app/components/AppHeader.vue src/e2e/landing.spec.ts
+git add src/app/views/CatalogView.vue src/app/views/HomeView.vue src/app/views/LandingView.vue src/app/views/GameView.vue src/app/views/NotFoundView.vue src/app/router/index.ts src/app/components/AppHeader.vue src/e2e/landing.spec.ts
 git commit -m "feat: add landing page at / and move the catalog to /games"
 ```
 
@@ -505,7 +534,7 @@ test('空数据时统计条隐藏、精选区显示空态', async ({ page }) => 
 - [ ] **步骤 3：类型检查与 e2e**
 
 运行：`cd src && npm run typecheck && npm run build && lsof -ti:4173 | xargs -r kill; npm run e2e`
-预期：typecheck 无输出；**34 passed**（上一任务 30 + 本次新增 4）
+预期：typecheck 无输出；**35 passed**（上一任务 31 + 本次新增 4）
 
 - [ ] **步骤 4：Commit**
 
@@ -586,7 +615,7 @@ test('数据失败时两个入口卡仍在', async ({ page }) => {
 - [ ] **步骤 3：类型检查与 e2e**
 
 运行：`cd src && npm run typecheck && npm run build && lsof -ti:4173 | xargs -r kill; npm run e2e`
-预期：typecheck 无输出；**37 passed**（上一任务 34 + 本次新增 3）
+预期：typecheck 无输出；**38 passed**（上一任务 35 + 本次新增 3）
 
 - [ ] **步骤 4：Commit**
 
@@ -644,7 +673,7 @@ git commit -m "docs: record 0.5.0 landing page"
 - [ ] **步骤 1：跑完整门禁**
 
 运行：`cd src && lsof -ti:4173 | xargs -r kill; npm run check && npm run e2e`
-预期：`check` 里 vitest 全绿（含新增 6 个 `featured` 用例）、`vue-tsc` 无输出、`vite build` 成功；e2e **37 passed**
+预期：`check` 里 vitest 全绿（含新增 6 个 `featured` 用例）、`vue-tsc` 无输出、`vite build` 成功；e2e **38 passed**
 
 - [ ] **步骤 2：逐节核对规格**
 

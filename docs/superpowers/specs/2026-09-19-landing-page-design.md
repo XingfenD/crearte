@@ -82,9 +82,24 @@ hero 内部自上而下：
 `AppHeader.vue` 现在只有一个 `onCatalog = (route.name === 'home')`，同时管**导航激活**与**贴纸**两件事。目录改名后必须拆成两个判定：
 
 - `onCatalog`（导航激活）：`route.name === 'catalog'` → 「游戏」只在 `/games` 激活；落地页上两项导航都不激活；详情页 `/games/:id` 仍不激活（行为不变）
+- 「游戏」的 `to` 从 `/` 改为 `/games`：否则该导航项点下去回的是落地页，而它只在 `catalog` 路由激活，等于永远不亮
 - `showGameCount`（贴纸）：`route.name === 'catalog' || route.name === 'home'` → 落地页与目录页都显示「共 N 款」；文档页仍显示「共 N 篇」
 - 「文档」判定 `onDocs` 不变；品牌 `crearte` 贴纸仍指 `/`
 - 落地页上 `AppHeader` 会取一次 `repo.listGames()`（与落地页自身请求同源，`staticRepo` 有 `cachedGames` 缓存，**不产生第二次网络请求**）
+
+### 4.4 指向目录的其它链接
+
+`/` 的语义从「目录」变成「落地页」，所有**指向目录**的既有链接必须一并改到 `/games`，否则标签与实际落点不符：
+
+| 位置 | 现状 | 改动后 |
+|---|---|---|
+| `AppHeader.vue` 导航「游戏」 | `to="/"` | `to="/games"` |
+| `GameView.vue` 未找到分支的「返回目录」 | `to="/"` | `to="/games"` |
+| `GameView.vue` 详情页顶部的「返回目录」 | `to="/"` | `to="/games"` |
+| `NotFoundView.vue` 的「返回目录」 | `to="/"` | `to="/games"` |
+| `AppHeader.vue` 品牌 `crearte` 贴纸 | `to="/"` | **不变**（落地页就是首页） |
+
+落地页自身的两个入口（hero 主 CTA「进入游戏目录」、精选区「查看全部 N 款 →」）本来就指向 `/games`。
 
 ## 5. 精选规则
 
@@ -179,7 +194,9 @@ src/app/
 ├── lib/featured.test.ts       # 新增
 ├── views/LandingView.vue      # 落地页（新增）
 ├── views/CatalogView.vue      # 目录（由 HomeView.vue 重命名，内容不改）
-├── components/AppHeader.vue   # onCatalog 判定修正 + showGameCount（既有文件）
+├── components/AppHeader.vue   # onCatalog / showGameCount 拆分 + 导航「游戏」改指 /games（既有文件）
+├── views/GameView.vue         # 两处「返回目录」改指 /games（既有文件）
+├── views/NotFoundView.vue     # 「返回目录」改指 /games（既有文件）
 └── router/index.ts            # / → LandingView、/games → CatalogView（既有文件）
 ```
 
@@ -214,6 +231,8 @@ src/app/
 - 精选卡片数 = `6`（上限截断）；e2e 数据由 `build-data.mjs --with-fixtures` 产出（真实 4 款 + 夹具，收录数 > 6），因此必然被截断到 6
 - 卡片顺序等于 `pickFeatured(该夹具数据)` 的结果——**不能照抄 §5 里线上 4 款的示例**，§5 那段只用于说明规则
 - 点「进入游戏目录」→ URL 为 `/games`，且目录的搜索框可见
+- 页头导航「游戏」在 `/` 与 `/games` 上的 `href` 均为 `/games`（防它退回指向落地页）
+- `/games/2048`（详情页）与未知路径（catch-all 落到 `NotFoundView`）上的「返回目录」`href` 为 `/games`
 - 点「查看全部 N 款 →」→ 同上
 - 投稿卡邮箱：断言锚点 `href` 以 `mailto:` 开头（**不点击**，避免唤起邮件客户端），且**未**被改写成 `/out`
 - 数据失败：`page.route` 拦 `/data/index.json` 返回 500 → 断言 hero 文案与双卡**仍在**、精选区显示错误态与重试按钮
