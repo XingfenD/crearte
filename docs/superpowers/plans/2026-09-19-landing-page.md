@@ -371,7 +371,10 @@ test('落地页上页头导航都不激活，但贴纸显示收录数', async ({
   await page.goto('http://localhost:4173/')
 
   await expect(page.getByRole('link', { name: '游戏', exact: true })).not.toHaveAttribute('aria-current', 'page')
-  await expect(page.getByRole('link', { name: '文档', exact: true })).not.toHaveAttribute('aria-current', 'page')
+  await expect(page.getByRole('navigation').getByRole('link', { name: '文档', exact: true })).not.toHaveAttribute(
+    'aria-current',
+    'page'
+  )
   await expect(page.getByRole('link', { name: '游戏', exact: true })).toHaveAttribute('href', '/games')
   await expect(page.getByText('共 15 款')).toBeVisible()
 })
@@ -593,6 +596,8 @@ const CONTACT_EMAIL = 'xingfen.fendy@outlook.com'
 ```
 
 要点：邮箱是普通 `mailto:` 锚点，**不经 `/out` 中间页**（与中间页规格 §4.3 一致）；两块不依赖数据，任何状态都渲染。
+
+⚠️ 本卡的「文档」链接与页头导航的同名链接（都在页面上，但页头在 `<main>` 之外）会让任务 2 里未加作用域的 `getByRole('link', { name: '文档', exact: true })` 命中 2 个元素、触发 Playwright strict mode violation。因此该断言同步加作用域 `page.getByRole('navigation')...`（意图「页头导航」本就该限定在导航内，语义更准）。
 
 - [ ] **步骤 2：扩展 e2e**
 
