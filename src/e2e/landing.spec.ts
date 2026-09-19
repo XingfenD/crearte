@@ -14,7 +14,10 @@ test('落地页上页头导航都不激活，但贴纸显示收录数', async ({
   await page.goto('http://localhost:4173/')
 
   await expect(page.getByRole('link', { name: '游戏', exact: true })).not.toHaveAttribute('aria-current', 'page')
-  await expect(page.getByRole('link', { name: '文档', exact: true })).not.toHaveAttribute('aria-current', 'page')
+  await expect(page.getByRole('navigation').getByRole('link', { name: '文档', exact: true })).not.toHaveAttribute(
+    'aria-current',
+    'page'
+  )
   await expect(page.getByRole('link', { name: '游戏', exact: true })).toHaveAttribute('href', '/games')
   await expect(page.getByText('共 15 款')).toBeVisible()
 })
@@ -93,4 +96,27 @@ test('空数据时统计条隐藏、精选区显示空态', async ({ page }) => 
 
   await expect(page.getByText('还没有收录游戏。')).toBeVisible()
   await expect(page.getByText('收录 0 款')).toHaveCount(0)
+})
+
+test('投稿卡邮箱走 mailto、不套中间页', async ({ page }) => {
+  await page.goto('http://localhost:4173/')
+
+  await expect(page.getByRole('link', { name: 'xingfen.fendy@outlook.com' })).toHaveAttribute(
+    'href',
+    'mailto:xingfen.fendy@outlook.com'
+  )
+})
+
+test('文档入口卡指向 /docs', async ({ page }) => {
+  await page.goto('http://localhost:4173/')
+
+  await expect(page.locator('main').getByRole('link', { name: '文档', exact: true })).toHaveAttribute('href', '/docs')
+})
+
+test('数据失败时两个入口卡仍在', async ({ page }) => {
+  await page.route('**/data/index.json', (route) => route.fulfill({ status: 500, body: 'boom' }))
+  await page.goto('http://localhost:4173/')
+
+  await expect(page.getByRole('heading', { name: '想被收录？' })).toBeVisible()
+  await expect(page.getByRole('heading', { name: '文档' })).toBeVisible()
 })

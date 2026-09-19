@@ -9,6 +9,7 @@ import StatePanel from '@/components/StatePanel.vue'
 
 const SLOGAN = 'STATIC WEB GAMES'
 const TAGLINE = '收集可直接开玩的静态网页游戏 · 打开即玩、无需安装'
+const CONTACT_EMAIL = 'xingfen.fendy@outlook.com'
 const FEATURED_LIMIT = 6
 
 const { data: games, error, loading, reload } = useAsync<GameSummary[]>(() => repo.listGames())
@@ -57,4 +58,21 @@ const stats = computed(() => {
       </p>
     </StatePanel>
   </section>
+
+  <div class="mt-8 flex flex-col gap-4 sm:flex-row">
+    <section class="flex-1 border-2 border-ink bg-surface p-4 shadow-hard-sm">
+      <h3 class="text-sm font-black">想被收录？</h3>
+      <p class="mt-2 text-xs leading-relaxed text-ink-soft">
+        提交 issue 或 PR，也可以发邮件到
+        <a :href="`mailto:${CONTACT_EMAIL}`" class="underline">{{ CONTACT_EMAIL }}</a>
+      </p>
+    </section>
+    <section class="flex-1 border-2 border-ink bg-surface p-4 shadow-hard-sm">
+      <h3 class="text-sm font-black">文档</h3>
+      <p class="mt-2 text-xs leading-relaxed text-ink-soft">
+        收录标准、投稿方式与本站说明，见
+        <RouterLink to="/docs" class="underline">文档</RouterLink>。
+      </p>
+    </section>
+  </div>
 </template>
