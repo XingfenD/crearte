@@ -6,6 +6,18 @@ All notable changes to this template should be documented in this file.
 The format loosely follows Keep a Changelog and can be adapted to the team's habits.
 本文档参考了 Keep a Changelog 的思路，也可以根据团队习惯调整。
 
+## [0.5.0] - 2026-09-19
+
+### Added / 新增
+
+- Added a landing page at `/` with a poster-style hero, a collection counter, and a featured grid sampled by balanced type rotation; the catalog moved to `/games`.
+- 新增 `/` 落地页：海报式 hero、收录统计条，以及按类型均衡取样得出的精选网格；目录迁至 `/games`。
+
+### Changed / 变更
+
+- The header badge shows the collection count on the landing page too, while navigation highlighting still follows the catalog route only.
+- 页头贴纸在落地页也显示收录数；导航激活仍只看目录路由。
+
 ## [0.4.1] - 2026-09-19
 
 ### Changed / 变更
