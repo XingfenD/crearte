@@ -11,12 +11,13 @@ const detailsRef = ref<HTMLDetailsElement | null>(null)
 watch(() => route.fullPath, () => {
   if (detailsRef.value?.open) detailsRef.value.open = false
 })
-const onCatalog = computed(() => route.name === 'home')
+const onCatalog = computed(() => route.name === 'catalog')
+const showGameCount = computed(() => route.name === 'catalog' || route.name === 'home')
 const onDocs = computed(() => route.name === 'docs' || route.name === 'doc')
 
 const { data: games } = useAsync<GameSummary[] | null>(
-  () => (onCatalog.value ? repo.listGames() : Promise.resolve(null)),
-  [onCatalog]
+  () => (showGameCount.value ? repo.listGames() : Promise.resolve(null)),
+  [showGameCount]
 )
 const { data: docs } = useAsync<DocMeta[] | null>(
   () => (onDocs.value ? repo.listDocs() : Promise.resolve(null)),
@@ -24,7 +25,7 @@ const { data: docs } = useAsync<DocMeta[] | null>(
 )
 
 const sticker = computed(() => {
-  if (onCatalog.value && games.value) return `共 ${games.value.length} 款`
+  if (showGameCount.value && games.value) return `共 ${games.value.length} 款`
   if (onDocs.value && docs.value) return `共 ${docs.value.length} 篇`
   return 'STATIC WEB GAMES'
 })
@@ -40,11 +41,11 @@ function logout(): void {
   <header class="sticky top-0 z-40 border-b-[3px] border-ink bg-paper">
     <div class="mx-auto flex h-14 w-full max-w-6xl items-center gap-6 px-4">
       <RouterLink to="/" class="bg-ink px-2 py-1 text-sm font-extrabold tracking-[0.04em] text-paper">
-        网页游戏收藏馆
+        crearte <span class="text-[0.6875rem] tracking-[0.2em]">创艺</span>
       </RouterLink>
       <nav class="flex gap-4 text-sm font-bold">
         <RouterLink
-          to="/"
+          to="/games"
           class="border-b-[3px] pb-0.5 text-sm font-bold"
           :class="onCatalog ? 'border-b-accent-ink text-accent-ink' : 'border-b-transparent text-ink-soft'"
           :aria-current="onCatalog ? 'page' : undefined"

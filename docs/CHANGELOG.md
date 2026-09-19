@@ -17,6 +17,55 @@ The format loosely follows Keep a Changelog and can be adapted to the team's hab
 
 - The account entry is now optional: without `VITE_API_BASE_URL` the login entry is hidden, auth routes redirect home and no auth requests are sent; added an `e2e:noauth` suite covering the disabled build.
 - 账号入口改为可选：未配置 `VITE_API_BASE_URL` 时隐藏登录入口、auth 路由重定向首页且不发起 auth 请求；新增 `e2e:noauth` 套件覆盖关闭态构建。
+## [0.6.0] - 2026-09-19
+
+### Changed / 变更
+
+- Scoped the open-source promise: this repository is the official frontend; the static catalog stays self-hostable, while account, upload and moderation features depend on the private backend.
+- 明确开源边界：本仓为官方前端，静态目录仍可自建，账号 / 上传 / 审核等能力依赖私有后端。
+
+### Added / 新增
+
+- Added the contributor license agreement (CLA) for code and data contributions, and documented the `VITE_API_BASE_URL` / `VITE_GAMES_BASE_DOMAIN` / `VITE_HOST_ORIGIN` build args in the deploy flow.
+- 新增贡献者许可协议（CLA，代码与数据均适用），并在部署流程中记录 `VITE_API_BASE_URL` / `VITE_GAMES_BASE_DOMAIN` / `VITE_HOST_ORIGIN` 构建参数。
+
+## [0.5.1] - 2026-09-19
+
+### Added / 新增
+
+- Added the Chinese brand name 创艺 alongside crearte: a badge above the landing hero title, the page title, the header brand, the catalog heading, and the about page opener.
+- 新增中文品牌名「创艺」，与 crearte 并列：落地页标题上方伴标、页面标题、页头品牌、目录页标题与关于页首句。
+
+## [0.5.0] - 2026-09-19
+
+### Added / 新增
+
+- Added a landing page at `/` with a poster-style hero, a collection counter, and a featured grid sampled by balanced type rotation; the catalog moved to `/games`.
+- 新增 `/` 落地页：海报式 hero、收录统计条，以及按类型均衡取样得出的精选网格；目录迁至 `/games`。
+
+### Changed / 变更
+
+- The header badge shows the collection count on the landing page too, while navigation highlighting still follows the catalog route only.
+- 页头贴纸在落地页也显示收录数；导航激活仍只看目录路由。
+
+## [0.4.1] - 2026-09-19
+
+### Changed / 变更
+
+- Rebranded the user-facing strings to crearte: the page title, the header site name, the catalog heading, and the about page opener.
+- 用户可见文案统一改为 crearte：页面标题、页头站点名、目录页标题与关于页首句。
+
+## [0.4.0] - 2026-09-19
+
+### Added / 新增
+
+- Added an outbound interstitial: every link that leaves the site now goes through `/out` with game and generic notice copy, an invalid-target error state, a strict http/https whitelist, and a render-time rewrite of external markdown links.
+- 新增外链中间页：所有离开本站的链接先经过 `/out`，含游戏版与普通版提示文案、非法目标错误态、严格 http/https 协议白名单，以及 markdown 外链的渲染期改写。
+
+### Changed / 变更
+
+- Game and author links on the detail page now open the interstitial first, and the about page documents the feedback email.
+- 详情页的游戏与作者链接改为先进入中间页；关于页补充邮箱反馈渠道。
 
 ## [0.2.0] - 2026-09-18
 
