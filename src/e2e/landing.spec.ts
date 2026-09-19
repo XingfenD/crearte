@@ -47,3 +47,50 @@ test('从落地页进入目录', async ({ page }) => {
   await expect(page).toHaveURL('http://localhost:4173/games')
   await expect(page.locator('#game-search')).toBeVisible()
 })
+
+test('精选区按类型均衡取样、上限 6', async ({ page }) => {
+  await page.goto('http://localhost:4173/')
+
+  const cards = page.locator('a[href^="/games/"]')
+  await expect(cards).toHaveCount(6)
+  expect(await cards.evaluateAll((els) => els.map((el) => el.getAttribute('href')))).toEqual([
+    '/games/2048',
+    '/games/a-dark-room',
+    '/games/arclight-nightcast',
+    '/games/abs-paths',
+    '/games/case-files',
+    '/games/corrupt'
+  ])
+})
+
+test('查看全部进入目录', async ({ page }) => {
+  await page.goto('http://localhost:4173/')
+  await page.getByRole('link', { name: /^查看全部/ }).click()
+
+  await expect(page).toHaveURL('http://localhost:4173/games')
+  await expect(page.locator('#game-search')).toBeVisible()
+})
+
+test('数据失败时 hero 仍在、精选区显示错误态', async ({ page }) => {
+  await page.route('**/data/index.json', (route) => route.fulfill({ status: 500, body: 'boom' }))
+  await page.goto('http://localhost:4173/')
+
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('crearte')
+  await expect(page.getByText('收集可直接开玩的静态网页游戏 · 打开即玩、无需安装')).toBeVisible()
+  await expect(page.getByText('加载失败')).toBeVisible()
+  await expect(page.getByRole('button', { name: '重试' })).toBeVisible()
+})
+
+test('空数据时统计条隐藏、精选区显示空态', async ({ page }) => {
+  await page.route('**/data/index.json', (route) =>
+    route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({ schemaVersion: 1, generatedAt: '2026-09-19T00:00:00.000Z', games: [] })
+    })
+  )
+  await page.goto('http://localhost:4173/')
+
+  await expect(page.getByText('还没有收录游戏。')).toBeVisible()
+  await expect(page.getByText('收录 0 款')).toHaveCount(0)
+})

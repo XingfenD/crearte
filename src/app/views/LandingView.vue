@@ -3,13 +3,18 @@ import { computed } from 'vue'
 import { RouterLink } from 'vue-router'
 import { repo, type GameSummary } from '@/data'
 import { useAsync } from '@/composables/useAsync'
+import { pickFeatured } from '@/lib/featured'
+import GameCard from '@/components/GameCard.vue'
+import StatePanel from '@/components/StatePanel.vue'
 
 const SLOGAN = 'STATIC WEB GAMES'
 const TAGLINE = '收集可直接开玩的静态网页游戏 · 打开即玩、无需安装'
+const FEATURED_LIMIT = 6
 
-const { data: games } = useAsync<GameSummary[]>(() => repo.listGames())
+const { data: games, error, loading, reload } = useAsync<GameSummary[]>(() => repo.listGames())
 
 const total = computed(() => games.value?.length ?? 0)
+const featured = computed(() => pickFeatured(games.value ?? [], FEATURED_LIMIT))
 
 const stats = computed(() => {
   const list = games.value ?? []
@@ -34,5 +39,22 @@ const stats = computed(() => {
       <span>{{ stats.types }} 种类型</span>
       <span>更新 {{ stats.latest }}</span>
     </p>
+  </section>
+
+  <section class="mt-8">
+    <div class="flex items-baseline gap-2">
+      <h2 class="font-mono text-[0.6875rem] font-bold tracking-[0.08em]">精选 · SELECTED</h2>
+      <RouterLink v-if="featured.length" to="/games" class="ml-auto text-xs text-ink-soft underline">
+        查看全部 {{ total }} 款 →
+      </RouterLink>
+    </div>
+    <StatePanel :loading="loading" :error="error" @retry="reload">
+      <div v-if="featured.length" class="mt-3 grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+        <GameCard v-for="game in featured" :key="game.id" :game="game" />
+      </div>
+      <p v-else class="mt-3 border-2 border-dashed border-ink p-10 text-center text-sm text-ink-soft">
+        还没有收录游戏。
+      </p>
+    </StatePanel>
   </section>
 </template>
