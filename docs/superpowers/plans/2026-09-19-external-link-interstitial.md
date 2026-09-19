@@ -251,7 +251,7 @@ export function parseTarget(raw: string | null | undefined, origin: string): Tar
 - [ ] **步骤 4：运行测试确认通过**
 
 运行：`cd /root/crearte_mono/crearte/src && npx vitest run app/lib/externalLink.test.ts`
-预期：PASS（6 + 3 + 1 + 7 = 17 个用例）。
+预期：PASS（6 + 3 + 1 + 6 = 16 个用例）。
 
 - [ ] **步骤 5：类型检查 + 全量单测**
 
@@ -334,7 +334,7 @@ describe('renderMarkdown 外链改写', () => {
 - [ ] **步骤 2：运行测试确认失败**
 
 运行：`cd /root/crearte_mono/crearte/src && npx vitest run app/lib/markdown.test.ts`
-预期：FAIL——新用例断言 `href="/out?...` 找不到（既有用例报 `Expected 1 arguments, but got 2` 也会先失败，属预期）。
+预期：FAIL——新用例断言 `href="/out?...` 找不到（实测 3 个新断言失败、8 个通过；vitest 不做类型检查，所以既有用例不会因参数个数先报错）。
 
 - [ ] **步骤 3：写实现**
 
@@ -354,7 +354,7 @@ md.renderer.rules.table_close = (tokens, idx, options, _env, self) =>
 md.renderer.rules.link_open = (tokens, idx, options, env, self) => {
   const href = tokens[idx].attrGet('href')
   const origin = typeof env?.origin === 'string' ? env.origin : ''
-  if (href && isExternalHref(href, origin)) {
+  if (typeof href === 'string' && isExternalHref(href, origin)) {
     tokens[idx].attrSet('href', toInterstitial(href))
     tokens[idx].attrSet('target', '_blank')
     tokens[idx].attrSet('rel', 'noopener')
@@ -779,7 +779,7 @@ test('危险协议与缺失参数都落到错误态且不跳转', async ({ page 
 })
 
 test('同源目标不显示中间页，直接站内跳转', async ({ page }) => {
-  await page.goto('http://localhost:4173/out?to=https%3A%2F%2Flocalhost%3A4173%2Fdocs%2Fabout')
+  await page.goto('http://localhost:4173/out?to=http%3A%2F%2Flocalhost%3A4173%2Fdocs%2Fabout')
   await expect(page).toHaveURL('http://localhost:4173/docs/about')
   await expect(page.getByRole('heading', { name: '关于本站' })).toBeVisible()
 })
@@ -794,7 +794,7 @@ test('缺省 kind 按普通版处理', async ({ page }) => {
 
 运行：`cd /root/crearte_mono/crearte/src && lsof -ti:4173 | xargs -r kill; npm run e2e`
 （必须先清掉可能残留的 4173 服务：`playwright.config.ts` 配了 `reuseExistingServer`，会复用旧构建导致测到过期产物。）
-预期：`5 passed`，且既有 24 条仍然通过（合计 `29 passed`）。
+预期：`5 passed`，且既有 20 条仍然通过（合计 `25 passed`）。
 
 - [ ] **步骤 4：Commit**
 
@@ -838,7 +838,7 @@ git commit -m "test: cover the outbound interstitial with e2e"
 - [ ] **步骤 3：全量 e2e**
 
 运行：`cd /root/crearte_mono/crearte/src && lsof -ti:4173 | xargs -r kill; npm run e2e`
-预期：`29 passed`（既有 24 + 新增 5）。
+预期：`25 passed`（既有 20 + 新增 5）。
 
 - [ ] **步骤 4：Commit**
 
@@ -861,7 +861,7 @@ git status --short && git log --oneline master..HEAD
 
 ## 完成标准
 
-- `npm run check` 与 `npm run e2e` 全绿（e2e 共 29 条）。
+- `npm run check` 与 `npm run e2e` 全绿（e2e 共 25 条）。
 - 详情页两处入口、markdown 渲染出的外链，全部指向 `/out`；站内链接与锚点不受影响。
 - `/out` 在 `to` 非法/缺失时只显示错误态，任何情况下都不自动跳转。
 - 无新增运行期依赖；`src/app/data/**` 一行未改。
