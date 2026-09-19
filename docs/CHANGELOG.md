@@ -6,6 +6,13 @@ All notable changes to this template should be documented in this file.
 The format loosely follows Keep a Changelog and can be adapted to the team's habits.
 本文档参考了 Keep a Changelog 的思路，也可以根据团队习惯调整。
 
+## [0.4.1] - 2026-09-19
+
+### Changed / 变更
+
+- Rebranded the user-facing strings to crearte: the page title, the header site name, the catalog heading, and the about page opener.
+- 用户可见文案统一改为 crearte：页面标题、页头站点名、目录页标题与关于页首句。
+
 ## [0.4.0] - 2026-09-19
 
 ### Added / 新增
