@@ -16,12 +16,30 @@ describe('auth 表单校验', () => {
     expect(validateEmail(long)).toBe('invalid_email')
   })
 
+  it('邮箱长度按字节而非字符计', () => {
+    expect(validateEmail(`${'é'.repeat(120)}@example.com`)).toBeNull()
+    expect(validateEmail(`${'é'.repeat(122)}@example.com`)).toBe('invalid_email')
+  })
+
   it('密码按字符数计,10-128 之间通过', () => {
     expect(validatePassword('a'.repeat(9))).toBe('weak_password')
     expect(validatePassword('a'.repeat(10))).toBeNull()
     expect(validatePassword('a'.repeat(128))).toBeNull()
     expect(validatePassword('a'.repeat(129))).toBe('weak_password')
     expect(validatePassword('密码密码密码密码密码')).toBeNull()
+  })
+
+  it('密码长度按码点而非 UTF-16 单元计', () => {
+    expect(validatePassword('中'.repeat(128))).toBeNull()
+    expect(validatePassword('😀'.repeat(10))).toBeNull()
+    expect(validatePassword('😀'.repeat(128))).toBeNull()
+    expect(validatePassword('😀'.repeat(129))).toBe('weak_password')
+  })
+
+  it('昵称 1 与 60 字符边界均通过', () => {
+    expect(validateDisplayName('a')).toBeNull()
+    expect(validateDisplayName('a'.repeat(60))).toBeNull()
+    expect(validateDisplayName('a'.repeat(61))).toBe('invalid_display_name')
   })
 
   it('昵称 trim 后 1-60 字符且不含控制字符', () => {
@@ -39,5 +57,11 @@ describe('auth 表单校验', () => {
     expect(sanitizeNext('/a\\b')).toBe('/')
     expect(sanitizeNext(undefined)).toBe('/')
     expect(sanitizeNext(['/a', '/b'])).toBe('/')
+  })
+
+  it('sanitizeNext 拒绝含控制字符的路径', () => {
+    expect(sanitizeNext('/\t/evil.com')).toBe('/')
+    expect(sanitizeNext('/\n/evil.com')).toBe('/')
+    expect(sanitizeNext('/\r/evil.com')).toBe('/')
   })
 })

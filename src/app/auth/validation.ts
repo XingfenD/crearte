@@ -30,6 +30,6 @@ export function validateDisplayName(value: string): 'invalid_display_name' | nul
 export function sanitizeNext(value: unknown): string {
   if (typeof value !== 'string') return '/'
   if (!value.startsWith('/') || value.startsWith('//')) return '/'
-  if (value.includes('\\')) return '/'
+  if (value.includes('\\') || CONTROL_PATTERN.test(value)) return '/'
   return value
 }
