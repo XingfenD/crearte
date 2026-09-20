@@ -6,6 +6,13 @@ All notable changes to this template should be documented in this file.
 The format loosely follows Keep a Changelog and can be adapted to the team's habits.
 本文档参考了 Keep a Changelog 的思路，也可以根据团队习惯调整。
 
+## [0.7.6] - 2026-09-20
+
+### Removed / 移除
+
+- Removed the in-repo compose files (`deploy/docker-compose.dev.yml`, `docker-compose.prod.yml`, `docker-compose.mock.yml`); local orchestration now lives in the `crearte-deploy` repository, and the Dockerfiles plus nginx config stay as its build inputs.
+- 移除仓库内的 compose 文件（`deploy/docker-compose.dev.yml`、`docker-compose.prod.yml`、`docker-compose.mock.yml`）：本地编排统一由 `crearte-deploy` 仓库负责，`Dockerfile` 与 nginx 配置保留作为其构建输入。
+
 ## [0.7.5] - 2026-09-20
 
 ### Added / 新增

@@ -24,21 +24,23 @@ npm run dev      # 自动生成 src/public/data
 npm run check    # vitest + vue-tsc + vite build
 ```
 
-容器内开发（源码挂载 + HMR，无需本机装 Node）：
+容器内开发（源码挂载 + HMR，无需本机装 Node；编排在 `crearte-deploy` 仓库，三个仓库平级）：
 
 ```bash
-docker compose -f deploy/docker-compose.dev.yml up --build   # http://localhost:8080
+cd ../crearte-deploy
+docker compose --profile dev up -d --build   # http://localhost:8080
 ```
 
-> 访问端口与生产模式统一为 8080（`WGC_PORT` 可覆盖），两者不要同时启动。
+> dev 与 prod 互斥（都占 8080）；其余 profile（prod / mock / debug）见 `crearte-deploy/README.md`。
 
 ## 生产形态本地验收
 
 ```bash
-docker compose -f deploy/docker-compose.prod.yml up -d --build   # http://localhost:8080
+cd ../crearte-deploy
+docker compose --profile prod up -d --build   # http://localhost:8080
 ```
 
-或不用 compose：
+或不用 compose（仅静态预览；账号请求需要同源反代 `api` 服务）：
 
 ```bash
 docker build -f deploy/Dockerfile -t crearte:local .
@@ -101,6 +103,8 @@ Copyright (C) 2026 XingfenD
 
 ## 账号系统本地联调
 
-1. 起后端依赖与后端：`cd crearte-server && docker compose -f deploy/docker-compose.dev.yml up -d`，再按该仓 `docs/README.md` 起 `go run ./cmd serve`
-2. 后端 `.env`：`DATABASE_URL`、`AUTH_TOKEN_SECRET`、`BUNDLE_KEK_*` 三项必备；跨域联调时把 `CORS_ALLOWED_ORIGINS` 设为前端 dev 地址（如 `http://localhost:5173`）
+1. 起后端依赖（Postgres）：`cd ../crearte-deploy && docker compose --profile debug up -d db-debug`
+2. 起后端：按 `crearte-server/docs/README.md` 设 `DATABASE_URL=postgres://crearte:crearte@localhost:5432/crearte?sslmode=disable`、`AUTH_TOKEN_SECRET`、`BUNDLE_KEK_*` 后 `go run ./cmd serve`；跨域联调时把 `CORS_ALLOWED_ORIGINS` 设为前端 dev 地址（如 `http://localhost:5173`）
 3. 前端：`cd src && npm install && npm run dev`，默认读 `src/.env.development` 直连 `http://localhost:8080`
+
+整套走容器（前端 + API + Postgres，同源代理，无需 CORS）：`cd ../crearte-deploy && docker compose --profile dev up -d --build`。
