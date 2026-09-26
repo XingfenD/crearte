@@ -86,7 +86,7 @@ async function bundleKeyMock(req, res, url) {
   const match = url.pathname.match(/^\/api\/games\/([a-z0-9-]+)\/bundle-key$/)
   if (!match) return false
   const id = match[1]
-  const version = url.searchParams.get('version') ?? ''
+  const version = (url.searchParams.get('version') ?? '').replace(/[^a-z0-9._-]/g, '')
   const send = (status, body, extra = {}) => {
     res.writeHead(status, {
       'Content-Type': 'application/json',
@@ -146,6 +146,11 @@ const server = createServer(async (req, res) => {
       } catch {
         res.writeHead(404, { 'Content-Type': 'application/json' }); res.end('{"ok":false}'); return
       }
+    }
+
+    if (url.pathname === '/__test/reset-ratelimit') {
+      rateLimitHits.clear()
+      res.writeHead(200, { 'Content-Type': 'application/json' }); res.end('{"ok":true}'); return
     }
 
     if (await bundleKeyMock(req, res, url)) return
