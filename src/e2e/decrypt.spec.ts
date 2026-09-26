@@ -1,10 +1,10 @@
 import { expect, test } from '@playwright/test'
 import { frameDataset, openGame } from './helpers'
 
-// 每个用例从干净的 ratelimit 配额起步：避免 reuseExistingServer 复用残留进程时
-// rateLimitHits 已 ≥3 导致「429→退避」用例首击即 200（静默假绿）
+// 每个用例从干净的 ratelimit 配额起步，并断言 reset 真生效（防复用旧进程时静默假绿）
 test.beforeEach(async ({ request }) => {
-  await request.get('http://localhost:4173/__test/reset-ratelimit')
+  const r = await request.get('http://localhost:4173/__test/reset-ratelimit')
+  expect(await r.json()).toEqual({ ok: true })
 })
 
 test('取钥 410：首装失败降级到 hosted', async ({ page }) => {
