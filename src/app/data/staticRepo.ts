@@ -5,7 +5,7 @@ function assert(condition: unknown, message: string): asserts condition {
   if (!condition) throw new Error(`数据格式错误: ${message}`)
 }
 
-function assertGameSummary(value: unknown, path: string): asserts value is GameSummary {
+export function assertGameSummary(value: unknown, path: string): asserts value is GameSummary {
   const g = value as GameSummary
   assert(g && typeof g.id === 'string' && typeof g.name === 'string' && typeof g.url === 'string', `${path} 缺少 id/name/url`)
   assert(Array.isArray(g.tags), `${path}.tags 必须是数组`)
@@ -16,7 +16,7 @@ function assertGameSummary(value: unknown, path: string): asserts value is GameS
   }
 }
 
-function assertGamesIndex(value: unknown): GamesIndex {
+export function assertGamesIndex(value: unknown): GamesIndex {
   const data = value as GamesIndex
   assert(data && Array.isArray(data.games), 'index.json 缺少 games 数组')
   data.games.forEach((game, i) => assertGameSummary(game, `games[${i}]`))
@@ -30,6 +30,14 @@ function assertDocsIndex(value: unknown): DocsIndex {
     assert(doc && typeof doc.slug === 'string' && typeof doc.title === 'string' && typeof doc.content === 'string', `docs[${i}] 非法`)
   })
   return data
+}
+
+export function assertGameDetail(value: unknown, path: string): asserts value is Game {
+  assertGameSummary(value, path)
+  const g = value as Game
+  if (g.runtime === 'virtual' && !g.bundle) {
+    throw new Error(`数据格式错误: ${path}.bundle 缺失（runtime=virtual 必须提供 bundle）`)
+  }
 }
 
 export class StaticContentRepository implements ContentRepository {
@@ -62,11 +70,8 @@ export class StaticContentRepository implements ContentRepository {
     if (!pending) {
       pending = this.fetchJson(`/games/${encodeURIComponent(id)}.json`)
         .then((data) => {
-          assertGameSummary(data, `games/${id}`)
-          if ((data as Game).runtime === 'virtual' && !(data as Game).bundle) {
-            throw new Error(`数据格式错误: games/${id}.bundle 缺失（runtime=virtual 必须提供 bundle）`)
-          }
-          return data as Game
+          assertGameDetail(data, `games/${id}`)
+          return data
         })
         .catch((error) => {
           this.cachedGamesById.delete(id)
