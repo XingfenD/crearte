@@ -22,10 +22,18 @@ export interface FeatureFlags {
   gamepad?: boolean
 }
 
+export interface BundleEnc {
+  v: number
+  alg: string
+  kid: string
+}
+
 export interface GameBundle {
   url: string
   bytes: number
   sha256: string
+  /** 存在即信封加密（CRB1 密文）；缺失按明文（dev/legacy 兼容，加密 spec §7.3） */
+  enc?: BundleEnc
 }
 
 export interface GameSummary {

@@ -36,7 +36,7 @@ export type GameEvent =
   | { type: 'game:snapshot'; id: string; data: string; bytes: number; truncated: boolean }
 
 export type ShellMessage =
-  | { type: 'runtime:install'; id: string; version: string; entry: string; bundleUrl: string; sha256: string; token?: string; hostOrigin: string; features?: Partial<FeatureFlags> }
+  | { type: 'runtime:install'; id: string; version: string; entry: string; bundleUrl: string; sha256: string; token?: string; hostOrigin: string; features?: Partial<FeatureFlags>; kid?: string; key?: string }
   | { type: 'runtime:progress'; received: number; total: number }
   | { type: 'runtime:ready'; version: string }
   | { type: 'runtime:error'; message: string; priorVersion?: string }
@@ -108,7 +108,9 @@ export function isShellMessage(value: unknown): value is ShellMessage {
       return typeof value.id === 'string' && typeof value.version === 'string' && typeof value.entry === 'string' &&
         typeof value.bundleUrl === 'string' && /^[0-9a-f]{64}$/.test(String(value.sha256)) &&
         typeof value.hostOrigin === 'string' && (value.token === undefined || typeof value.token === 'string') &&
-        (value.features === undefined || isPartialFeatures(value.features))
+        (value.features === undefined || isPartialFeatures(value.features)) &&
+        (value.kid === undefined || typeof value.kid === 'string') &&
+        (value.key === undefined || typeof value.key === 'string')
     case 'runtime:progress':
       return typeof value.received === 'number' && typeof value.total === 'number'
     case 'runtime:ready':

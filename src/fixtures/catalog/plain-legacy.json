@@ -1,0 +1,14 @@
+{
+  "id": "plain-legacy",
+  "name": "明文遗留夹具",
+  "url": "https://example.com/plain-legacy",
+  "author": { "name": "test" },
+  "description": "fixture",
+  "durationMinutes": { "min": 1, "max": 1 },
+  "type": "other",
+  "tags": ["fixture"],
+  "addedAt": "2026-09-17",
+  "entry": "index.html",
+  "_plaintext": true,
+  "features": { "inlineScript": true }
+}

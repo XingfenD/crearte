@@ -20,6 +20,15 @@ export function resolveRuntimeTargets(game: Game, opts: { baseDomain: string; pr
       bundle: absoluteBundle,
       sha: game.bundle.sha256
     }
+    if (game.bundle.enc) {
+      const keyBase = config.apiBase || (typeof location !== 'undefined' ? location.origin : '')
+      if (keyBase) {
+        const keyUrl = new URL(`/api/games/${encodeURIComponent(game.id)}/bundle-key`, keyBase)
+        keyUrl.searchParams.set('version', game.version)
+        fragment.kid = game.bundle.enc.kid
+        fragment.key = keyUrl.href
+      }
+    }
     if (game.features && Object.keys(game.features).length > 0) fragment.features = JSON.stringify(game.features)
     const hash = new URLSearchParams(fragment)
     targets.push({ mode: 'virtual', url: `${origin}/__bootstrap#${hash.toString()}`, origin })

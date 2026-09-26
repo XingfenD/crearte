@@ -78,6 +78,52 @@ function notFound(res) {
 
 const versionOverrides = new Map()
 
+// bundle-key mock：应答 fixtures/generated/keys/<id>__<version>.json；按夹具 id 注入故障。
+// 必须带 ACAO:*——SW 从 <id>.localhost 跨域取钥。响应永不落磁盘日志（key 材料）。
+const rateLimitHits = new Map()
+
+async function bundleKeyMock(req, res, url) {
+  const match = url.pathname.match(/^\/api\/games\/([a-z0-9-]+)\/bundle-key$/)
+  if (!match) return false
+  const id = match[1]
+  const version = (url.searchParams.get('version') ?? '').replace(/[^a-z0-9._-]/g, '')
+  const send = (status, body, extra = {}) => {
+    res.writeHead(status, {
+      'Content-Type': 'application/json',
+      'Access-Control-Allow-Origin': '*',
+      // 跨域下 Retry-After 需显式 expose，keyfetch 的退避才能读到（与后端 cors.go 一致）
+      'Access-Control-Expose-Headers': 'Retry-After',
+      'Cache-Control': 'no-store',
+      ...extra
+    })
+    res.end(typeof body === 'string' ? body : JSON.stringify(body))
+  }
+  // CORS 预检：SW 跨域取钥带 Cache-Control/Authorization 头；不计入 ratelimit、不读 key 文件
+  if (req.method === 'OPTIONS') {
+    res.writeHead(204, {
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Methods': 'GET, OPTIONS',
+      'Access-Control-Allow-Headers': req.headers['access-control-request-headers'] ?? 'Cache-Control, Authorization',
+      'Access-Control-Max-Age': '60'
+    })
+    res.end(); return true
+  }
+  const revoked = { error: { code: 'key_revoked', message: 'version revoked' } }
+  if (id === 'revoked' || (id === 'revoke-update' && version === 'v2')) { send(410, revoked); return true }
+  if (id === 'ratelimit') {
+    const hits = (rateLimitHits.get(id) ?? 0) + 1
+    rateLimitHits.set(id, hits)
+    if (hits <= 2) { send(429, { error: { code: 'rate_limited', message: 'slow down' } }, { 'Retry-After': '1' }); return true }
+  }
+  try {
+    const body = await readFile(path.join(fixtures, 'generated', 'keys', `${id}__${version}.json`), 'utf8')
+    send(200, body)
+  } catch {
+    send(404, { error: { code: 'not_found', message: 'unknown game or version' } })
+  }
+  return true
+}
+
 const server = createServer(async (req, res) => {
   const host = (req.headers.host ?? '').split(':')[0]
   const isGameHost = host.endsWith('.localhost')
@@ -101,6 +147,13 @@ const server = createServer(async (req, res) => {
         res.writeHead(404, { 'Content-Type': 'application/json' }); res.end('{"ok":false}'); return
       }
     }
+
+    if (url.pathname === '/__test/reset-ratelimit') {
+      rateLimitHits.clear()
+      res.writeHead(200, { 'Content-Type': 'application/json' }); res.end('{"ok":true}'); return
+    }
+
+    if (await bundleKeyMock(req, res, url)) return
 
     if (isGameHost) {
       const gameId = host.split('.')[0]

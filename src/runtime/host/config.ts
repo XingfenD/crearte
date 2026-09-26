@@ -8,7 +8,8 @@ export function runtimeConfig(): RuntimeConfig {
   return {
     baseDomain: import.meta.env.VITE_GAMES_BASE_DOMAIN ?? 'games.example.com',
     hostOrigin: import.meta.env.VITE_HOST_ORIGIN ?? 'https://games.example.com',
-    apiBase: import.meta.env.VITE_DATA_BASE_URL ?? '/data'
+    // API 基址（与 app/auth 同一 env）：空 = 同源。用于拼 bundle-key 绝对 URL
+    apiBase: import.meta.env.VITE_API_BASE_URL ?? ''
   }
 }
 

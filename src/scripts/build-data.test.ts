@@ -111,6 +111,24 @@ describe('loadGames via generate', () => {
     const docs = JSON.parse(await readFile(path.join(sorted, 'public/data/docs.json'), 'utf8'))
     expect(docs.docs.map((d: { slug: string }) => d.slug)).toEqual(['a', 'b'])
   })
+
+  it('bundle.enc 合法时接受、kid 非法时拒绝', async () => {
+    const enc = { v: 1, alg: 'AES-256-GCM', kid: 'k'.repeat(22) }
+    const bundle = { url: '/data/bundles/2048.bin', bytes: 10, sha256: 'a'.repeat(64), enc }
+    const okRoot = await fixture({
+      'games/2048.json': { ...validGame, runtime: 'virtual', version: 'v1', bundle },
+      'docs/about.json': { slug: 'about', title: '关于', order: 1, content: '正文' }
+    })
+    const ok = await generate({ srcRoot: okRoot, check: true })
+    expect(ok.ok, JSON.stringify(ok.errors)).toBe(true)
+
+    const badRoot = await fixture({
+      'games/2048.json': { ...validGame, runtime: 'virtual', version: 'v1', bundle: { ...bundle, enc: { ...enc, kid: 'short' } } },
+      'docs/about.json': { slug: 'about', title: '关于', order: 1, content: '正文' }
+    })
+    const bad = await generate({ srcRoot: badRoot, check: true })
+    expect(bad.ok).toBe(false)
+  })
 })
 
 describe('schema v2 运行时字段', () => {
