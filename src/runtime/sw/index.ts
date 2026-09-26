@@ -5,6 +5,8 @@ import { securityHeaders } from './csp'
 import { DEFAULT_FEATURES, isShellMessage, type FeatureFlags } from '../bridge/protocol'
 import { cachesToKeep, clearPendingInstall, readMeta, readPendingInstall, writeMeta, writePendingInstall, type RuntimeMeta } from './meta'
 import { extractZip, ZIP_LIMITS, ZipError } from './unzip'
+import { BundleFormatError, decryptBundle, parseBundleHeader } from './crypto'
+import { fetchBundleKey } from './keyfetch'
 
 declare const self: ServiceWorkerGlobalScope
 
@@ -73,6 +75,13 @@ async function installBundle(message: Extract<import('../bridge/protocol').Shell
     await writePendingInstall(message.version, origin)
     const headers: Record<string, string> = {}
     if (message.token) headers.Authorization = `Bearer ${message.token}`
+    const encrypted = Boolean(message.kid && message.key)
+    if ((message.kid || message.key) && !encrypted) console.warn('[sw] 加密参数不完整（kid/key 须同时存在），按明文安装')
+    // 取钥与 bundle 下载并行；失败在安装尾部统一 await 抛出
+    const keyPromise = encrypted
+      ? fetchBundleKey(message.key!, message.token ? { token: message.token } : {})
+      : null
+    if (keyPromise) keyPromise.catch(() => {})
     const response = await fetch(message.bundleUrl, { headers, cache: 'no-store' })
     if (!response.ok) throw new Error(`bundle 下载失败: HTTP ${response.status}`)
     const total = Number(response.headers.get('Content-Length') ?? 0) || 0
@@ -103,7 +112,18 @@ async function installBundle(message: Extract<import('../bridge/protocol').Shell
     const hex = [...new Uint8Array(digest)].map((b) => b.toString(16).padStart(2, '0')).join('')
     if (hex !== message.sha256) throw new Error('bundle 校验失败（sha256 不匹配）')
 
-    const entries = await extractZip(bundle)
+    // TS 6 泛型 Uint8Array：decryptBundle 返回 ArrayBufferLike 变体，声明放宽以兼容两侧
+    let zipBytes: Uint8Array = bundle
+    if (keyPromise) {
+      const keyMaterial = await keyPromise
+      const header = parseBundleHeader(bundle)
+      if (header.kid !== keyMaterial.kid || header.kid !== message.kid) {
+        throw new BundleFormatError('kid 三方校验不一致（目录/key 响应/文件头）')
+      }
+      zipBytes = await decryptBundle(bundle, keyMaterial.key)
+    }
+
+    const entries = await extractZip(zipBytes)
     if (!entries.has(message.entry)) throw new Error(`入口不存在: ${message.entry}`)
     const agentBytes = await fetchAgentSource()
     entries.set(AGENT_CACHE_PATH, agentBytes)
@@ -117,7 +137,8 @@ async function installBundle(message: Extract<import('../bridge/protocol').Shell
     }
     const meta: RuntimeMeta = {
       id: message.id, version: message.version, entry: message.entry, hostOrigin: message.hostOrigin,
-      bundleUrl: message.bundleUrl, sha256: message.sha256, installedAt: Date.now(), features: message.features
+      bundleUrl: message.bundleUrl, sha256: message.sha256, installedAt: Date.now(), features: message.features,
+      ...(encrypted ? { kid: message.kid!, keyUrl: message.key! } : {})
     }
     await writeMeta(meta, origin)
     // pending 清理失败不应让已成功的安装报错；残留的 pending 只会多保留一个缓存
@@ -232,6 +253,10 @@ function bootstrapRedirect(meta: RuntimeMeta | null, search: string): Response {
     hash.set('bundle', meta.bundleUrl)
     hash.set('sha', meta.sha256)
     if (meta.features && Object.keys(meta.features).length > 0) hash.set('features', JSON.stringify(meta.features))
+    if (meta.kid && meta.keyUrl) {
+      hash.set('kid', meta.kid)
+      hash.set('key', meta.keyUrl)
+    }
   }
   const fragment = hash.toString()
   return Response.redirect(new URL(`${BOOTSTRAP_PATH}${search}${fragment ? `#${fragment}` : ''}`, self.location.origin).href, 302)
