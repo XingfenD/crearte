@@ -42,6 +42,37 @@ test('virtual 目标透传 features 参数', () => {
   expect(params.get('features')).toBe('{"eval":true}')
 })
 
+test('virtual + bundle.enc 注入 kid 与绝对 key URL', () => {
+  const game: Game = {
+    ...base, runtime: 'virtual', version: 'v1',
+    bundle: {
+      url: '/data/bundles/demo.bin', bytes: 10, sha256: 'a'.repeat(64),
+      enc: { v: 1, alg: 'AES-256-GCM', kid: 'k'.repeat(22) }
+    }
+  }
+  const [primary] = resolveRuntimeTargets(game, {
+    ...opts,
+    config: { baseDomain: 'games.example.com', hostOrigin: 'https://games.example.com', apiBase: 'https://api.example' }
+  })
+  const params = new URLSearchParams(new URL(primary.url).hash.replace(/^#/, ''))
+  expect(params.get('kid')).toBe('k'.repeat(22))
+  expect(params.get('key')).toBe('https://api.example/api/games/demo/bundle-key?version=v1')
+})
+
+test('无 enc 不注入加密参数（明文路径不变）', () => {
+  const game: Game = {
+    ...base, runtime: 'virtual', version: 'v1',
+    bundle: { url: '/data/bundles/demo.zip', bytes: 10, sha256: 'a'.repeat(64) }
+  }
+  const [primary] = resolveRuntimeTargets(game, {
+    ...opts,
+    config: { baseDomain: 'games.example.com', hostOrigin: 'https://games.example.com', apiBase: 'https://api.example' }
+  })
+  const params = new URLSearchParams(new URL(primary.url).hash.replace(/^#/, ''))
+  expect(params.get('kid')).toBeNull()
+  expect(params.get('key')).toBeNull()
+})
+
 test('fallback 链：hosted 再 external', () => {
   const game: Game = {
     ...base, runtime: 'virtual', version: 'v1',
