@@ -38,6 +38,13 @@ describe('protocol guards', () => {
     expect(isShellMessage({ ...install, features: { eval: 'yes' } })).toBe(false)
     expect(isShellMessage({ ...install, features: { nope: true } })).toBe(false)
   })
+  test('install 的可选 kid/key 校验', () => {
+    const install = { type: 'runtime:install', id: 'a', version: 'v', entry: 'index.html', bundleUrl: 'https://x/b.bin', sha256: 'a'.repeat(64), hostOrigin: 'https://h' }
+    expect(isShellMessage({ ...install, kid: 'k'.repeat(22), key: 'https://api.example/api/games/a/bundle-key?version=v' })).toBe(true)
+    expect(isShellMessage({ ...install, kid: 42 })).toBe(false)
+    expect(isShellMessage({ ...install, key: null })).toBe(false)
+    expect(isShellMessage({ ...install, kid: 'k'.repeat(22) })).toBe(true) // 允许半套，编排层按明文处理并告警
+  })
   test('isPartialFeatures 直接校验部分特性开关', () => {
     expect(isPartialFeatures({})).toBe(true)
     expect(isPartialFeatures({ eval: true, gamepad: false })).toBe(true)

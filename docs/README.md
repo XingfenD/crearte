@@ -71,7 +71,7 @@ docker run --rm -p 8080:80 crearte:local
 2. 访问：集群未装 ingress controller，Service 走 NodePort 30080，即 `http://<节点IP>:30080`；生产建议由前端代理按 Host 转发。
 3. TLS：集群内不终止 TLS；需要 HTTPS 时在前端代理用 `*.games.example.com` 通配证书终止，或后续补装 ingress controller 再导入通配证书（DNS-01 签发，如 acme.sh `dns_ali` 或 cert-manager）。
 4. 构建变量：`VITE_GAMES_BASE_DOMAIN`（默认 `games.example.com`）决定子域后缀，`VITE_HOST_ORIGIN`（默认 `https://games.example.com`）为宿主站来源；构建镜像时用 `--build-arg` 覆盖（见「部署」）。
-5. 运行时三件套固定为 `dist/bootstrap/index.html`、`dist/sw.js`、`dist/agent.js`，由 nginx 通配 server block 精确暴露为 `/__bootstrap`、`/sw.js`、`/agent.js`（均 `no-store`），其余路径返回 404；主站 `/data/bundles/` 带 `Access-Control-Allow-Origin: *` 供子域拉取 bundle。
+5. 运行时三件套固定为 `dist/bootstrap/index.html`、`dist/sw.js`、`dist/agent.js`，由 nginx 通配 server block 精确暴露为 `/__bootstrap`、`/sw.js`、`/agent.js`（均 `no-store`），其余路径返回 404；主站 `/data/bundles/` 带 `Access-Control-Allow-Origin: *` 供子域拉取 bundle。virtual 作品的 bundle 为 CRB1 信封加密密文时（目录数据带 `bundle.enc`），SW 安装期并行请求 `{VITE_API_BASE_URL}/api/games/{id}/bundle-key` 取钥解密（设计见 `docs/superpowers/specs/2026-09-27-sw-bundle-decryption-design.md`）；对象存储需为游戏子域配置 CORS GET/HEAD。
 
 ## 许可、开放边界与商业授权
 

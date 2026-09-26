@@ -6,6 +6,13 @@ All notable changes to this template should be documented in this file.
 The format loosely follows Keep a Changelog and can be adapted to the team's habits.
 本文档参考了 Keep a Changelog 的思路，也可以根据团队习惯调整。
 
+## [0.8.0] - 2026-09-27
+
+### Added / 新增
+
+- The SW runtime now installs envelope-encrypted CRB1 bundles: parallel bundle-key fetch with 429 backoff, three-way kid cross-check (catalog `bundle.enc.kid` ↔ key response ↔ file header), AES-256-GCM decryption via WebCrypto before the existing unzip/cache chain; plaintext bundles (no `enc`) keep the legacy path. Self-heal reinstalls rebuild encryption params from persisted runtime meta; e2e fixtures are encrypted with fault-injected key endpoints (410/429).
+- SW 运行时支持安装信封加密的 CRB1 bundle：并行取钥（429 退避重试）、kid 三方交叉校验（目录 `bundle.enc.kid` ↔ key 响应 ↔ 文件头）、WebCrypto AES-256-GCM 解密后衔接现有解包/缓存链路；无 `enc` 的明文 bundle 保持旧路径。自愈重装从持久化 meta 重建加密参数；e2e 夹具全面加密并注入取钥故障（410/429）。
+
 ## [0.7.6] - 2026-09-20
 
 ### Removed / 移除

@@ -1,6 +1,6 @@
 import { expect, test, type Page, type Route } from '@playwright/test'
 
-const API = 'http://localhost:8080'
+const API = 'http://localhost:4173'
 
 interface FixtureState {
   users: Map<string, { password: string; display_name: string }>

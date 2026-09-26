@@ -8,7 +8,7 @@ test('首页是落地页：hero 文案与统计条', async ({ page }) => {
   await expect(page.locator('main').getByText('创艺', { exact: true })).toBeVisible()
   await expect(page.getByRole('link', { name: 'crearte 创艺' })).toBeVisible()
   await expect(page.getByText('托管你的创意')).toBeVisible()
-  await expect(page.getByText('收录 15 款')).toBeVisible()
+  await expect(page.getByText('收录 19 款')).toBeVisible()
   await expect(page.getByText('4 种类型')).toBeVisible()
   await expect(page.getByText('更新 2026-09-17')).toBeVisible()
 })
@@ -22,7 +22,7 @@ test('落地页上页头导航都不激活，但贴纸显示收录数', async ({
     'page'
   )
   await expect(page.getByRole('link', { name: '作品', exact: true })).toHaveAttribute('href', '/games')
-  await expect(page.getByText('共 15 款')).toBeVisible()
+  await expect(page.getByText('共 19 款')).toBeVisible()
 })
 
 test('回目录的链接都指向 /games', async ({ page }) => {

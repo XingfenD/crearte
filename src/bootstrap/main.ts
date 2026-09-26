@@ -86,6 +86,11 @@ async function main(): Promise<void> {
   const entry = params.get('entry') ?? 'index.html'
   const rawFeatures = params.get('features')
   const features = parseFeatures(rawFeatures)
+  const kid = params.get('kid') ?? ''
+  const keyUrl = params.get('key') ?? ''
+  if (Boolean(kid) !== Boolean(keyUrl)) {
+    console.warn('[bootstrap] 加密参数不完整（kid/key 须同时存在），按明文 bundle 安装')
+  }
   if (!version || !bundleUrl || !sha256) {
     fail('启动参数不完整', location.href)
     return
@@ -112,6 +117,7 @@ async function main(): Promise<void> {
       sha256,
       ...(token ? { token } : {}),
       ...(features ? { features } : {}),
+      ...(kid && keyUrl ? { kid, key: keyUrl } : {}),
       hostOrigin: import.meta.env.VITE_HOST_ORIGIN ?? 'https://games.example.com'
     })
     status.textContent = '下载资产…'
