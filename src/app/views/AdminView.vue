@@ -65,10 +65,19 @@ async function toggleVersions(id: string): Promise<void> {
     try {
       const game = await apiRepo.getGame(id)
       versionOf.value = { ...versionOf.value, [id]: game.version ?? null }
-    } catch {
-      versionOf.value = { ...versionOf.value, [id]: null }
+    } catch (e) {
+      // 不写 null：null ≠ undefined 会让再展开也不重试、且吊销/恢复按钮的 v-if 永假。
+      // 保持 undefined 以便重试，收起展开态（按钮回到「查看」），错误走本页既有 alert
+      expanded.value = null
+      actionError.value = toContentMessage(e)
     }
   }
+}
+
+// StatePanel 直出 error.message（后端原文，如 "admin role required"），过一遍 toContentMessage
+// 与 actionError 保持一致的中文映射。不动 StatePanel/useAsync 冻结面（Task 7 同构已放行）
+function panelError(e: Error | null): Error | null {
+  return e ? new Error(toContentMessage(e)) : null
 }
 
 function switchTab(next: 'queue' | 'works'): void {
@@ -101,7 +110,7 @@ function switchStatus(next: 'pending' | 'approved' | 'rejected'): void {
           {{ s === 'pending' ? '待审' : s === 'approved' ? '已通过' : '已拒绝' }}
         </button>
       </div>
-      <StatePanel class="mt-4" :loading="queueLoading" :error="queueError" @retry="reloadQueue">
+      <StatePanel class="mt-4" :loading="queueLoading" :error="panelError(queueError)" @retry="reloadQueue">
         <p v-if="queueSubs.length === 0" class="border-2 border-ink bg-surface p-6 text-sm text-ink-soft shadow-hard">该状态下没有提交。</p>
         <table v-else class="w-full border-2 border-ink bg-surface text-sm shadow-hard">
           <thead class="border-b-2 border-ink bg-paper font-mono text-[0.6875rem]">
@@ -129,7 +138,7 @@ function switchStatus(next: 'pending' | 'approved' | 'rejected'): void {
 
     <!-- Tab 2：作品管理 -->
     <div v-else class="mt-6 space-y-8">
-      <StatePanel :loading="worksLoading" :error="worksError" @retry="reloadWorks">
+      <StatePanel :loading="worksLoading" :error="panelError(worksError)" @retry="reloadWorks">
         <table class="w-full border-2 border-ink bg-surface text-sm shadow-hard">
           <thead class="border-b-2 border-ink bg-paper font-mono text-[0.6875rem]">
             <tr><th class="px-3 py-2 text-left">作品</th><th class="px-3 py-2 text-left">运行时</th><th class="px-3 py-2 text-left">当前版本</th><th class="px-3 py-2 text-left">操作</th></tr>
@@ -166,7 +175,7 @@ function switchStatus(next: 'pending' | 'approved' | 'rejected'): void {
 
       <section>
         <h2 class="font-display text-sm font-black">已通过提交（含已下架作品，可恢复上架 / 操作历史版本）</h2>
-        <StatePanel class="mt-3" :loading="historyLoading" :error="historyError" @retry="reloadHistory">
+        <StatePanel class="mt-3" :loading="historyLoading" :error="panelError(historyError)" @retry="reloadHistory">
           <table class="w-full border-2 border-ink bg-surface text-sm shadow-hard">
             <thead class="border-b-2 border-ink bg-paper font-mono text-[0.6875rem]">
               <tr><th class="px-3 py-2 text-left">作品</th><th class="px-3 py-2 text-left">版本</th><th class="px-3 py-2 text-left">通过时间</th><th class="px-3 py-2 text-left">操作</th></tr>
