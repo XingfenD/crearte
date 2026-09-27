@@ -5,6 +5,7 @@ import { useGameFrame } from './useGameFrame'
 
 const hosted: RuntimeTarget = { mode: 'hosted', url: 'http://hosted-demo.localhost:4173/', origin: 'http://hosted-demo.localhost:4173' }
 const external: RuntimeTarget = { mode: 'external', url: 'https://upstream.example/game', origin: null }
+const virtual: RuntimeTarget = { mode: 'virtual', url: 'http://demo.localhost:4173/__bootstrap#v=1', origin: 'http://demo.localhost:4173' }
 
 function makeFrame(targets: RuntimeTarget[], onExternal = vi.fn()) {
   return {
@@ -63,4 +64,44 @@ test('stop 清除告警', () => {
   frame.stop()
   vi.advanceTimersByTime(3_000)
   expect(console.warn).not.toHaveBeenCalled()
+})
+
+// ---- runtime:progress（bootstrap 安装进度转报）----
+
+function attachedFrame(targets: RuntimeTarget[]) {
+  const { frame } = makeFrame(targets)
+  frame.start()
+  const contentWindow = { postMessage: vi.fn() }
+  frame.attach({ contentWindow } as unknown as HTMLIFrameElement)
+  const source = frame.iframeRef.value?.contentWindow
+  const send = (received: number, total: number, origin = virtual.origin, from: unknown = source) =>
+    frame.onMessage({ origin, source: from, data: { type: 'runtime:progress', received, total } } as unknown as MessageEvent)
+  return { frame, send }
+}
+
+test('runtime:progress 按字节比折算百分比，超量钳到 100，total 未知保持原值', () => {
+  const { frame, send } = attachedFrame([virtual, external])
+  expect(frame.state.value.progress).toBeNull()
+  send(512, 1024)
+  expect(frame.state.value.progress).toBe(50)
+  send(2048, 1024)
+  expect(frame.state.value.progress).toBe(100)
+  send(100, 0)
+  expect(frame.state.value.progress).toBe(100)
+})
+
+test('runtime:progress 来源非 iframe 或 origin 不符被忽略', () => {
+  const { frame, send } = attachedFrame([virtual, external])
+  send(5, 10, virtual.origin, { postMessage: vi.fn() })
+  expect(frame.state.value.progress).toBeNull()
+  send(5, 10, 'http://evil.example')
+  expect(frame.state.value.progress).toBeNull()
+})
+
+test('degrade 重置进度', () => {
+  const { frame, send } = attachedFrame([virtual, external])
+  send(5, 10)
+  expect(frame.state.value.progress).toBe(50)
+  frame.degrade('测试降级')
+  expect(frame.state.value.progress).toBeNull()
 })

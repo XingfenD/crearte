@@ -6,7 +6,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "predev": "node scripts/build-data.mjs",
+    "predev": "node scripts/build-data.mjs && node scripts/build-runtime.mjs",
     "build": "vue-tsc --noEmit && vite build && node scripts/build-runtime.mjs",
     "build:runtime": "node scripts/build-runtime.mjs",
     "build:fixtures": "node scripts/build-fixtures.mjs",

@@ -70,6 +70,17 @@ describe('createContentClient', () => {
     expect(JSON.parse(String(init?.body))).toEqual({ revoked: true })
   })
 
+  test('adminSetFeatures：PUT 路径与 { features } body', async () => {
+    const fetchMock = vi.fn(async (_url: string, _init?: RequestInit) => jsonResponse({ ok: true }))
+    vi.stubGlobal('fetch', fetchMock)
+    const client = createContentClient(opts)
+    await client.adminSetFeatures('w1', { eval: true, inlineScript: false })
+    const [url, init] = fetchMock.mock.calls[0]
+    expect(url).toBe('http://api/api/admin/works/w1/features')
+    expect(init?.method).toBe('PUT')
+    expect(JSON.parse(String(init?.body))).toEqual({ features: { eval: true, inlineScript: false } })
+  })
+
   test('网络错误 → code network', async () => {
     vi.stubGlobal('fetch', vi.fn(async (_url: string, _init?: RequestInit) => { throw new TypeError('fetch failed') }))
     const client = createContentClient(opts)

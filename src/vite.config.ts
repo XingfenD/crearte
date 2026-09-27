@@ -2,11 +2,12 @@ import { fileURLToPath, URL } from 'node:url'
 import { configDefaults, defineConfig } from 'vitest/config'
 import vue from '@vitejs/plugin-vue'
 import tailwindcss from '@tailwindcss/vite'
+import { gameSubdomainRuntimePlugin } from './scripts/dev-game-runtime'
 
 const apiProxyTarget = (process.env.VITE_API_PROXY_TARGET ?? '').trim()
 
 export default defineConfig({
-  plugins: [vue(), tailwindcss()],
+  plugins: [vue(), tailwindcss(), gameSubdomainRuntimePlugin(fileURLToPath(new URL('./dist', import.meta.url)))],
   resolve: {
     alias: { '@': fileURLToPath(new URL('./app', import.meta.url)) }
   },

@@ -6,6 +6,7 @@ import { useAsync } from '@/composables/useAsync'
 import { apiRepo } from '@/data'
 import type { GameSummary } from '@/data/types'
 import { contentClient, toContentMessage, type SubmissionView } from '@/content'
+import { EMPTY_FEATURES, FEATURE_ITEMS, collectFeatures, featuresToForm, type EditableFeatures } from '@/content/features'
 
 const LIMIT = 20
 const tab = ref<'queue' | 'works'>('queue')
@@ -31,6 +32,8 @@ const { data: historyData, error: historyError, loading: historyLoading, reload:
 // virtual 作品的当前版本：行展开时懒加载详情
 const expanded = ref<string | null>(null)
 const versionOf = ref<Record<string, string | null>>({})
+// 展开行的运行权限勾选态（admin 可改已发布作品的 CSP 开关）
+const featuresOf = ref<Record<string, EditableFeatures>>({})
 
 const KIND_LABELS: Record<string, string> = { new_work: '新作品', new_version: '新版本', metadata_change: '元数据更新' }
 const queueSubs = computed(() => queueData.value?.submissions ?? [])
@@ -61,10 +64,15 @@ async function run(key: string, fn: () => Promise<unknown>, then?: () => void): 
 
 async function toggleVersions(id: string): Promise<void> {
   expanded.value = expanded.value === id ? null : id
+  // 展开即同步落默认勾选态：详情返回前 UI 也可交互，且避免模板读 undefined
+  if (expanded.value === id && !featuresOf.value[id]) {
+    featuresOf.value = { ...featuresOf.value, [id]: { ...EMPTY_FEATURES } }
+  }
   if (expanded.value === id && versionOf.value[id] === undefined && apiRepo) {
     try {
       const game = await apiRepo.getGame(id)
       versionOf.value = { ...versionOf.value, [id]: game.version ?? null }
+      featuresOf.value = { ...featuresOf.value, [id]: featuresToForm(game.features) }
     } catch (e) {
       // 不写 null：null ≠ undefined 会让再展开也不重试、且吊销/恢复按钮的 v-if 永假。
       // 保持 undefined 以便重试，收起展开态（按钮回到「查看」），错误走本页既有 alert
@@ -72,6 +80,12 @@ async function toggleVersions(id: string): Promise<void> {
       actionError.value = toContentMessage(e)
     }
   }
+}
+
+// 保存运行权限：只更新 works.features 单列，作品详情 API 随之返回新值（SW 按它注入 CSP）
+async function saveFeatures(id: string): Promise<void> {
+  const draft = featuresOf.value[id] ?? { ...EMPTY_FEATURES }
+  await run(`feat-${id}`, () => contentClient.adminSetFeatures(id, collectFeatures(draft)))
 }
 
 // StatePanel 直出 error.message（后端原文，如 "admin role required"），过一遍 toContentMessage
@@ -166,6 +180,19 @@ function switchStatus(next: 'pending' | 'approved' | 'rejected'): void {
                   <button v-if="expanded === g.id && versionOf[g.id]" type="button"
                     class="ml-2 border-2 border-ink bg-surface px-2 py-1 text-xs font-bold disabled:opacity-50" :disabled="busyKey !== null"
                     @click="run(`restore-${g.id}`, () => contentClient.adminSetRevoked(g.id, versionOf[g.id]!, false))">恢复密钥</button>
+                </td>
+              </tr>
+              <tr v-if="expanded === g.id && featuresOf[g.id]" :data-testid="`work-detail-${g.id}`">
+                <td colspan="4" class="border-b-[1.5px] border-ink bg-paper px-3 py-3">
+                  <div class="space-y-2">
+                    <p class="font-mono text-[0.6875rem] tracking-[0.05em]">运行权限（仅对站内运行作品生效；保存后该作品的 CSP 立即按新开关放行）</p>
+                    <label v-for="item in FEATURE_ITEMS" :key="item.key" class="flex items-start gap-2 text-sm">
+                      <input v-model="featuresOf[g.id][item.key]" type="checkbox" :data-testid="`admin-feature-${g.id}-${item.key}`" class="mt-1">
+                      <span><span class="font-bold">{{ item.label }}</span><span class="ml-1 text-xs text-ink-soft">{{ item.hint }}</span></span>
+                    </label>
+                    <button type="button" data-testid="admin-feature-save" class="border-2 border-ink bg-surface px-2 py-1 text-xs font-bold disabled:opacity-50"
+                      :disabled="busyKey !== null" @click="saveFeatures(g.id)">保存权限</button>
+                  </div>
                 </td>
               </tr>
             </template>

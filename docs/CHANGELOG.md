@@ -6,6 +6,41 @@ All notable changes to this template should be documented in this file.
 The format loosely follows Keep a Changelog and can be adapted to the team's habits.
 本文档参考了 Keep a Changelog 的思路，也可以根据团队习惯调整。
 
+## [0.10.2] - 2026-09-27
+
+### Added / 新增
+
+- Fullscreen support for the embedded play area: a 全屏/退出全屏 button in the control bar puts the whole cabinet (title bar, stage, and controls) into fullscreen, with the stage expanding from its fixed aspect ratio to fill the viewport; state tracks `fullscreenchange` so Esc and external exits restore the layout correctly.
+- 内嵌游玩区支持全屏：控制条新增「全屏/退出全屏」按钮，整个展柜（标题栏、播放区、控制按钮）进入全屏，播放区由固定纵横比改为撑满视口；状态跟随 `fullscreenchange` 事件，Esc 或外部退出都能正确还原布局。
+
+### Fixed / 修复
+
+- The play iframe's sandbox now includes `allow-fullscreen`: works' own fullscreen requests (the `allowfullscreen` attribute and Permissions Policy were already in place) were blocked by the sandbox flag, so in-work fullscreen buttons never worked.
+- 播放 iframe 的 sandbox 补上 `allow-fullscreen`：此前作品自身的全屏请求被 sandbox 旗标拦截（`allowfullscreen` 属性与 Permissions Policy 均已就位也没用），作品内的全屏按钮不可用。
+
+- The bootstrap page now falls back to `document.referrer`'s origin when `VITE_HOST_ORIGIN` is missing or misconfigured: previously it would post every signal to a hardcoded default origin, the browser would silently reject them all, and the host would only surface an opaque 60s bootstrap timeout. Parent-side origin validation is unchanged, so this does not weaken the security model.
+- bootstrap 页在 `VITE_HOST_ORIGIN` 缺失或配错时回退使用 `document.referrer` 的 origin：此前所有信号都发往硬编码默认 origin 并被浏览器静默拒绝，父级只能看到一句莫名的 60s 超时。父侧 origin 校验不变，不削弱安全模型。
+
+## [0.10.1] - 2026-09-27
+
+### Added / 新增
+
+- Loading a work now shows a real determinate progress bar: the bootstrap page forwards the service worker's `runtime:progress` (received/total bytes) to the host, `useGameFrame` records it in the pre-existing (previously unused) `progress` state, and the cabinet overlay renders an ink-framed bar with percentage. The in-iframe bootstrap page's own progress UI is restyled to the same paper-ink language, so download, decrypt, install and startup read as one continuous themed flow.
+- 作品加载现在显示真实确定态进度条：bootstrap 页将 SW 的 `runtime:progress`（已接收/总字节）转报父级，`useGameFrame` 记入早已预留但从未使用的 `progress` 状态，展柜遮罩渲染墨框进度条与百分比。iframe 内 bootstrap 页自身进度 UI 同步改为纸墨主题，下载/解密/安装/启动全程观感一致。
+
+## [0.10.0] - 2026-09-27
+
+### Added / 新增
+
+- Submission form now collects runtime permission flags for virtual works (`eval` / `inlineScript`, default off with inline guidance): previously the form never sent `features`, so works needing `unsafe-eval` (e.g. Alpine.js) or `unsafe-inline` were blocked by the service worker's default CSP with no way to declare otherwise. Both the draft-edit and prefill paths round-trip the flags.
+- 提交表单现为站内作品收集运行权限开关（`eval` / `inlineScript`，默认关闭并附适用场景说明）：此前表单不提交 `features`，需要 `unsafe-eval`（如 Alpine.js）或 `unsafe-inline` 的作品会被 SW 默认 CSP 拦截且无从声明。草稿编辑与预填两条回填路径同步回填勾选态。
+
+- Admin console works tab can revise a published work's permission flags in place (saves via `PUT /api/admin/works/:id/features`; takes effect immediately through the detail API → host → SW chain), and the review detail page shows the flags a submission requested (read-only).
+- 管理台「作品管理」可就地修订已发布作品的权限开关（经 `PUT /api/admin/works/:id/features` 保存，经详情 API→宿主→SW 链立即生效）；审核详情页只读展示提交者申请的开关。
+
+- Embedded play area now renders as a themed "cabinet": 2px ink frame with hard shadow, a title bar with the work name, runtime badge (站内运行 / 托管运行 / 已降级外链) and status dot, and the loading/error/degrade overlays restyled to the paper-ink design language.
+- 内嵌游玩区改为「展柜式」呈现：2px 墨框 + 硬阴影，标题栏含作品名、运行时徽标（站内运行/托管运行/已降级外链）与状态点，加载/失败/降级遮罩同步改为纸墨设计语言。
+
 ## [0.9.0] - 2026-09-27
 
 ### Added / 新增

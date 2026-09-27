@@ -2,6 +2,7 @@
 import { computed, ref } from 'vue'
 import { RouterLink, useRoute, useRouter } from 'vue-router'
 import { contentClient, toContentMessage, type SubmissionView } from '@/content'
+import { FEATURE_ITEMS, hasAnyFeature } from '@/content/features'
 import { GAME_TYPE_LABELS } from '@/lib/labels'
 
 const props = defineProps<{ id?: string }>()
@@ -20,6 +21,12 @@ const KIND_LABELS: Record<string, string> = { new_work: '新作品', new_version
 const STATUS_LABELS: Record<string, string> = { draft: '草稿', pending: '审核中', approved: '已通过', rejected: '已拒绝' }
 const isPending = computed(() => sub.value?.status === 'pending')
 const canReject = computed(() => rejectNote.value.trim().length > 0)
+// 提交者申请的运行权限（只读）：admin 需要据此判断是否放行；调整走作品管理或驳回
+const featuresText = computed(() => {
+  const f = sub.value?.payload?.features
+  if (!hasAnyFeature(f)) return '—（未声明额外权限，按默认收紧策略运行）'
+  return FEATURE_ITEMS.filter((i) => f?.[i.key]).map((i) => i.label).join('、')
+})
 
 async function load(): Promise<void> {
   busy.value = 'load'
@@ -92,6 +99,7 @@ async function reject(): Promise<void> {
         <div class="grid grid-cols-[10rem_1fr] gap-2"><dt class="font-mono text-[0.6875rem] text-ink-soft">时长</dt><dd>{{ sub.payload?.durationMinutes?.min }}–{{ sub.payload?.durationMinutes?.max }} 分钟</dd></div>
         <div class="grid grid-cols-[10rem_1fr] gap-2"><dt class="font-mono text-[0.6875rem] text-ink-soft">类型 / 标签</dt><dd>{{ GAME_TYPE_LABELS[sub.payload?.type ?? 'other'] ?? sub.payload?.type }} · {{ (sub.payload?.tags ?? []).join('、') || '—' }}</dd></div>
         <div class="grid grid-cols-[10rem_1fr] gap-2"><dt class="font-mono text-[0.6875rem] text-ink-soft">运行时 / 版本</dt><dd>{{ sub.payload?.runtime ?? 'external' }}<span v-if="sub.payload?.version"> · {{ sub.payload.version }}</span><span v-if="sub.payload?.entry"> · 入口 {{ sub.payload.entry }}</span></dd></div>
+        <div class="grid grid-cols-[10rem_1fr] gap-2"><dt class="font-mono text-[0.6875rem] text-ink-soft">运行权限</dt><dd data-testid="payload-features" class="font-mono text-[0.6875rem]">{{ featuresText }}</dd></div>
         <div class="grid grid-cols-[10rem_1fr] gap-2"><dt class="font-mono text-[0.6875rem] text-ink-soft">bundle</dt><dd data-testid="payload-bundle" class="font-mono text-[0.6875rem]">{{ sub.bundle_upload_id ? `已关联上传 ${sub.bundle_upload_id.slice(0, 8)}…（密文，审批通过后可见）` : '—' }}</dd></div>
         <div class="grid grid-cols-[10rem_1fr] gap-2"><dt class="font-mono text-[0.6875rem] text-ink-soft">封面</dt><dd class="font-mono text-[0.6875rem]">{{ sub.cover_upload_id ? '已关联上传（审批通过后可见）' : '—' }}</dd></div>
         <div v-if="sub.payload?.intro" class="grid grid-cols-[10rem_1fr] gap-2"><dt class="font-mono text-[0.6875rem] text-ink-soft">简介</dt><dd class="whitespace-pre-wrap text-xs">{{ sub.payload.intro }}</dd></div>

@@ -1,5 +1,5 @@
 import { computed, ref, type Ref } from 'vue'
-import { HELLO_TIMEOUT_MS, PROTOCOL_VERSION, isGameEvent, isHostCommand, isShellSignal, type FeatureFlags, type GameEvent, type HostCommand } from '../bridge/protocol'
+import { HELLO_TIMEOUT_MS, PROTOCOL_VERSION, isGameEvent, isHostCommand, isShellMessage, isShellSignal, type FeatureFlags, type GameEvent, type HostCommand } from '../bridge/protocol'
 import type { RuntimeTarget } from './adapters'
 
 const BOOTSTRAP_TIMEOUT_MS = 60_000
@@ -33,7 +33,9 @@ export function useGameFrame(options: GameFrameOptions) {
   let bridgeWarn: ReturnType<typeof setTimeout> | null = null
 
   const target = computed(() => options.targets()[targetIndex.value] ?? null)
-  const sandbox = 'allow-scripts allow-same-origin allow-pointer-lock'
+  // allow-fullscreen：缺此旗标时作品自身的 requestFullscreen 会被 sandbox 挡掉
+  // （iframe 的 allowfullscreen 属性与 Permissions Policy 都救不回来）
+  const sandbox = 'allow-scripts allow-same-origin allow-pointer-lock allow-fullscreen'
   const allow = computed(() => {
     const parts = ['fullscreen', 'autoplay']
     if (options.features().gamepad) parts.push('gamepad')
@@ -85,6 +87,13 @@ export function useGameFrame(options: GameFrameOptions) {
     if (event.origin !== current.origin) return
     if (event.source !== iframeRef.value?.contentWindow) return
     if (isShellSignal(event.data)) { degrade(event.data.message); return }
+    // bootstrap 安装进度：SW 的 runtime:progress 经 iframe 内 bootstrap 页转报父级。
+    // 仅驱动遮罩进度条（cosmetic），阶段流转只认 agent 握手与 shell 信号
+    if (isShellMessage(event.data) && event.data.type === 'runtime:progress') {
+      const { received, total } = event.data
+      if (total > 0) state.value.progress = Math.min(100, Math.round((received / total) * 100))
+      return
+    }
     if (event.data?.type === 'agent:boot' && isGameEvent(event.data)) {
       clearBridgeWarn()
       armTimeout(HELLO_TIMEOUT_MS)
@@ -135,6 +144,7 @@ export function useGameFrame(options: GameFrameOptions) {
   function degrade(reason: string): void {
     clearTimeout()
     clearBridgeWarn()
+    state.value.progress = null
     const next = targetIndex.value + 1
     const chain = options.targets()
     if (next < chain.length && chain[next].mode === 'external') {

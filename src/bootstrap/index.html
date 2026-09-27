@@ -5,16 +5,22 @@
     <meta name="robots" content="noindex" />
     <title>游戏加载中…</title>
     <style>
-      body { margin: 0; background: #0a0a0a; color: #e5e5e5; font-family: system-ui, sans-serif; display: grid; place-items: center; min-height: 100vh; }
+      body { margin: 0; background: #f7f2e7; color: #141414; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; display: grid; place-items: center; min-height: 100vh; }
       main { text-align: center; max-width: 26rem; padding: 1.5rem; }
-      progress { width: 100%; height: 6px; }
-      button { margin-top: 1rem; padding: 0.5rem 1.25rem; border-radius: 0.5rem; border: 0; background: #7c3aed; color: white; font-size: 1rem; }
-      pre { text-align: left; font-size: 0.75rem; color: #a3a3a3; white-space: pre-wrap; }
+      h1 { font-size: 1rem; font-weight: 800; }
+      progress { width: 100%; height: 16px; box-sizing: border-box; border: 2px solid #141414; background: #ffffff; box-shadow: 4px 4px 0 #141414; appearance: none; -webkit-appearance: none; }
+      progress::-webkit-progress-bar { background: #ffffff; }
+      progress::-webkit-progress-value { background: #e8552f; }
+      progress::-moz-progress-bar { background: #e8552f; }
+      #status { font-size: 0.8rem; color: #5c584d; }
+      button { margin-top: 1rem; padding: 0.5rem 1.25rem; border: 2px solid #141414; border-radius: 0; background: #141414; color: #f7f2e7; font-size: 0.875rem; font-weight: 800; box-shadow: 3px 3px 0 #141414; cursor: pointer; }
+      #error-message { color: #c03a1b; font-size: 0.9rem; font-weight: 700; }
+      pre { text-align: left; font-size: 0.75rem; color: #5c584d; white-space: pre-wrap; }
     </style>
   </head>
   <body>
     <main>
-      <h1 style="font-size:1rem;font-weight:600">正在准备游戏运行环境…</h1>
+      <h1>正在准备游戏运行环境…</h1>
       <progress id="progress" max="100" value="0"></progress>
       <p id="status" style="font-size:0.8rem;color:#a3a3a3">初始化</p>
       <div id="error" hidden>

@@ -1,4 +1,5 @@
 import { isPartialFeatures, isShellMessage, type FeatureFlags, type ShellMessage } from '../runtime/bridge/protocol'
+import { resolveHostOrigin } from './host-origin'
 
 const params = new URLSearchParams(location.hash.replace(/^#/, ''))
 const version = params.get('v') ?? ''
@@ -22,7 +23,8 @@ function fail(message: string, detail?: string, dropRegistration = false): void 
   else signalDegrade(text)
 }
 
-const hostOrigin = import.meta.env.VITE_HOST_ORIGIN ?? 'https://games.example.com'
+// 父级 origin：环境变量缺失/配错时回退 referrer，避免信号链路静默死亡（见 host-origin.ts）
+const hostOrigin = resolveHostOrigin(import.meta.env.VITE_HOST_ORIGIN, document.referrer)
 const BOOTSTRAP_TIMEOUT_MS = 45_000
 let settleTimer: ReturnType<typeof setTimeout> | null = setTimeout(() => {
   fail('准备超时')
@@ -101,7 +103,15 @@ async function main(): Promise<void> {
   }
   // Service Worker 的 client.postMessage 只派发到 container，不会派发到 window
   navigator.serviceWorker.addEventListener('message', (event) => {
-    if (isShellMessage(event.data)) handle(event.data)
+    if (!isShellMessage(event.data)) return
+    // 安装进度转报父级宿主：展柜遮罩据此渲染真实下载进度（与 signalDegrade 同一路上报）
+    if (event.data.type === 'runtime:progress') {
+      window.parent.postMessage(
+        { type: 'runtime:progress', received: event.data.received, total: event.data.total },
+        hostOrigin
+      )
+    }
+    handle(event.data)
   })
   try {
     const registration = await navigator.serviceWorker.register('/sw.js')
