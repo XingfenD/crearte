@@ -60,6 +60,12 @@ onBeforeUnmount(() => {
 })
 
 const KIND_LABELS: Record<SubmissionKind, string> = { new_work: '新作品', new_version: '新版本', metadata_change: '元数据更新' }
+const KIND_OPTIONS = [
+  { value: 'new_work', label: KIND_LABELS.new_work },
+  { value: 'new_version', label: `${KIND_LABELS.new_version}（已收录的 virtual 作品）` },
+  { value: 'metadata_change', label: `${KIND_LABELS.metadata_change}（已收录作品）` }
+]
+const TYPE_OPTIONS = GAME_TYPES.map((t) => ({ value: t, label: GAME_TYPE_LABELS[t] }))
 
 function buildPayload(): WorkPayload {
   return {
@@ -316,11 +322,13 @@ const labelClass = 'font-mono text-[0.6875rem] tracking-[0.05em]'
       <!-- 1. 提交类型 -->
       <fieldset class="space-y-2" :disabled="readOnly">
         <legend :class="labelClass">提交类型</legend>
-        <BaseSelect v-if="!editing" v-model="kind" data-testid="kind-select">
-          <option value="new_work">{{ KIND_LABELS.new_work }}</option>
-          <option value="new_version">{{ KIND_LABELS.new_version }}（已收录的 virtual 作品）</option>
-          <option value="metadata_change">{{ KIND_LABELS.metadata_change }}（已收录作品）</option>
-        </BaseSelect>
+        <BaseSelect
+          v-if="!editing"
+          :model-value="kind"
+          data-testid="kind-select"
+          :options="KIND_OPTIONS"
+          @update:model-value="kind = $event as SubmissionKind"
+        />
         <p v-else class="text-sm font-bold">{{ KIND_LABELS[kind] }}</p>
       </fieldset>
 
@@ -371,9 +379,8 @@ const labelClass = 'font-mono text-[0.6875rem] tracking-[0.05em]'
           </div>
           <div class="space-y-1.5">
             <label class="font-mono text-[0.6875rem]" for="sf-type">类型</label>
-            <BaseSelect id="sf-type" v-model="form.type">
-              <option v-for="t in GAME_TYPES" :key="t" :value="t">{{ GAME_TYPE_LABELS[t] }}</option>
-            </BaseSelect>
+            <BaseSelect id="sf-type" :model-value="form.type" :options="TYPE_OPTIONS" :disabled="readOnly"
+              @update:model-value="form.type = $event" />
           </div>
         </div>
         <p v-if="err('duration') || err('type')" class="text-xs font-bold text-accent-ink">{{ err('duration') ?? err('type') }}</p>

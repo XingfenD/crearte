@@ -6,6 +6,13 @@ All notable changes to this template should be documented in this file.
 The format loosely follows Keep a Changelog and can be adapted to the team's habits.
 本文档参考了 Keep a Changelog 的思路，也可以根据团队习惯调整。
 
+## [0.10.5] - 2026-09-28
+
+### Changed / 变更
+
+- BaseSelect is now a custom listbox instead of a native `<select>`: the closed trigger keeps the paper-ink frame with a self-drawn caret, and the opened option panel is now site-styled (ink border, hard shadow, highlighted selected row with a check mark) rather than the OS-rendered popup that could not be themed. Includes keyboard navigation (↑↓ / Enter / Esc), click-outside close, focus return, and `listbox`/`option` ARIA semantics. The API changed from slotted `<option>` elements to an `options` prop (matching BaseTabs), and both submit-form selects (提交类型 / 类型) are migrated with the disabled state passed explicitly.
+- BaseSelect 由原生 `<select>` 改为自定义 listbox：收起态保持纸墨边框 + 自绘 caret，展开后的选项面板改为站点风格（墨色边框、硬阴影、选中项高亮带勾），不再是无法套用主题的操作系统原生弹层。支持键盘导航（↑↓ / Enter / Esc）、点击外部收起、焦点归还，以及 `listbox`/`option` 无障碍语义。API 由 `<option>` 插槽改为 `options` prop（与 BaseTabs 同构），提交表单的两个下拉（提交类型 / 类型）已迁移并显式传入 disabled 态。
+
 ## [0.10.4] - 2026-09-28
 
 ### Changed / 变更
