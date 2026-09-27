@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { PhWarningCircle } from '@phosphor-icons/vue'
+import BaseButton from '@/components/ui/BaseButton.vue'
 
 defineProps<{ loading: boolean; error: Error | null }>()
 defineEmits<{ retry: [] }>()
@@ -30,9 +31,9 @@ defineEmits<{ retry: [] }>()
       ERROR · 加载失败
     </p>
     <p class="mt-3 font-mono text-xs text-ink-soft">{{ error.message }}</p>
-    <button type="button" class="btn-ink lift mt-4 hover:shadow-hard active:shadow-none" @click="$emit('retry')">
+    <BaseButton variant="ink" lift class="mt-4 hover:shadow-hard active:shadow-none" @click="$emit('retry')">
       重试
-    </button>
+    </BaseButton>
   </div>
 
   <slot v-else />

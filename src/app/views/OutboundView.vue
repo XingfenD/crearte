@@ -2,6 +2,7 @@
 import { computed, watchEffect } from 'vue'
 import { RouterLink, useRoute, useRouter } from 'vue-router'
 import { PhArrowSquareOut, PhWarningCircle } from '@phosphor-icons/vue'
+import BaseButton from '@/components/ui/BaseButton.vue'
 import { normalizeKind, parseTarget } from '@/lib/externalLink'
 
 const route = useRoute()
@@ -66,13 +67,14 @@ function goBack(): void {
           class="text-accent-ink underline decoration-2 underline-offset-2"
         >关于本站</RouterLink>
       </p>
-      <button
-        type="button"
-        class="btn-ink lift mt-5 hover:shadow-hard active:shadow-none"
+      <BaseButton
+        variant="ink"
+        lift
+        class="mt-5 hover:shadow-hard active:shadow-none"
         @click="goBack"
       >
         返回
-      </button>
+      </BaseButton>
     </div>
 
     <div v-else-if="state.view === 'external'" class="border-2 border-ink bg-surface p-6 shadow-hard">
@@ -114,21 +116,22 @@ function goBack(): void {
       </p>
 
       <div class="mt-5 flex flex-wrap gap-3">
-        <button
-          type="button"
-          class="btn-ink lift inline-flex items-center gap-2 hover:shadow-hard active:shadow-none"
+        <BaseButton
+          variant="ink"
+          lift
+          class="hover:shadow-hard active:shadow-none"
           @click="goOn(state.url)"
         >
           继续访问
           <PhArrowSquareOut :size="16" weight="bold" aria-hidden="true" />
-        </button>
-        <button
-          type="button"
-          class="btn-surface lift hover:shadow-hard active:shadow-none"
+        </BaseButton>
+        <BaseButton
+          lift
+          class="hover:shadow-hard active:shadow-none"
           @click="goBack"
         >
           返回
-        </button>
+        </BaseButton>
       </div>
     </div>
   </div>

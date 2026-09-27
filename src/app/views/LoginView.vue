@@ -4,6 +4,8 @@ import { RouterLink, useRoute, useRouter } from 'vue-router'
 import { session } from '@/auth'
 import { AUTH_ERROR_MESSAGES, toUserMessage } from '@/auth/errors'
 import { sanitizeNext, validateEmail } from '@/auth/validation'
+import BaseButton from '@/components/ui/BaseButton.vue'
+import BaseInput from '@/components/ui/BaseInput.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -48,32 +50,30 @@ async function submit(): Promise<void> {
     <form class="mt-6 space-y-4" novalidate @submit.prevent="submit">
       <div class="space-y-1.5">
         <label class="font-mono text-[0.6875rem] tracking-[0.05em]" for="login-email">邮箱</label>
-        <input
+        <BaseInput
           id="login-email"
           v-model="email"
           type="email"
           autocomplete="email"
-          class="w-full border-2 border-ink bg-surface px-3 py-2"
-          :aria-invalid="errorField === 'email'"
+          :invalid="errorField === 'email'"
           :aria-describedby="errorField === 'email' ? 'login-error' : undefined"
-        >
+        />
       </div>
       <div class="space-y-1.5">
         <label class="font-mono text-[0.6875rem] tracking-[0.05em]" for="login-password">密码</label>
-        <input
+        <BaseInput
           id="login-password"
           v-model="password"
           type="password"
           autocomplete="current-password"
-          class="w-full border-2 border-ink bg-surface px-3 py-2"
-          :aria-invalid="errorField === 'password'"
+          :invalid="errorField === 'password'"
           :aria-describedby="errorField === 'password' ? 'login-error' : undefined"
-        >
+        />
       </div>
       <p v-if="error" id="login-error" role="alert" aria-live="polite" class="border-2 border-ink bg-highlight px-3 py-2 text-xs font-bold">{{ error }}</p>
-      <button type="submit" class="btn-ink lift w-full disabled:opacity-50" :disabled="busy">
+      <BaseButton type="submit" variant="ink" lift class="w-full" :disabled="busy">
         {{ busy ? '登录中…' : '登录' }}
-      </button>
+      </BaseButton>
     </form>
     <p class="mt-4 text-xs text-ink-soft">
       没有账号？

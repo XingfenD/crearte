@@ -5,6 +5,7 @@ import { GAME_TYPES } from '@/data/types'
 import { GAME_TYPE_LABELS } from '@/lib/labels'
 import { DEFAULT_FILTER, countByDuration, countByTag, countByType, type DurationBucket } from '@/lib/filter'
 import { useFilterState } from '@/composables/useFilterState'
+import BaseButton from '@/components/ui/BaseButton.vue'
 
 const props = defineProps<{ games: GameSummary[] }>()
 const { state, update } = useFilterState()
@@ -139,10 +140,10 @@ function toggleTag(tag: string): void {
       </ul>
     </section>
 
-    <button
-      type="button"
-      class="lift w-full border-2 border-ink bg-surface px-3 py-2 text-sm font-extrabold shadow-hard-sm hover:shadow-hard active:shadow-none"
+    <BaseButton
+      lift
+      class="w-full hover:shadow-hard active:shadow-none"
       @click="update(DEFAULT_FILTER)"
-    >重置筛选</button>
+    >重置筛选</BaseButton>
   </div>
 </template>

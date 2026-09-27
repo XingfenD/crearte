@@ -10,6 +10,7 @@ import FilterSidebar from '@/components/FilterSidebar.vue'
 import FilterDrawer from '@/components/FilterDrawer.vue'
 import ResultMeta from '@/components/ResultMeta.vue'
 import StatePanel from '@/components/StatePanel.vue'
+import BaseButton from '@/components/ui/BaseButton.vue'
 
 const { data: games, error, loading, reload } = useAsync<GameSummary[]>(() => repo.listGames())
 const { state, update } = useFilterState()
@@ -74,12 +75,13 @@ function clearSearch(): void {
           <p class="mt-3 text-sm text-ink-soft">
             {{ (games?.length ?? 0) > 0 ? '没有匹配的作品，试试调整筛选条件。' : '还没有收录作品。' }}
           </p>
-          <button
+          <BaseButton
             v-if="(games?.length ?? 0) > 0"
-            type="button"
-            class="btn-ink lift mt-5 hover:shadow-hard active:shadow-none"
+            variant="ink"
+            lift
+            class="mt-5 hover:shadow-hard active:shadow-none"
             @click="update(DEFAULT_FILTER)"
-          >重置筛选</button>
+          >重置筛选</BaseButton>
         </div>
       </div>
     </div>

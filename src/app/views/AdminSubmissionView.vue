@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import { RouterLink, useRoute, useRouter } from 'vue-router'
+import BaseButton from '@/components/ui/BaseButton.vue'
 import { contentClient, toContentMessage, type SubmissionView } from '@/content'
 import { FEATURE_ITEMS, hasAnyFeature } from '@/content/features'
 import { GAME_TYPE_LABELS } from '@/lib/labels'
@@ -109,19 +110,19 @@ async function reject(): Promise<void> {
 
       <div v-if="isPending" class="mt-6 space-y-3">
         <div class="flex gap-3">
-          <button type="button" class="btn-ink lift bg-highlight disabled:opacity-50" :disabled="busy !== null" @click="approve">
+          <BaseButton variant="ink" lift class="bg-highlight" :disabled="busy !== null" @click="approve">
             {{ busy === 'approve' ? '处理中…' : '通过' }}
-          </button>
-          <button type="button" class="btn-ink lift disabled:opacity-50" :disabled="busy !== null" @click="rejectMode = !rejectMode">
+          </BaseButton>
+          <BaseButton variant="ink" lift :disabled="busy !== null" @click="rejectMode = !rejectMode">
             拒绝
-          </button>
+          </BaseButton>
         </div>
         <div v-if="rejectMode" class="border-2 border-ink bg-surface p-3">
           <label class="font-mono text-[0.6875rem]" for="reject-note">审核意见（必填，将展示给提交者）</label>
           <textarea id="reject-note" v-model="rejectNote" data-testid="reject-note" rows="3" class="mt-1 w-full border-2 border-ink bg-paper px-3 py-2 text-sm" />
-          <button type="button" class="btn-ink lift mt-2 bg-accent-ink text-paper disabled:opacity-50" :disabled="!canReject || busy !== null" @click="reject">
+          <BaseButton variant="ink" lift class="mt-2 bg-accent-ink text-paper" :disabled="!canReject || busy !== null" @click="reject">
             {{ busy === 'reject' ? '处理中…' : '确认拒绝' }}
-          </button>
+          </BaseButton>
         </div>
       </div>
     </template>

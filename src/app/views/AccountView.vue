@@ -5,6 +5,8 @@ import { session } from '@/auth'
 import { AUTH_ERROR_MESSAGES, toUserMessage } from '@/auth/errors'
 import { validatePassword } from '@/auth/validation'
 import type { UserRole } from '@/auth/types'
+import BaseButton from '@/components/ui/BaseButton.vue'
+import BaseInput from '@/components/ui/BaseInput.vue'
 
 const router = useRouter()
 const user = computed(() => session.state.user)
@@ -106,26 +108,26 @@ function logout(): void {
       <h2 class="font-display text-lg font-black">修改密码</h2>
       <div class="space-y-1.5">
         <label class="font-mono text-[0.6875rem] tracking-[0.05em]" for="account-current">当前密码</label>
-        <input id="account-current" v-model="currentPassword" type="password" autocomplete="current-password" class="w-full border-2 border-ink bg-surface px-3 py-2" :aria-invalid="errorField === 'current'" :aria-describedby="errorField === 'current' ? 'account-error' : undefined">
+        <BaseInput id="account-current" v-model="currentPassword" type="password" autocomplete="current-password" :invalid="errorField === 'current'" :aria-describedby="errorField === 'current' ? 'account-error' : undefined" />
       </div>
       <div class="space-y-1.5">
         <label class="font-mono text-[0.6875rem] tracking-[0.05em]" for="account-new">新密码（10–128 个字符）</label>
-        <input id="account-new" v-model="newPassword" type="password" autocomplete="new-password" class="w-full border-2 border-ink bg-surface px-3 py-2" :aria-invalid="errorField === 'new'" :aria-describedby="errorField === 'new' ? 'account-error' : undefined">
+        <BaseInput id="account-new" v-model="newPassword" type="password" autocomplete="new-password" :invalid="errorField === 'new'" :aria-describedby="errorField === 'new' ? 'account-error' : undefined" />
       </div>
       <p v-if="error" id="account-error" role="alert" aria-live="polite" class="border-2 border-ink bg-highlight px-3 py-2 text-xs font-bold">{{ error }}</p>
       <p v-if="notice" role="status" aria-live="polite" class="border-2 border-ink bg-surface px-3 py-2 text-xs">{{ notice }}</p>
-      <button type="submit" class="btn-ink lift disabled:opacity-50" :disabled="busy">更新密码</button>
+      <BaseButton type="submit" variant="ink" lift :disabled="busy">更新密码</BaseButton>
     </form>
 
     <section class="mt-10 space-y-3 border-t-[3px] border-ink pt-6">
       <h2 class="font-display text-lg font-black">会话</h2>
       <p class="text-xs text-ink-soft">登出全部设备会让所有已签发的登录凭证立即失效（包括当前设备）。</p>
       <div v-if="confirmingLogoutAll" class="flex flex-wrap gap-2">
-        <button type="button" class="btn-ink lift disabled:opacity-50" :disabled="busy" @click="logoutAll">确认登出全部</button>
-        <button type="button" class="btn-surface lift" @click="confirmingLogoutAll = false">取消</button>
+        <BaseButton variant="ink" lift :disabled="busy" @click="logoutAll">确认登出全部</BaseButton>
+        <BaseButton lift @click="confirmingLogoutAll = false">取消</BaseButton>
       </div>
-      <button v-else type="button" class="btn-surface lift" @click="confirmingLogoutAll = true">登出全部设备</button>
-      <button type="button" class="btn-surface lift ml-0 sm:ml-2" @click="logout">登出</button>
+      <BaseButton v-else lift @click="confirmingLogoutAll = true">登出全部设备</BaseButton>
+      <BaseButton lift class="ml-0 sm:ml-2" @click="logout">登出</BaseButton>
     </section>
   </section>
 </template>

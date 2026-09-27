@@ -6,6 +6,13 @@ All notable changes to this template should be documented in this file.
 The format loosely follows Keep a Changelog and can be adapted to the team's habits.
 本文档参考了 Keep a Changelog 的思路，也可以根据团队习惯调整。
 
+## [0.10.3] - 2026-09-28
+
+### Changed / 变更
+
+- Extracted a reusable base-UI component layer under `src/app/components/ui/` (BaseButton, BaseInput, BaseTextarea, BaseSelect, BaseCheckbox, FileInput, BaseTabs, BasePagination) and migrated the repeated button / input / select / textarea / checkbox / file-upload / tab / pagination markup out of the views and shared components into it. `main.css` gains a compact `.btn-sm` size and a built-in disabled opacity for `.btn-ink` / `.btn-surface`; bespoke one-off controls (catalog search box, sort select with caret, icon buttons, sidebar filter rows) intentionally stay native. Appearance, aria semantics and e2e selectors (roles, text, data-testid) are unchanged; adds 32 component unit tests.
+- 抽出可复用的基础 UI 组件层 `src/app/components/ui/`（BaseButton、BaseInput、BaseTextarea、BaseSelect、BaseCheckbox、FileInput、BaseTabs、BasePagination），把散落在各视图与公共组件里的重复按钮/输入框/下拉/多行文本/复选框/文件上传/页签/分页标记全部迁移进去。`main.css` 新增紧凑尺寸 `.btn-sm` 并为 `.btn-ink`/`.btn-surface` 内置禁用态透明度；一次性定制控件（目录搜索框、带箭头的排序下拉、图标按钮、侧栏筛选行）有意保持原生。外观、aria 语义与 e2e 选择器（role、文案、data-testid）均不变；新增 32 个组件单元测试。
+
 ## [0.10.2] - 2026-09-27
 
 ### Added / 新增
