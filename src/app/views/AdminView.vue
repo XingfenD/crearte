@@ -1,5 +1,199 @@
+<script setup lang="ts">
+import { computed, ref } from 'vue'
+import { RouterLink } from 'vue-router'
+import StatePanel from '@/components/StatePanel.vue'
+import { useAsync } from '@/composables/useAsync'
+import { apiRepo } from '@/data'
+import type { GameSummary } from '@/data/types'
+import { contentClient, toContentMessage, type SubmissionView } from '@/content'
+
+const LIMIT = 20
+const tab = ref<'queue' | 'works'>('queue')
+const status = ref<'pending' | 'approved' | 'rejected'>('pending')
+const offset = ref(0)
+const worksOffset = ref(0)
+const actionError = ref<string | null>(null)
+const busyKey = ref<string | null>(null)
+
+const { data: queueData, error: queueError, loading: queueLoading, reload: reloadQueue } = useAsync(
+  () => contentClient.adminListSubmissions({ status: status.value, limit: LIMIT, offset: offset.value }),
+  [status, offset]
+)
+const { data: worksData, error: worksError, loading: worksLoading, reload: reloadWorks } = useAsync<GameSummary[]>(
+  () => (apiRepo ? apiRepo.listGames() : Promise.reject(new Error('未配置内容 API'))),
+  [tab]
+)
+const { data: historyData, error: historyError, loading: historyLoading, reload: reloadHistory } = useAsync(
+  () => contentClient.adminListSubmissions({ status: 'approved', limit: LIMIT, offset: worksOffset.value }),
+  [worksOffset, tab]
+)
+
+// virtual 作品的当前版本：行展开时懒加载详情
+const expanded = ref<string | null>(null)
+const versionOf = ref<Record<string, string | null>>({})
+
+const KIND_LABELS: Record<string, string> = { new_work: '新作品', new_version: '新版本', metadata_change: '元数据更新' }
+const queueSubs = computed(() => queueData.value?.submissions ?? [])
+const queueTotal = computed(() => queueData.value?.total ?? 0)
+const historySubs = computed(() => historyData.value?.submissions ?? [])
+const historyTotal = computed(() => historyData.value?.total ?? 0)
+
+function nameOf(s: SubmissionView): string {
+  return s.payload?.name?.trim() || s.work_id
+}
+function versionOfSub(s: SubmissionView): string {
+  return s.payload?.version ?? '—'
+}
+
+async function run(key: string, fn: () => Promise<unknown>, then?: () => void): Promise<void> {
+  if (busyKey.value) return
+  busyKey.value = key
+  actionError.value = null
+  try {
+    await fn()
+    then?.()
+  } catch (e) {
+    actionError.value = toContentMessage(e)
+  } finally {
+    busyKey.value = null
+  }
+}
+
+async function toggleVersions(id: string): Promise<void> {
+  expanded.value = expanded.value === id ? null : id
+  if (expanded.value === id && versionOf.value[id] === undefined && apiRepo) {
+    try {
+      const game = await apiRepo.getGame(id)
+      versionOf.value = { ...versionOf.value, [id]: game.version ?? null }
+    } catch {
+      versionOf.value = { ...versionOf.value, [id]: null }
+    }
+  }
+}
+
+function switchTab(next: 'queue' | 'works'): void {
+  tab.value = next
+  actionError.value = null
+}
+function switchStatus(next: 'pending' | 'approved' | 'rejected'): void {
+  status.value = next
+  offset.value = 0
+}
+</script>
+
 <template>
-  <section class="mx-auto w-full max-w-3xl px-4 py-10">
+  <section class="mx-auto w-full max-w-5xl px-4 py-10">
     <h1 class="font-display text-[1.75rem] font-black leading-tight">审核管理</h1>
+
+    <div class="mt-4 flex gap-2 text-sm font-bold">
+      <button type="button" class="border-2 border-ink px-3 py-1.5" :class="tab === 'queue' ? 'bg-accent-ink text-paper' : 'bg-surface'" @click="switchTab('queue')">审核队列</button>
+      <button type="button" class="border-2 border-ink px-3 py-1.5" :class="tab === 'works' ? 'bg-accent-ink text-paper' : 'bg-surface'" @click="switchTab('works')">作品管理</button>
+    </div>
+
+    <p v-if="actionError" role="alert" class="mt-4 border-2 border-ink bg-highlight px-3 py-2 text-xs font-bold">{{ actionError }}</p>
+
+    <!-- Tab 1：审核队列 -->
+    <div v-if="tab === 'queue'" class="mt-6">
+      <div class="flex gap-2 text-xs font-bold">
+        <button v-for="s in (['pending', 'approved', 'rejected'] as const)" :key="s" type="button"
+          class="border-2 border-ink px-2 py-1" :class="status === s ? 'bg-highlight' : 'bg-surface'"
+          @click="switchStatus(s)">
+          {{ s === 'pending' ? '待审' : s === 'approved' ? '已通过' : '已拒绝' }}
+        </button>
+      </div>
+      <StatePanel class="mt-4" :loading="queueLoading" :error="queueError" @retry="reloadQueue">
+        <p v-if="queueSubs.length === 0" class="border-2 border-ink bg-surface p-6 text-sm text-ink-soft shadow-hard">该状态下没有提交。</p>
+        <table v-else class="w-full border-2 border-ink bg-surface text-sm shadow-hard">
+          <thead class="border-b-2 border-ink bg-paper font-mono text-[0.6875rem]">
+            <tr><th class="px-3 py-2 text-left">作品</th><th class="px-3 py-2 text-left">类型</th><th class="px-3 py-2 text-left">提交</th><th class="px-3 py-2 text-left">更新</th><th class="px-3 py-2" /></tr>
+          </thead>
+          <tbody>
+            <tr v-for="s in queueSubs" :key="s.id" :data-testid="`queue-${s.id}`" class="border-b-[1.5px] border-ink">
+              <td class="px-3 py-2"><span class="font-bold">{{ nameOf(s) }}</span><span class="ml-2 font-mono text-[0.625rem] text-ink-soft">{{ s.work_id }}</span></td>
+              <td class="px-3 py-2 font-mono text-[0.6875rem]">{{ KIND_LABELS[s.kind] ?? s.kind }}</td>
+              <td class="px-3 py-2 font-mono text-[0.625rem]">{{ s.id.slice(0, 8) }}</td>
+              <td class="px-3 py-2 font-mono text-[0.625rem]">{{ s.updated_at.slice(0, 10) }}</td>
+              <td class="px-3 py-2 text-right">
+                <RouterLink :to="`/admin/submissions/${s.id}`" class="border-2 border-ink bg-surface px-2 py-1 text-xs font-bold hover:bg-paper">审核</RouterLink>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+        <div class="mt-3 flex items-center gap-3 text-xs font-bold">
+          <button type="button" class="border-2 border-ink bg-surface px-2 py-1 disabled:opacity-40" :disabled="offset === 0" @click="offset = Math.max(0, offset - LIMIT)">上一页</button>
+          <span class="font-mono">{{ offset + 1 }}–{{ Math.min(offset + LIMIT, queueTotal) }} / {{ queueTotal }}</span>
+          <button type="button" class="border-2 border-ink bg-surface px-2 py-1 disabled:opacity-40" :disabled="offset + LIMIT >= queueTotal" @click="offset += LIMIT">下一页</button>
+        </div>
+      </StatePanel>
+    </div>
+
+    <!-- Tab 2：作品管理 -->
+    <div v-else class="mt-6 space-y-8">
+      <StatePanel :loading="worksLoading" :error="worksError" @retry="reloadWorks">
+        <table class="w-full border-2 border-ink bg-surface text-sm shadow-hard">
+          <thead class="border-b-2 border-ink bg-paper font-mono text-[0.6875rem]">
+            <tr><th class="px-3 py-2 text-left">作品</th><th class="px-3 py-2 text-left">运行时</th><th class="px-3 py-2 text-left">当前版本</th><th class="px-3 py-2 text-left">操作</th></tr>
+          </thead>
+          <tbody>
+            <template v-for="g in worksData ?? []" :key="g.id">
+              <tr :data-testid="`work-row-${g.id}`" class="border-b-[1.5px] border-ink">
+                <td class="px-3 py-2"><span class="font-bold">{{ g.name }}</span><span class="ml-2 font-mono text-[0.625rem] text-ink-soft">{{ g.id }}</span></td>
+                <td class="px-3 py-2 font-mono text-[0.6875rem]">{{ g.runtime ?? 'external' }}</td>
+                <td class="px-3 py-2 font-mono text-[0.6875rem]">
+                  <template v-if="g.runtime === 'virtual'">
+                    <button type="button" class="border-2 border-ink bg-surface px-2 py-0.5 text-xs font-bold" @click="toggleVersions(g.id)">
+                      {{ expanded === g.id ? (versionOf[g.id] ?? '加载中…') : '查看' }}
+                    </button>
+                  </template>
+                  <template v-else>—</template>
+                </td>
+                <td class="px-3 py-2">
+                  <button type="button" class="border-2 border-ink bg-surface px-2 py-1 text-xs font-bold disabled:opacity-50"
+                    :disabled="busyKey !== null"
+                    @click="run(`unpub-${g.id}`, () => contentClient.adminUnpublish(g.id), reloadWorks)">下架</button>
+                  <button v-if="expanded === g.id && versionOf[g.id]" type="button"
+                    class="ml-2 border-2 border-ink bg-surface px-2 py-1 text-xs font-bold disabled:opacity-50" :disabled="busyKey !== null"
+                    @click="run(`revoke-${g.id}`, () => contentClient.adminSetRevoked(g.id, versionOf[g.id]!, true))">吊销密钥</button>
+                  <button v-if="expanded === g.id && versionOf[g.id]" type="button"
+                    class="ml-2 border-2 border-ink bg-surface px-2 py-1 text-xs font-bold disabled:opacity-50" :disabled="busyKey !== null"
+                    @click="run(`restore-${g.id}`, () => contentClient.adminSetRevoked(g.id, versionOf[g.id]!, false))">恢复密钥</button>
+                </td>
+              </tr>
+            </template>
+          </tbody>
+        </table>
+      </StatePanel>
+
+      <section>
+        <h2 class="font-display text-sm font-black">已通过提交（含已下架作品，可恢复上架 / 操作历史版本）</h2>
+        <StatePanel class="mt-3" :loading="historyLoading" :error="historyError" @retry="reloadHistory">
+          <table class="w-full border-2 border-ink bg-surface text-sm shadow-hard">
+            <thead class="border-b-2 border-ink bg-paper font-mono text-[0.6875rem]">
+              <tr><th class="px-3 py-2 text-left">作品</th><th class="px-3 py-2 text-left">版本</th><th class="px-3 py-2 text-left">通过时间</th><th class="px-3 py-2 text-left">操作</th></tr>
+            </thead>
+            <tbody>
+              <tr v-for="s in historySubs" :key="s.id" class="border-b-[1.5px] border-ink">
+                <td class="px-3 py-2"><span class="font-bold">{{ nameOf(s) }}</span><span class="ml-2 font-mono text-[0.625rem] text-ink-soft">{{ s.work_id }}</span></td>
+                <td class="px-3 py-2 font-mono text-[0.6875rem]">{{ versionOfSub(s) }}</td>
+                <td class="px-3 py-2 font-mono text-[0.625rem]">{{ s.updated_at.slice(0, 10) }}</td>
+                <td class="px-3 py-2">
+                  <button type="button" class="border-2 border-ink bg-surface px-2 py-1 text-xs font-bold disabled:opacity-50" :disabled="busyKey !== null"
+                    @click="run(`repub-${s.work_id}`, () => contentClient.adminRepublish(s.work_id), () => { reloadWorks(); reloadHistory() })">恢复上架</button>
+                  <button v-if="s.payload?.version" type="button" class="ml-2 border-2 border-ink bg-surface px-2 py-1 text-xs font-bold disabled:opacity-50" :disabled="busyKey !== null"
+                    @click="run(`hrev-${s.work_id}-${s.payload.version}`, () => contentClient.adminSetRevoked(s.work_id, s.payload.version!, true))">吊销密钥</button>
+                  <button v-if="s.payload?.version" type="button" class="ml-2 border-2 border-ink bg-surface px-2 py-1 text-xs font-bold disabled:opacity-50" :disabled="busyKey !== null"
+                    @click="run(`hres-${s.work_id}-${s.payload.version}`, () => contentClient.adminSetRevoked(s.work_id, s.payload.version!, false))">恢复密钥</button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+          <div class="mt-3 flex items-center gap-3 text-xs font-bold">
+            <button type="button" class="border-2 border-ink bg-surface px-2 py-1 disabled:opacity-40" :disabled="worksOffset === 0" @click="worksOffset = Math.max(0, worksOffset - LIMIT)">上一页</button>
+            <span class="font-mono">{{ worksOffset + 1 }}–{{ Math.min(worksOffset + LIMIT, historyTotal) }} / {{ historyTotal }}</span>
+            <button type="button" class="border-2 border-ink bg-surface px-2 py-1 disabled:opacity-40" :disabled="worksOffset + LIMIT >= historyTotal" @click="worksOffset += LIMIT">下一页</button>
+          </div>
+        </StatePanel>
+      </section>
+    </div>
   </section>
 </template>
