@@ -45,6 +45,13 @@ describe('resolveNavigation', () => {
     expect(resolveNavigation(to('admin', { requiresAuth: true, requiresAdmin: true }), ctx({ isAdmin: true }))).toBe(true)
   })
 
+  // 锁死「requiresAuth 先于 requiresAdmin」的分支顺序：若有人调换 guards.ts 两个 if，
+  // 未登录访问 /admin 会静默变成回首页（丢 next 回跳），此用例即红（Task 5 审查补）
+  test('未登录访问 /admin → login 带 next（而非直接回首页）', () => {
+    expect(resolveNavigation(to('admin', { requiresAuth: true, requiresAdmin: true }, '/admin'), ctx({ authenticated: false })))
+      .toEqual({ name: 'login', query: { next: '/admin' } })
+  })
+
   test('未登录访问 /submit → login 带 next 回跳', () => {
     expect(resolveNavigation(to('submit-new', { requiresAuth: true }, '/submit/new'), ctx({ authenticated: false })))
       .toEqual({ name: 'login', query: { next: '/submit/new' } })
