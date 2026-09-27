@@ -20,6 +20,7 @@ export interface AuthSession {
   logout(): void
   logoutAll(): Promise<void>
   invalidate(): void
+  getToken(): string | null
 }
 
 export function toSession(response: AuthResponse): Session {
@@ -56,6 +57,9 @@ export function createAuthSession(deps: { client: AuthClientLike; store: Session
   return {
     state,
     invalidate,
+    getToken() {
+      return current?.token ?? null
+    },
     async restore() {
       const cached = current
       const epoch = generation

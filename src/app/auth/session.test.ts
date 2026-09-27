@@ -191,4 +191,14 @@ describe('auth 会话', () => {
     expect(store.read()).toBeNull()
     expect(storage.keys()).toHaveLength(0)
   })
+
+  it('getToken 返回当前会话 token，登出后为 null', async () => {
+    const { client } = deps()
+    const session = createAuthSession({ client, store: createSessionStore(storage, () => NOW) })
+    expect(session.getToken()).toBeNull()
+    await session.login('a@example.com', 'password1234')
+    expect(session.getToken()).toBe('t1')
+    session.logout()
+    expect(session.getToken()).toBeNull()
+  })
 })
