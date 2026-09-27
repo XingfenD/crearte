@@ -21,7 +21,9 @@ export function resolveRuntimeTargets(game: Game, opts: { baseDomain: string; pr
       sha: game.bundle.sha256
     }
     if (game.bundle.enc) {
-      const keyBase = config.apiBase || (typeof location !== 'undefined' ? location.origin : '')
+      // 相对基址（'' 或 '/'，同源反代）不能作 URL base：落 location.origin；绝对基址直接用
+      const absoluteApi = config.apiBase.startsWith('/') ? '' : config.apiBase
+      const keyBase = absoluteApi || (typeof location !== 'undefined' ? location.origin : '')
       if (keyBase) {
         const keyUrl = new URL(`/api/games/${encodeURIComponent(game.id)}/bundle-key`, keyBase)
         keyUrl.searchParams.set('version', game.version)

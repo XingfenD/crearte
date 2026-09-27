@@ -7,10 +7,13 @@ export * from './repository'
 export * from './types'
 
 const staticRepo = new StaticContentRepository()
-const apiBase = (import.meta.env.VITE_API_BASE_URL ?? '').trim().replace(/\/+$/, '')
+// 与 auth 模块同一语义：'' = 无后端（noauth）；'/' = 同源反代（compose dev/prod）；绝对基址 = 跨域 API。
+// 判空必须用去空白后的原值——'/' 剥掉尾斜杠是空串，但它不是「无后端」
+const rawApiBase = (import.meta.env.VITE_API_BASE_URL ?? '').trim()
+const apiBase = rawApiBase.replace(/\/+$/, '')
 
 // 双源装配：VITE_API_BASE_URL 为空（noauth 部署）→ 纯静态；非空 → 并集合并（spec §3）
-export const apiRepo: ApiContentRepository | null = apiBase
+export const apiRepo: ApiContentRepository | null = rawApiBase !== ''
   ? new ApiContentRepository(apiBase, staticRepo)
   : null
 export const repo: ContentRepository = apiRepo
