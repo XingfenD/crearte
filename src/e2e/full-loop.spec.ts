@@ -56,6 +56,10 @@ test('全链路：注册→提交→过审→目录可见→可玩→revoke→�
   await adminPage.locator('#login-email').fill(stack!.adminEmail)
   await adminPage.locator('#login-password').fill(stack!.adminPassword)
   await adminPage.getByRole('button', { name: '登录' }).click()
+  // ⚠️ 等登录 POST 落地再导航：click 后立即 goto 会整页导航掐断在途的
+  // POST /api/auth/login（实测 trace：-> -1），导致 admin 会话没建立。
+  // LoginView 成功后 router.replace('/')，故等 URL 到首页即登录完成。
+  await expect(adminPage).toHaveURL(`${WEB}/`, { timeout: 15_000 })
   await adminPage.goto(`${WEB}/admin`)
   await adminPage.getByRole('link', { name: '审核' }).first().click()
   adminPage.once('dialog', (d) => void d.accept())
@@ -63,10 +67,17 @@ test('全链路：注册→提交→过审→目录可见→可玩→revoke→�
   await expect(adminPage).toHaveURL(`${WEB}/admin`, { timeout: 15_000 })
 
   // 4. 目录可见（API 源）且可玩（SW 解密链，依赖计划 A）
-  await page.goto(`${WEB}/games`)
-  await expect(page.getByRole('heading', { name: 'Stack Work' })).toBeVisible({ timeout: 15_000 })
-  await page.goto(`${WEB}/games/${workId}`)
-  const frame = page.frameLocator('iframe')
+  // ⚠️ 用全新 context：主 page 在 Step1 注册成功后 router.replace('/') 让 LandingView
+  // 挂载即 listGames()，把「审批前的空 /api/games」预热进本 context 的 HTTP 缓存
+  // （后端 Cache-Control: max-age=60）。同 context 再 goto /games 会复用陈旧空列表 →
+  // 看不到刚过审的 Stack Work（实测：approve 前后同一 resource hash）。新访客语义 =
+  // 全新 context 干净缓存，零产品改动；顺带从冷启动跑一遍 SW 安装→解密→可玩全链。
+  const visitCtx = await browser.newContext()
+  const visitPage = await visitCtx.newPage()
+  await visitPage.goto(`${WEB}/games`)
+  await expect(visitPage.getByRole('heading', { name: 'Stack Work' })).toBeVisible({ timeout: 15_000 })
+  await visitPage.goto(`${WEB}/games/${workId}`)
+  const frame = visitPage.frameLocator('iframe')
   await expect(frame.locator('body')).toHaveAttribute('data-ready', '1', { timeout: 60_000 })
   await expect(frame.locator('body')).toHaveAttribute('data-ok', 'stack')
 

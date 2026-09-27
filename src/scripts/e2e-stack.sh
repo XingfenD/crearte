@@ -36,6 +36,13 @@ cleanup() {
   rm -f "$STACK_FILE"
 }
 trap cleanup EXIT
+# ⚠️ bash 收到未捕获的 SIGTERM/SIGHUP 会直接终止、**不跑 EXIT trap**。playwright 的
+# gracefulShutdown 发的正是 SIGTERM，故显式把它转成 exit（143=128+15）以触发 cleanup。
+# （若 playwright 未配 gracefulShutdown 则用 SIGKILL，不可捕获 → 靠下面的起始清残留兜底。）
+trap 'exit 143' TERM INT
+# 起始先清上次残留（即使上次被 SIGKILL 没清干净）：陈旧 stack.json 的 ready:true 会让
+# 本次在栈没起时误判为可用（二次假绿），故无条件先删。
+rm -f "$STACK_FILE"
 
 stack_ok=1
 command -v docker >/dev/null 2>&1 && docker info >/dev/null 2>&1 || stack_ok=0
@@ -121,9 +128,9 @@ else
   (cd "$FRONT_ROOT" && npm run build:e2e) || exit 1
 fi
 
-# ⚠️ 不用 exec：exec 替换进程映像会使上面的 trap cleanup EXIT **永不触发** →
-# docker 容器泄漏 + stack.json 残留（残留的 ready:true 会让下次 e2e:stack 不 skip 却打不到栈）。
-# 后台起 + wait：playwright 杀 webServer 时 SIGTERM 中断 wait → EXIT trap 正常清理。
+# ⚠️ 不用 exec：exec 替换进程映像会使上面的 trap **永不触发**。后台起 + wait：
+# playwright gracefulShutdown 发 SIGTERM → 命中 TERM trap → exit 143 → EXIT trap → cleanup。
+# （wait 会被信号中断从而让 trap 得以运行；若 node 前台跑，信号只送 node 不送脚本。）
 node "$FRONT_ROOT/scripts/serve-runtime.mjs" --port "$WEB_PORT" &
 WEB_PID=$!
 wait "$WEB_PID"

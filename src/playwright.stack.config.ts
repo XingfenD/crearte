@@ -13,6 +13,12 @@ export default defineConfig({
     command: 'bash scripts/e2e-stack.sh',
     url: 'http://localhost:4175/',
     reuseExistingServer: false,
-    timeout: 600_000
+    timeout: 600_000,
+    // ⚠️ 不配 gracefulShutdown 时，playwright teardown 用 SIGKILL 杀整个进程组
+    // （coreBundle.js: process.kill(-spawnedProcess.pid, "SIGKILL")），SIGKILL 不可被
+    // bash trap 捕获 → e2e-stack.sh 的 cleanup 永不触发 → docker 容器 + stack.json +
+    // worktree 泄漏（残留的 stack.json ready:true 还会让下次跑误判栈可用 = 二次假绿）。
+    // 改发 SIGTERM（超时才 SIGKILL），脚本的 TERM trap 才能跑 cleanup。
+    gracefulShutdown: { signal: 'SIGTERM', timeout: 30_000 }
   }
 })
