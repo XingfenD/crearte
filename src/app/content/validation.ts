@@ -32,8 +32,8 @@ export function parseTags(raw: string): string[] {
 
 export function validateWorkPayload(payload: WorkPayload, kind: SubmissionKind): Partial<Record<FieldKey, string>> {
   const errors: Partial<Record<FieldKey, string>> = {}
-  if (!WORK_ID_PATTERN.test(payload.id)) errors.workId = '作品 id 需为小写字母/数字/连字符（1–64 字符，首尾非连字符）'
-  if (!payload.name.trim()) errors.name = '名称必填'
+  if (!WORK_ID_PATTERN.test(payload.id)) errors.workId = '名称需为小写字母、数字或连字符（1–64 字符，首尾非连字符）'
+  if (!payload.name.trim()) errors.name = '展示名称必填'
   if (!/^https?:\/\/\S+$/.test(payload.url)) errors.url = '需为有效的 http(s) 链接'
   if (!payload.author.name.trim()) errors.authorName = '作者必填'
   if (!payload.description.trim()) errors.description = '描述必填'

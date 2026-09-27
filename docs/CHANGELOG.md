@@ -6,6 +6,13 @@ All notable changes to this template should be documented in this file.
 The format loosely follows Keep a Changelog and can be adapted to the team's habits.
 本文档参考了 Keep a Changelog 的思路，也可以根据团队习惯调整。
 
+## [0.10.4] - 2026-09-28
+
+### Changed / 变更
+
+- Reworked the submission form's identity fields for plain-language clarity: the technical 「作品 id（slug，收录后不可改）」 is now labeled 「名称（小写字母、数字或连字符，用于作品链接，收录后不可改）」 with a live helper line showing the resulting `/games/<名称>` URL, and the old 「名称」 title field is now 「展示名称（站内展示的标题）」 and moves above it. Auto-slug generation, validation rules, payloads and test hooks are unchanged; related error/notice copy in `validation.ts`, `client.ts` and the form (bundle-invalidated hints) now says 名称/展示名称 accordingly.
+- 提交表单的身份字段改为普通用户能看懂的文案：技术味的「作品 id（slug，收录后不可改）」改标为「名称（小写字母、数字或连字符，用于作品链接，收录后不可改）」，字段下实时显示最终链接 `/games/<名称>`；原「名称」标题字段改为「展示名称（站内展示的标题）」并上移到其之前。slug 自动联动、校验规则、提交载荷与测试钩子均不变；`validation.ts`、`client.ts` 与表单内的相关错误/提示文案（bundle 作废提示等）同步改用 名称/展示名称 口径。
+
 ## [0.10.3] - 2026-09-28
 
 ### Changed / 变更

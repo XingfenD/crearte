@@ -33,7 +33,7 @@ export interface ContentClient {
 /** 上传前置校验（纯函数，可单测）：返回错误文案或 null */
 export function validateUploadInput(input: UploadInput): string | null {
   if (input.kind === 'bundle') {
-    if (!input.workId || !input.version) return '请先填写作品 id（work_id）与版本号，再上传 bundle'
+    if (!input.workId || !input.version) return '请先填写名称与版本号，再上传 bundle'
     const isZip = input.file.type === 'application/zip' ||
       input.file.type === 'application/x-zip-compressed' || /\.zip$/i.test(input.file.name)
     if (!isZip) return 'bundle 需为 zip 文件'

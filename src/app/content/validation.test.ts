@@ -41,6 +41,11 @@ describe('validateWorkPayload', () => {
     expect(validateWorkPayload({ ...good, type: 'nope' as never }, 'new_work').type).toBeTruthy()
     expect(validateWorkPayload({ ...good, tags: ['1','2','3','4','5','6','7','8','9'] }, 'new_work').tags).toBeTruthy()
   })
+  test('面向用户的文案：workId 错误说「名称」，name 错误说「展示名称」', () => {
+    expect(validateWorkPayload({ ...good, id: 'Bad_ID' }, 'new_work').workId)
+      .toBe('名称需为小写字母、数字或连字符（1–64 字符，首尾非连字符）')
+    expect(validateWorkPayload({ ...good, name: '  ' }, 'new_work').name).toBe('展示名称必填')
+  })
   test('runtime 缺省回退 external（Task 8 buildPayload 对 external 不写 runtime 键，必走此路径）', () => {
     expect(validateWorkPayload({ ...good, runtime: undefined }, 'new_work')).toEqual({})
   })

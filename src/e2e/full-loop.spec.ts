@@ -48,7 +48,7 @@ test('全链路：注册→提交→过审→目录可见→可玩→revoke→�
 
   // 2. 新建 virtual 提交 + 真实上传（服务端加密）
   await page.goto(`${WEB}/submit/new`)
-  await page.getByLabel('名称').fill('Stack Work')
+  await page.getByLabel('展示名称').fill('Stack Work')
   await page.locator('[data-testid=work-id]').fill(workId)
   await page.getByLabel('作品原始链接').fill(`https://example.com/${workId}`)
   await page.getByLabel('作者名').fill('Stack Submitter')
