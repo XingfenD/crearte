@@ -22,10 +22,18 @@ export interface FeatureFlags {
   gamepad?: boolean
 }
 
+export interface BundleEnc {
+  v: number
+  alg: string
+  kid: string
+}
+
 export interface GameBundle {
   url: string
   bytes: number
   sha256: string
+  /** 存在即信封加密（CRB1 密文）；缺失按明文（dev/legacy 兼容，加密 spec §7.3） */
+  enc?: BundleEnc
 }
 
 export interface GameSummary {
@@ -40,6 +48,8 @@ export interface GameSummary {
   cover?: string
   addedAt: string
   runtime?: GameRuntimeMode
+  /** 前端合并标注（非服务端契约）：目录数据来自 API 源还是静态源；纯静态模式下为 undefined */
+  source?: 'api' | 'static'
 }
 
 export interface Game extends GameSummary {

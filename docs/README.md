@@ -12,6 +12,9 @@
 1. 在 `src/games/` 新增 `<id>.json`（`id` 仅含小写字母、数字、连字符，且与文件名一致）
 2. 本地校验：`cd src && npm install && npm run validate:data`
 3. 提 PR，CI 会跑数据校验与完整检查
+4. **作品经后端 import / 审核收录后，必须从 `src/games/` 删除对应 JSON**：否则后端一旦下架该作品，静态源会让它「复活」。未入库前由静态源展示，目录卡片带「社区投稿」徽标
+
+> ⚠️ 随包发布的静态目录**当前为空**（`src/games/` 只剩 `.gitkeep`，存量 4 作品已迁入 e2e 夹具）。生产目录内容全部来自后端 API，故部署有硬前置，见[部署](#部署)。
 
 字段与规则详见 [CONTRIBUTING.md](./CONTRIBUTING.md)。
 
@@ -33,12 +36,30 @@ docker compose --profile dev up -d --build   # http://localhost:8080
 
 > dev 与 prod 互斥（都占 8080）；其余 profile（prod / mock / debug）见 `crearte-deploy/README.md`。
 
+### 双源目录（`VITE_API_BASE_URL`）
+
+- `VITE_API_BASE_URL` **为空** → 纯静态目录（只读 `src/games/`），不启用账号入口
+- **非空** → 目录与详情为**双源合并**：按 id 并集、API 胜出、静态源作品带「社区投稿」徽标；API 故障时目录降级纯静态，详情页显式报错而非伪装成不存在
+- 需要本地真后端时见 `crearte-server` 的 README（db-debug + serve）；也可跑 `npm run e2e:stack`，它会用 docker 起 postgres + MinIO 并编译后端（见[生产形态本地验收](#生产形态本地验收)）
+
 ## 生产形态本地验收
 
 ```bash
 cd ../crearte-deploy
 docker compose --profile prod up -d --build   # http://localhost:8080
 ```
+
+### 真栈 smoke（`npm run e2e:stack`）
+
+在仓库内用 docker 起 postgres + MinIO、从 `crearte-server` 的 `origin/feat/content-pipeline`（git worktree，不切分支）编译后端，跑一条贯穿「注册→提交→上传→过审→目录可见→可玩→revoke→降级」的真实链路：
+
+```bash
+cd src && npm run e2e:stack
+```
+
+- 依赖：docker、go ≥ 1.24（脚本用 `/usr/local/go/bin/go`）、兄弟仓 `crearte-server`；缺任一依赖时自动降级 skip（退出码 0）
+- 跑完 cleanup 自动清容器/临时 worktree/stack.json；脚本起始也会清上次残留（防陈旧 `ready:true` 误判）
+- ⚠️ **已知限制**：full-loop 的 Step5（revoke 410 + 降级）当前会 FAILED，因后端 `cors.go` 的 `Access-Control-Allow-Headers` 不含 `If-None-Match`（浏览器对 ETag 响应自动携带、前端无从规避）→ admin「作品管理」的作品列表再验证被预检拒。Step1-4（投稿→过审→目录可见→可玩）已验证通过。后端修复见上「环境变量」节的 CORS 注记
 
 或不用 compose（仅静态预览；账号请求需要同源反代 `api` 服务）：
 
@@ -48,6 +69,10 @@ docker run --rm -p 8080:80 crearte:local
 ```
 
 ## 部署
+
+> 🔴 **顺序硬前置**：本版前端上线**前**，后端内容管线（`crearte-server` 的 content-pipeline）必须已部署**并完成存量作品 import**。因为随包静态目录为空（`src/games/` 只剩 `.gitkeep`），前端一旦先上线，线上目录会是**空白**的。
+>
+> 同理：后端不可用时目录会降级到静态源，而静态源为空 → **目录显示为空**（不是降级到存量 4 作品）。请确保后端可用性与告警。
 
 1. 本机构建并推送镜像（首次需把 Package 可见性设为 public；构建参数按实际值注入，`VITE_API_BASE_URL` 留空则不启用账号入口）：
 
@@ -71,7 +96,7 @@ docker run --rm -p 8080:80 crearte:local
 2. 访问：集群未装 ingress controller，Service 走 NodePort 30080，即 `http://<节点IP>:30080`；生产建议由前端代理按 Host 转发。
 3. TLS：集群内不终止 TLS；需要 HTTPS 时在前端代理用 `*.games.example.com` 通配证书终止，或后续补装 ingress controller 再导入通配证书（DNS-01 签发，如 acme.sh `dns_ali` 或 cert-manager）。
 4. 构建变量：`VITE_GAMES_BASE_DOMAIN`（默认 `games.example.com`）决定子域后缀，`VITE_HOST_ORIGIN`（默认 `https://games.example.com`）为宿主站来源；构建镜像时用 `--build-arg` 覆盖（见「部署」）。
-5. 运行时三件套固定为 `dist/bootstrap/index.html`、`dist/sw.js`、`dist/agent.js`，由 nginx 通配 server block 精确暴露为 `/__bootstrap`、`/sw.js`、`/agent.js`（均 `no-store`），其余路径返回 404；主站 `/data/bundles/` 带 `Access-Control-Allow-Origin: *` 供子域拉取 bundle。
+5. 运行时三件套固定为 `dist/bootstrap/index.html`、`dist/sw.js`、`dist/agent.js`，由 nginx 通配 server block 精确暴露为 `/__bootstrap`、`/sw.js`、`/agent.js`（均 `no-store`），其余路径返回 404；主站 `/data/bundles/` 带 `Access-Control-Allow-Origin: *` 供子域拉取 bundle。virtual 作品的 bundle 为 CRB1 信封加密密文时（目录数据带 `bundle.enc`），SW 安装期并行请求 `{VITE_API_BASE_URL}/api/games/{id}/bundle-key` 取钥解密（设计见 `docs/superpowers/specs/2026-09-27-sw-bundle-decryption-design.md`）；对象存储需为游戏子域配置 CORS GET/HEAD。
 
 ## 许可、开放边界与商业授权
 
@@ -100,6 +125,8 @@ Copyright (C) 2026 XingfenD
 > **生产构建如需账号能力，必须注入 `VITE_API_BASE_URL`**：`.env.development` 只管 dev；`build:e2e` 自带注入；生产走 `VITE_API_BASE_URL=https://api.crearte.yoresee.cc` 或部署侧注入；空值表示**关闭账号能力**（隐藏登录入口、auth 路由回首页、不发起 auth 请求）。
 >
 > **后端 CORS 必须同时配置 `CORS_ALLOWED_ORIGINS` 放行前端 origin 并 expose `Retry-After`**（否则跨域下前端读不到 `Retry-After`，429 提示会退化为缺省 60 秒）。
+>
+> ⚠️ **后端 `Access-Control-Allow-Headers` 还必须包含 `If-None-Match`**（`crearte-server` 的 `internal/api/cors.go` 当前只有 `Authorization, Content-Type`）。`/api/games` 返回 `ETag` + `max-age=60`，缓存过期后浏览器会**自动**带 `If-None-Match` 再验证；该头不是 CORS 安全列表头 → 触发预检 → 被拒 → **目录加载失败**。跨源部署（站点域名 ≠ API 域名，即上述生产形态）下用户浏览超 60s 再导航即命中，前端无法规避。
 
 ## 账号系统本地联调
 

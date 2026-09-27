@@ -6,6 +6,45 @@ All notable changes to this template should be documented in this file.
 The format loosely follows Keep a Changelog and can be adapted to the team's habits.
 本文档参考了 Keep a Changelog 的思路，也可以根据团队习惯调整。
 
+## [0.9.0] - 2026-09-27
+
+### Added / 新增
+
+- Dual-source content layer: catalog and game details now merge the backend API with static JSON (union by id, API wins, `source` badge for static-only community contributions); API outages degrade the catalog to static-only, while detail pages surface errors instead of masking them as not-found.
+- 双源内容层：目录与作品详情合并后端 API 与静态 JSON（按 id 并集、API 胜出、静态源作品带「社区投稿」徽标）；API 故障时目录降级纯静态，详情页则显式报错而非伪装成不存在。
+
+- Submission portal at /submit: full lifecycle (new work / new version / metadata change), slug auto-generation, prefill from existing works, XHR bundle & cover uploads with progress, drafts, submit/withdraw/resubmit after rejection with review notes.
+- /submit 提交入口：完整生命周期（新作品/新版本/元数据更新）、slug 自动生成、已收录作品预填、XHR bundle 与封面上传（带进度）、草稿、提交/撤回/被拒后重提（含审核意见展示）。
+
+- Admin console at /admin (admin role only): pending review queue with pagination, submission detail with approve/reject (note required), works management (unpublish, bundle-key revoke/restore, republish via approved-submission history).
+- /admin 管理台（仅 admin 角色）：待审队列（分页）、审核详情（通过/拒绝，意见必填）、作品管理（下架、密钥吊销/恢复、经已通过提交历史恢复上架）。
+
+### Changed / 变更
+
+- The 4 legacy catalog entries (2048 / a-dark-room / arclight-nightcast / case-files) moved out of `src/games/` into e2e fixtures: in production the backend is now their single source of truth. **The shipped static catalog is therefore empty** (`build-data.mjs` without `--with-fixtures` reads `src/games/`, which holds only `.gitkeep`), so a production deploy shows the API-sourced catalog only — the static pipeline stays for future PR contributions until each is imported and its JSON removed. See the deploy ordering constraint in README.
+- 存量 4 作品（2048 / a-dark-room / arclight-nightcast / case-files）从 `src/games/` 迁入 e2e 夹具：生产中它们以后端为唯一真源。**因此随包发布的静态目录为空**（`build-data.mjs` 不带 `--with-fixtures` 时读 `src/games/`，其中只剩 `.gitkeep`）→ 生产部署只展示 API 源目录；静态通道保留给后续 PR 贡献（被 import 后同样删除对应静态文件）。部署顺序约束见 README。
+
+- `docs/superpowers/` (superpowers design specs/plans/handoffs) is no longer tracked by git and is now gitignored; the design docs added on this branch were also stripped from its commit history. Local copies stay on disk.
+- `docs/superpowers/`（superpowers 设计文档/计划/交接）不再被 git 追踪并加入 gitignore；本分支提交历史中新增的设计文档也已一并抹除。本地副本保留在磁盘上。
+
+### Fixed / 修复
+
+- Cross-origin bundle-key fetch: removed the redundant author-level `Cache-Control: no-cache` request header in the SW key fetch. It is not a CORS-safelisted header, so on any cross-origin deploy it forced a preflight that the backend's narrow `Access-Control-Allow-Headers` rejected, blocking the key GET and leaving virtual works unplayable. `cache: 'no-store'` already prevents caching (and is stricter), so the header was pure liability.
+- 跨源取钥：移除 SW 取钥中冗余的作者级 `Cache-Control: no-cache` 请求头。它不是 CORS 安全列表头，跨源部署下会强制触发预检，而后端较窄的 `Access-Control-Allow-Headers` 会拒绝该预检 → 取钥 GET 被拦 → virtual 作品不可玩。防缓存已由 `cache: 'no-store'`（更严）保证，故该头纯属累赘。
+
+- Submit form: the bundle-upload disabled hint now names exactly which field is missing (work id and/or version) instead of always showing both. This fixes the confusion where the version placeholder `v1` looks like an entered value while the file input stays unclickable.
+- 提交表单：bundle 上传禁用提示现在精确指出缺失字段（作品 id 与/或版本号），不再固定同时显示两者；解决了版本号占位符 `v1` 看似已填写、文件选择却始终点不了的困惑。
+
+- Submit form: the bundle and cover file inputs were left unstyled (raw browser-default "选择文件" text), clashing with the neo-brutalist form. They now match the design system: outer box aligned with other inputs, inner button rendered as a `btn-ink`-style black button.
+- 提交表单：bundle 与封面的文件选择框此前无任何样式（浏览器默认的裸「选择文件」文本），与表单的新粗野主义风格脱节；现对齐设计系统——外框与其他输入框一致，内部按钮渲染为 btn-ink 风格的黑底按钮。
+
+## [0.8.0] - 2026-09-27
+
+### Added / 新增
+
+- The SW runtime now installs envelope-encrypted CRB1 bundles: parallel bundle-key fetch with 429 backoff, three-way kid cross-check (catalog `bundle.enc.kid` ↔ key response ↔ file header), AES-256-GCM decryption via WebCrypto before the existing unzip/cache chain; plaintext bundles (no `enc`) keep the legacy path. Self-heal reinstalls rebuild encryption params from persisted runtime meta; e2e fixtures are encrypted with fault-injected key endpoints (410/429).
+- SW 运行时支持安装信封加密的 CRB1 bundle：并行取钥（429 退避重试）、kid 三方交叉校验（目录 `bundle.enc.kid` ↔ key 响应 ↔ 文件头）、WebCrypto AES-256-GCM 解密后衔接现有解包/缓存链路；无 `enc` 的明文 bundle 保持旧路径。自愈重装从持久化 meta 重建加密参数；e2e 夹具全面加密并注入取钥故障（410/429）。
+
 ## [0.7.6] - 2026-09-20
 
 ### Removed / 移除

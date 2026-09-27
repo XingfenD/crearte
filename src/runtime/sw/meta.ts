@@ -9,6 +9,9 @@ export interface RuntimeMeta {
   sha256: string
   installedAt: number
   features?: Partial<FeatureFlags>
+  /** 加密 bundle 自愈重装参数：bootstrapRedirect 重建 fragment 时输出 */
+  kid?: string
+  keyUrl?: string
 }
 
 const META_CACHE = 'runtime-meta'

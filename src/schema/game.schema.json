@@ -52,7 +52,17 @@
       "properties": {
         "url": { "type": "string", "pattern": "^(https://[^\\s]+|/data/bundles/)" },
         "bytes": { "type": "integer", "minimum": 1 },
-        "sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" }
+        "sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+        "enc": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["v", "alg", "kid"],
+          "properties": {
+            "v": { "const": 1 },
+            "alg": { "const": "AES-256-GCM" },
+            "kid": { "type": "string", "pattern": "^[A-Za-z0-9_-]{22}$" }
+          }
+        }
       }
     },
     "features": {

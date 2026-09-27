@@ -1,10 +1,14 @@
 import type { RouteLocationNormalized } from 'vue-router'
 
-const AUTH_ROUTE_NAMES = new Set(['login', 'register', 'account'])
+const AUTH_ROUTE_NAMES = new Set([
+  'login', 'register', 'account',
+  'submit', 'submit-new', 'submit-edit', 'admin', 'admin-submission'
+])
 
 export interface NavigationContext {
   authEnabled: boolean
   authenticated: boolean
+  isAdmin: boolean
 }
 
 export type NavigationDecision = true | { name: string; query?: Record<string, string> }
@@ -18,6 +22,9 @@ export function resolveNavigation(
   }
   if (context.authEnabled && to.meta.requiresAuth === true && !context.authenticated) {
     return { name: 'login', query: { next: to.fullPath } }
+  }
+  if (context.authEnabled && to.meta.requiresAdmin === true && !context.isAdmin) {
+    return { name: 'home' }
   }
   return true
 }

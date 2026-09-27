@@ -41,6 +41,10 @@ const hiddenTags = computed(() => props.game.tags.slice(MAX_TAGS))
           v-if="hiddenTags.length"
           class="border-[1.5px] border-ink px-1 py-0.5 font-mono text-[0.625rem]"
         >+{{ hiddenTags.length }}<span class="sr-only">：{{ hiddenTags.join('、') }}</span></span>
+        <span
+          v-if="game.source === 'static'"
+          class="border-[1.5px] border-ink bg-highlight px-1 py-0.5 font-mono text-[0.625rem]"
+        >社区投稿</span>
       </div>
     </div>
   </RouterLink>

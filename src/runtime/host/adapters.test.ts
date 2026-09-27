@@ -1,4 +1,4 @@
-import { expect, test } from 'vitest'
+import { expect, test, vi } from 'vitest'
 import type { Game } from '../../app/data/types'
 import { resolveRuntimeTargets } from './adapters'
 
@@ -42,6 +42,37 @@ test('virtual 目标透传 features 参数', () => {
   expect(params.get('features')).toBe('{"eval":true}')
 })
 
+test('virtual + bundle.enc 注入 kid 与绝对 key URL', () => {
+  const game: Game = {
+    ...base, runtime: 'virtual', version: 'v1',
+    bundle: {
+      url: '/data/bundles/demo.bin', bytes: 10, sha256: 'a'.repeat(64),
+      enc: { v: 1, alg: 'AES-256-GCM', kid: 'k'.repeat(22) }
+    }
+  }
+  const [primary] = resolveRuntimeTargets(game, {
+    ...opts,
+    config: { baseDomain: 'games.example.com', hostOrigin: 'https://games.example.com', apiBase: 'https://api.example' }
+  })
+  const params = new URLSearchParams(new URL(primary.url).hash.replace(/^#/, ''))
+  expect(params.get('kid')).toBe('k'.repeat(22))
+  expect(params.get('key')).toBe('https://api.example/api/games/demo/bundle-key?version=v1')
+})
+
+test('无 enc 不注入加密参数（明文路径不变）', () => {
+  const game: Game = {
+    ...base, runtime: 'virtual', version: 'v1',
+    bundle: { url: '/data/bundles/demo.zip', bytes: 10, sha256: 'a'.repeat(64) }
+  }
+  const [primary] = resolveRuntimeTargets(game, {
+    ...opts,
+    config: { baseDomain: 'games.example.com', hostOrigin: 'https://games.example.com', apiBase: 'https://api.example' }
+  })
+  const params = new URLSearchParams(new URL(primary.url).hash.replace(/^#/, ''))
+  expect(params.get('kid')).toBeNull()
+  expect(params.get('key')).toBeNull()
+})
+
 test('fallback 链：hosted 再 external', () => {
   const game: Game = {
     ...base, runtime: 'virtual', version: 'v1',
@@ -50,4 +81,22 @@ test('fallback 链：hosted 再 external', () => {
   }
   const targets = resolveRuntimeTargets(game, opts)
   expect(targets.map((t) => t.mode)).toEqual(['virtual', 'hosted', 'external'])
+})
+
+test('apiBase 为相对基址（/，同源反代）时 keyUrl 落 location.origin', () => {
+  vi.stubGlobal('location', { origin: 'http://site.local' })
+  const game: Game = {
+    ...base, runtime: 'virtual', version: 'v1',
+    bundle: {
+      url: '/data/bundles/demo.bin', bytes: 10, sha256: 'a'.repeat(64),
+      enc: { v: 1, alg: 'AES-256-GCM', kid: 'k'.repeat(22) }
+    }
+  }
+  const [primary] = resolveRuntimeTargets(game, {
+    ...opts,
+    config: { baseDomain: 'games.example.com', hostOrigin: 'https://games.example.com', apiBase: '/' }
+  })
+  const params = new URLSearchParams(new URL(primary.url).hash.replace(/^#/, ''))
+  expect(params.get('key')).toBe('http://site.local/api/games/demo/bundle-key?version=v1')
+  vi.unstubAllGlobals()
 })
