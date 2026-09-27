@@ -20,6 +20,9 @@ export function slugify(name: string): string {
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-+|-+$/g, '')
     .slice(0, 64)
+    // 截断后末字符可能是连字符（如 63 字符 + 空格 + 词）：后端 WORK_ID_PATTERN 拒绝尾 `-`，
+    // 这里直接修剪掉，避免自动联动产出非法 id（Task 6 审查补）
+    .replace(/-+$/, '')
 }
 
 export function parseTags(raw: string): string[] {

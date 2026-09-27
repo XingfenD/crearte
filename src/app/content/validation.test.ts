@@ -13,6 +13,8 @@ test('slugify：中文清空、空格/大写/符号转连字符、修剪首尾',
   expect(slugify('  Hello   World ')).toBe('hello-world')
   expect(slugify('中文名字')).toBe('')
   expect(slugify('a'.repeat(80))).toBe('a'.repeat(64))
+  // 截断后末字符不得是连字符（否则 WORK_ID_PATTERN 拒绝、后端 400）
+  expect(slugify('a'.repeat(63) + ' b')).toBe('a'.repeat(63))
 })
 
 test('parseTags：中英分隔符、去重、去空、上限 8', () => {
@@ -31,10 +33,16 @@ describe('validateWorkPayload', () => {
     expect(validateWorkPayload({ ...good, name: '  ' }, 'new_work').name).toBeTruthy()
     expect(validateWorkPayload({ ...good, url: 'ftp://x' }, 'new_work').url).toBeTruthy()
     expect(validateWorkPayload({ ...good, author: { name: '' } }, 'new_work').authorName).toBeTruthy()
+    expect(validateWorkPayload({ ...good, description: '   ' }, 'new_work').description).toBeTruthy()
     expect(validateWorkPayload({ ...good, durationMinutes: { min: 20, max: 5 } }, 'new_work').duration).toBeTruthy()
     expect(validateWorkPayload({ ...good, durationMinutes: { min: 0, max: 5 } }, 'new_work').duration).toBeTruthy()
+    expect(validateWorkPayload({ ...good, durationMinutes: { min: 1.5, max: 5 } }, 'new_work').duration).toBeTruthy()
+    expect(validateWorkPayload({ ...good, durationMinutes: { min: Number.NaN, max: 5 } }, 'new_work').duration).toBeTruthy()
     expect(validateWorkPayload({ ...good, type: 'nope' as never }, 'new_work').type).toBeTruthy()
     expect(validateWorkPayload({ ...good, tags: ['1','2','3','4','5','6','7','8','9'] }, 'new_work').tags).toBeTruthy()
+  })
+  test('runtime 缺省回退 external（Task 8 buildPayload 对 external 不写 runtime 键，必走此路径）', () => {
+    expect(validateWorkPayload({ ...good, runtime: undefined }, 'new_work')).toEqual({})
   })
   test('virtual：new_work/new_version 需要合法 version 与 entry；metadata_change 不检查', () => {
     const virtual = { ...good, runtime: 'virtual' as const }
