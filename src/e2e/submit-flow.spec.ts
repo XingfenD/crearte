@@ -71,7 +71,7 @@ const ZIP = zipSync({ 'index.html': new TextEncoder().encode('<!doctype html><ti
 
 async function fillNewWorkForm(page: Page): Promise<void> {
   await page.goto('http://localhost:4173/submit/new')
-  await page.getByLabel('名称').fill('My Game')
+  await page.getByLabel('展示名称').fill('My Game')
   await expect(page.locator('[data-testid=work-id]')).toHaveValue('my-game') // slug 联动
   await page.getByLabel('作品原始链接').fill('https://example.com/my-game')
   await page.getByLabel('作者名').fill('Tester')
@@ -143,7 +143,7 @@ test('rejected：审核意见展示 → 编辑重提', async ({ page }) => {
 
   await page.locator('[data-testid=submission-sub-1]').getByRole('link', { name: '编辑' }).click()
   await expect(page).toHaveURL('http://localhost:4173/submit/sub-1')
-  await expect(page.getByLabel('名称')).toHaveValue('My Game')
+  await expect(page.getByLabel('展示名称')).toHaveValue('My Game')
   page.once('dialog', (d) => void d.accept())
   await page.locator('[data-testid=submit-review]').click()
   await expect(page).toHaveURL('http://localhost:4173/submit')

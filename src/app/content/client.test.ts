@@ -93,7 +93,7 @@ describe('validateUploadInput', () => {
   const zip = { name: 'a.zip', size: 10, type: 'application/zip' } as File
   const png = { name: 'c.png', size: 10, type: 'image/png' } as File
   test('bundle 必须带 work_id/version 且为 zip 且 ≤100MB', () => {
-    expect(validateUploadInput({ kind: 'bundle', file: zip })).toMatch(/work_id/)
+    expect(validateUploadInput({ kind: 'bundle', file: zip })).toMatch(/请先填写名称与版本号/)
     expect(validateUploadInput({ kind: 'bundle', workId: 'w', version: 'v1', file: zip })).toBeNull()
     expect(validateUploadInput({ kind: 'bundle', workId: 'w', version: 'v1', file: { ...zip, name: 'a.rar', type: '' } as File })).toMatch(/zip/)
     expect(validateUploadInput({ kind: 'bundle', workId: 'w', version: 'v1', file: { ...zip, size: 101 * 1024 * 1024 } as File })).toMatch(/超过上限/)

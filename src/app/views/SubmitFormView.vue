@@ -93,7 +93,7 @@ watch([() => form.workId, () => form.version], () => {
     bundle.value = null
     bundleLinkedOnly.value = false
     bundleInvalidated.value = true
-    notice.value = '作品 id 或版本号已修改，请重新上传 bundle'
+    notice.value = '名称或版本号已修改，请重新上传 bundle'
   }
 })
 
@@ -107,7 +107,7 @@ const bundleDisabled = computed(() =>
 const bundleDisabledHint = computed(() => {
   if (!bundleDisabled.value || kind.value === 'metadata_change') return ''
   const missing: string[] = []
-  if (!WORK_ID_PATTERN.test(form.workId.trim())) missing.push('作品 id')
+  if (!WORK_ID_PATTERN.test(form.workId.trim())) missing.push('名称')
   if (!VERSION_PATTERN.test(form.version.trim())) missing.push('版本号')
   return missing.length > 0 ? `先填写${missing.join(' 与 ')}后可上传` : ''
 })
@@ -261,7 +261,7 @@ async function save(submit: boolean): Promise<void> {
   // 被 `bundleRef := env.BundleUploadID` 回退 —— 两条路都会把 AAD 绑旧 version 的 bundle
   // 静默写回，发布后玩家侧解密失败。
   if (bundleInvalidated.value && !bundle.value) {
-    error.value = '作品 id 或版本号已修改，原 bundle 已失效，请重新上传后再保存'
+    error.value = '名称或版本号已修改，原 bundle 已失效，请重新上传后再保存'
     return
   }
   if (submit && !window.confirm('确认提交审核？审核通过后作品将公开可见。')) return
@@ -328,15 +328,16 @@ const labelClass = 'font-mono text-[0.6875rem] tracking-[0.05em]'
       <fieldset class="space-y-4" :disabled="readOnly">
         <legend :class="labelClass">基本信息</legend>
         <div class="space-y-1.5">
-          <label class="font-mono text-[0.6875rem]" for="sf-workid">作品 id（slug，收录后不可改）</label>
-          <BaseInput id="sf-workid" v-model="form.workId" data-testid="work-id" type="text"
-            :readonly="editing" :invalid="Boolean(err('workId'))" @blur="kind !== 'new_work' && !editing && prefill(form.workId.trim())" />
-          <p v-if="err('workId')" class="text-xs font-bold text-accent-ink">{{ err('workId') }}</p>
-        </div>
-        <div class="space-y-1.5">
-          <label class="font-mono text-[0.6875rem]" for="sf-name">名称</label>
+          <label class="font-mono text-[0.6875rem]" for="sf-name">展示名称（站内展示的标题）</label>
           <BaseInput id="sf-name" v-model="form.name" type="text" :invalid="Boolean(err('name'))" />
           <p v-if="err('name')" class="text-xs font-bold text-accent-ink">{{ err('name') }}</p>
+        </div>
+        <div class="space-y-1.5">
+          <label class="font-mono text-[0.6875rem]" for="sf-workid">名称（小写字母、数字或连字符，用于作品链接，收录后不可改）</label>
+          <BaseInput id="sf-workid" v-model="form.workId" data-testid="work-id" type="text"
+            :readonly="editing" :invalid="Boolean(err('workId'))" @blur="kind !== 'new_work' && !editing && prefill(form.workId.trim())" />
+          <p class="font-mono text-[0.6875rem] text-ink-soft">作品链接将是 /games/{{ form.workId.trim() || '<名称>' }}</p>
+          <p v-if="err('workId')" class="text-xs font-bold text-accent-ink">{{ err('workId') }}</p>
         </div>
         <div class="space-y-1.5">
           <label class="font-mono text-[0.6875rem]" for="sf-url">作品原始链接</label>
