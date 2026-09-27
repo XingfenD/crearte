@@ -1,4 +1,3 @@
-import type { Game } from '@/data/types'
 import { ContentApiError, toContentErrorCode } from './errors'
 import type { SubmissionDraft, SubmissionUpdate, SubmissionView, UploadInput, UploadProgress, UploadResult } from './types'
 
@@ -27,13 +26,12 @@ export interface ContentClient {
   adminUnpublish(workId: string): Promise<void>
   adminRepublish(workId: string): Promise<void>
   adminSetRevoked(workId: string, version: string, revoked: boolean): Promise<void>
-  gameDetail(id: string): Promise<Game>
 }
 
 /** 上传前置校验（纯函数，可单测）：返回错误文案或 null */
 export function validateUploadInput(input: UploadInput): string | null {
   if (input.kind === 'bundle') {
-    if (!input.workId || !input.version) return '请先填写 work_id 与版本号，再上传 bundle'
+    if (!input.workId || !input.version) return '请先填写作品 id（work_id）与版本号，再上传 bundle'
     const isZip = input.file.type === 'application/zip' ||
       input.file.type === 'application/x-zip-compressed' || /\.zip$/i.test(input.file.name)
     if (!isZip) return 'bundle 需为 zip 文件'
@@ -49,11 +47,14 @@ export function validateUploadInput(input: UploadInput): string | null {
   return null
 }
 
-function parseRetryAfter(headers: Headers): number | null {
-  const raw = headers.get('Retry-After')
+function parseRetryAfterValue(raw: string | null): number | null {
   if (!raw) return null
   const seconds = Number.parseInt(raw, 10)
   return Number.isFinite(seconds) && seconds > 0 ? seconds : null
+}
+
+function parseRetryAfter(headers: Headers): number | null {
+  return parseRetryAfterValue(headers.get('Retry-After'))
 }
 
 function toApiError(status: number, response: Response | null, body: { error?: { code?: unknown; message?: unknown } } | null, network = false): ContentApiError {
@@ -115,7 +116,7 @@ export function createContentClient(options: ContentClientOptions): ContentClien
         }
         const code = toContentErrorCode(body?.error?.code)
         if (xhr.status === 401 && code === 'unauthorized') options.onUnauthorized?.()
-        reject(new ContentApiError(xhr.status, code, typeof body?.error?.message === 'string' ? body.error.message : `upload failed: ${code}`, null, code === 'invalid_request' && typeof body?.error?.message === 'string' ? body.error.message : null))
+        reject(new ContentApiError(xhr.status, code, typeof body?.error?.message === 'string' ? body.error.message : `upload failed: ${code}`, parseRetryAfterValue(xhr.getResponseHeader('Retry-After')), code === 'invalid_request' && typeof body?.error?.message === 'string' ? body.error.message : null))
       }
       xhr.onerror = () => reject(toApiError(0, null, null, true))
       xhr.send(form)
@@ -173,9 +174,6 @@ export function createContentClient(options: ContentClientOptions): ContentClien
     },
     adminSetRevoked(workId, version, revoked) {
       return send<{ ok: boolean }>(`/api/admin/works/${encodeURIComponent(workId)}/versions/${encodeURIComponent(version)}/revoke`, { method: 'POST', body: JSON.stringify({ revoked }) }).then(() => undefined)
-    },
-    gameDetail(id) {
-      return send<Game>(`/api/games/${encodeURIComponent(id)}`)
     }
   }
 }

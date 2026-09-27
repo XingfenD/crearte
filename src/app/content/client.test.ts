@@ -92,4 +92,16 @@ describe('validateUploadInput', () => {
     expect(validateUploadInput({ kind: 'cover', file: { ...png, type: 'image/gif', name: 'c.gif' } as File })).toMatch(/png/)
     expect(validateUploadInput({ kind: 'cover', file: { ...png, size: 6 * 1024 * 1024 } as File })).toMatch(/超过上限/)
   })
+  // 以下三条为纯逻辑分支补测（与后端 uploads.go 的 "file must not be empty"、Windows zip MIME 对齐）
+  test('bundle 接受 Windows 的 application/x-zip-compressed', () => {
+    expect(validateUploadInput({ kind: 'bundle', workId: 'w', version: 'v1', file: { ...zip, name: 'a.bin', type: 'application/x-zip-compressed' } as File })).toBeNull()
+  })
+  test('空文件拒绝（bundle/cover 各自文案）', () => {
+    expect(validateUploadInput({ kind: 'bundle', workId: 'w', version: 'v1', file: { ...zip, size: 0 } as File })).toMatch(/为空文件/)
+    expect(validateUploadInput({ kind: 'cover', file: { ...png, size: 0 } as File })).toMatch(/为空文件/)
+  })
+  test('cover 扩展名与 MIME 须同时合法（MIME 合法但扩展名不符仍拒）', () => {
+    expect(validateUploadInput({ kind: 'cover', file: { ...png, name: 'c.bin', type: 'image/png' } as File })).toMatch(/png/)
+    expect(validateUploadInput({ kind: 'cover', file: { ...png, name: 'c.png', type: '' } as File })).toBeNull()
+  })
 })
