@@ -13,12 +13,25 @@ const WEB = 'http://localhost:4175'
 const workId = `stack-work-${Date.now().toString(36)}`
 const userEmail = `submitter-${Date.now()}@stack.local`
 const userPassword = 'stack-user-password'
+// ⚠️ 必须用**外部脚本**，不能用内联 <script>：
+// SW 的 CSP 默认 `script-src 'self'`（csp.ts:14），只有 `features.inlineScript` 为真才补
+// `'unsafe-inline'`（:16），而 DEFAULT_FEATURES 是 `inlineScript:false`（protocol.ts:12）。
+// API 源的 features 经 adapters.ts:32 → sw/index.ts:222 传递，但**提交表单不收集 features**
+// （SubmitFormView.vue buildPayload 无此键，规格亦零命中）→ 走 API 的作品永远拿不到
+// inlineScript → 内联脚本被 CSP 拦。实测后果：iframe body 渲染出来了但 data-ready 为 null
+// （toHaveAttribute 报 unexpected value "null"）。
+// 计划 A 的静态夹具能过是因为每个夹具 JSON 都硬写了 features:{inlineScript:true}。
+// 用外部脚本走 `'self'` 默认放行，且顺带多测一段链路：多文件 bundle 解压 + SW 按
+// `contentTypeFor()`（mime.ts: js → text/javascript）服务资产，nosniff 亦满足。
+// 另：ZIP 值不可写成 `[new TextEncoder().encode(…)]` 单元素数组——fflate 的
+// `ZippableFile = Uint8Array | Zippable | [Uint8Array|Zippable, ZipOptions]`（index.d.ts:1020）
+// 中那是二元组 [file, options]，单元素数组 typecheck 红（Task 10 偏差① 已实测）。
 const ZIP = zipSync({
-  // ⚠️ 不可写成 `[new TextEncoder().encode(…)]`：fflate 的 `ZippableFile = Uint8Array | Zippable |
-  // [Uint8Array | Zippable, ZipOptions]`（index.d.ts:1020），单元素数组不是合法的 [file, options]
-  // 元组 → typecheck 红。Task 10 偏差① 已实测确认，此处照正确写法。
   'index.html': new TextEncoder().encode(
-    '<!doctype html><html><body><script>document.body.dataset.ok="stack";document.body.dataset.ready="1"</script></body></html>'
+    '<!doctype html><html><body><script src="boot.js"></script></body></html>'
+  ),
+  'boot.js': new TextEncoder().encode(
+    'document.body.dataset.ok = "stack"; document.body.dataset.ready = "1"'
   )
 })
 
