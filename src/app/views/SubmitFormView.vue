@@ -285,6 +285,9 @@ function err(key: FieldKey): string | undefined {
   return showErrors.value ? fieldErrors.value[key] : undefined
 }
 const inputClass = 'w-full border-2 border-ink bg-surface px-3 py-2 disabled:opacity-60'
+// file 输入：外框对齐 inputClass，内部「选择文件」按钮做成 btn-ink 风格（黑底纸色字）
+const fileInputClass = 'w-full cursor-pointer border-2 border-ink bg-surface px-3 py-2 disabled:cursor-not-allowed disabled:opacity-60 ' +
+  'file:mr-3 file:cursor-pointer file:border-2 file:border-ink file:bg-ink file:px-3 file:py-1 file:text-sm file:font-extrabold file:text-paper hover:file:bg-accent-ink'
 const labelClass = 'font-mono text-[0.6875rem] tracking-[0.05em]'
 </script>
 
@@ -405,7 +408,7 @@ const labelClass = 'font-mono text-[0.6875rem] tracking-[0.05em]'
           <div class="space-y-1.5">
             <label class="font-mono text-[0.6875rem]" for="sf-bundle">bundle（zip ≤ 100MB，服务端加密存储）</label>
             <input id="sf-bundle" data-testid="bundle-file" type="file" accept=".zip,application/zip,application/x-zip-compressed"
-              :disabled="bundleDisabled" @change="onBundleFile">
+              :class="fileInputClass" :disabled="bundleDisabled" @change="onBundleFile">
             <p v-if="bundleDisabledHint" class="text-xs text-ink-soft">{{ bundleDisabledHint }}</p>
             <p v-if="bundle" data-testid="bundle-done" class="border-2 border-ink bg-paper px-2 py-1 font-mono text-[0.6875rem]">
               已上传 {{ (bundle.bytes / 1024 / 1024).toFixed(2) }} MB · sha256 {{ bundle.sha256.slice(0, 12) }}…
@@ -421,7 +424,8 @@ const labelClass = 'font-mono text-[0.6875rem] tracking-[0.05em]'
       <!-- 4. 封面 -->
       <fieldset class="space-y-2" :disabled="readOnly">
         <legend :class="labelClass">封面（可选，png/jpeg/webp ≤ 5MB）</legend>
-        <input data-testid="cover-file" type="file" aria-label="封面文件" accept=".png,.jpg,.jpeg,.webp,image/png,image/jpeg,image/webp" @change="onCoverFile">
+        <input data-testid="cover-file" type="file" aria-label="封面文件" accept=".png,.jpg,.jpeg,.webp,image/png,image/jpeg,image/webp"
+          :class="fileInputClass" @change="onCoverFile">
         <img v-if="coverPreview" :src="coverPreview" alt="封面预览" class="mt-2 w-40 border-2 border-ink">
         <p v-else-if="cover" class="font-mono text-[0.6875rem]">已上传封面 {{ cover.upload_id.slice(0, 8) }}…</p>
         <p v-else-if="coverLinkedOnly" class="font-mono text-[0.6875rem]">已关联封面（重新选择文件可替换）</p>

@@ -35,6 +35,9 @@ The format loosely follows Keep a Changelog and can be adapted to the team's hab
 - Submit form: the bundle-upload disabled hint now names exactly which field is missing (work id and/or version) instead of always showing both. This fixes the confusion where the version placeholder `v1` looks like an entered value while the file input stays unclickable.
 - 提交表单：bundle 上传禁用提示现在精确指出缺失字段（作品 id 与/或版本号），不再固定同时显示两者；解决了版本号占位符 `v1` 看似已填写、文件选择却始终点不了的困惑。
 
+- Submit form: the bundle and cover file inputs were left unstyled (raw browser-default "选择文件" text), clashing with the neo-brutalist form. They now match the design system: outer box aligned with other inputs, inner button rendered as a `btn-ink`-style black button.
+- 提交表单：bundle 与封面的文件选择框此前无任何样式（浏览器默认的裸「选择文件」文本），与表单的新粗野主义风格脱节；现对齐设计系统——外框与其他输入框一致，内部按钮渲染为 btn-ink 风格的黑底按钮。
+
 ## [0.8.0] - 2026-09-27
 
 ### Added / 新增
