@@ -98,8 +98,12 @@ let prefillTimer: ReturnType<typeof setTimeout> | null = null
 watch([() => form.workId, kind], () => {
   if (editing.value || (kind.value !== 'new_version' && kind.value !== 'metadata_change')) return
   if (!WORK_ID_PATTERN.test(form.workId.trim())) return
+  if (prefillTimer) clearTimeout(prefillTimer)
   prefillTimer = setTimeout(() => void prefill(form.workId.trim()), 600)
 })
+
+// 切 kind 后重置 slug 锁定：new_work 手改过 workId 再切走又切回，应恢复名称→slug 自动联动
+watch(kind, () => { slugTouched.value = false })
 
 async function prefill(workId: string): Promise<void> {
   error.value = null
@@ -108,6 +112,12 @@ async function prefill(workId: string): Promise<void> {
     // 此守卫只为满足 TS 的 `ApiContentRepository | null` 类型，实际不可达
     if (!apiRepo) throw new Error('内容 API 未启用')
     const game = await apiRepo.getGame(workId)
+    // hosted 在本表单无法表达（form.runtime 与 content 层 WorkPayload.runtime 均只有 external|virtual）：
+    // 若归一成 external 提交，后端 UpdateMetadata 全列覆盖会把 hosted 作品静默降级 → 直接拒绝预填
+    if (game.runtime === 'hosted') {
+      error.value = '该作品为 hosted 运行时，暂不支持在此提交（仅外链与站内作品可）'
+      return
+    }
     form.name = game.name
     form.url = game.url
     form.authorName = game.author.name
@@ -362,18 +372,19 @@ const labelClass = 'font-mono text-[0.6875rem] tracking-[0.05em]'
         <legend :class="labelClass">运行方式</legend>
         <div class="flex gap-4 text-sm font-bold">
           <label class="inline-flex items-center gap-1.5">
-            <input v-model="form.runtime" type="radio" value="external"> 外链作品
+            <input v-model="form.runtime" type="radio" value="external" :disabled="kind !== 'new_work'"> 外链作品
           </label>
           <label class="inline-flex items-center gap-1.5">
             <input v-model="form.runtime" data-testid="runtime-virtual" type="radio" value="virtual"
-              :disabled="kind === 'new_version' ? false : kind === 'metadata_change'"> 站内运行（上传 bundle）
+              :disabled="kind !== 'new_work'"> 站内运行（上传 bundle）
           </label>
         </div>
         <template v-if="form.runtime === 'virtual'">
           <div class="grid gap-4 sm:grid-cols-2">
             <div class="space-y-1.5">
               <label class="font-mono text-[0.6875rem]" for="sf-version">版本号</label>
-              <input id="sf-version" v-model="form.version" data-testid="version" type="text" placeholder="v1" :class="inputClass" :aria-invalid="Boolean(err('version'))">
+              <input id="sf-version" v-model="form.version" data-testid="version" type="text" placeholder="v1" :class="inputClass"
+                :readonly="kind === 'metadata_change'" :aria-invalid="Boolean(err('version'))">
               <p v-if="err('version')" class="text-xs font-bold text-accent-ink">{{ err('version') }}</p>
             </div>
             <div class="space-y-1.5">
@@ -401,7 +412,7 @@ const labelClass = 'font-mono text-[0.6875rem] tracking-[0.05em]'
       <!-- 4. 封面 -->
       <fieldset class="space-y-2" :disabled="readOnly">
         <legend :class="labelClass">封面（可选，png/jpeg/webp ≤ 5MB）</legend>
-        <input data-testid="cover-file" type="file" accept=".png,.jpg,.jpeg,.webp,image/png,image/jpeg,image/webp" @change="onCoverFile">
+        <input data-testid="cover-file" type="file" aria-label="封面文件" accept=".png,.jpg,.jpeg,.webp,image/png,image/jpeg,image/webp" @change="onCoverFile">
         <img v-if="coverPreview" :src="coverPreview" alt="封面预览" class="mt-2 w-40 border-2 border-ink">
         <p v-else-if="cover" class="font-mono text-[0.6875rem]">已上传封面 {{ cover.upload_id.slice(0, 8) }}…</p>
         <p v-else-if="coverLinkedOnly" class="font-mono text-[0.6875rem]">已关联封面（重新选择文件可替换）</p>
