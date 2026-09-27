@@ -1,18 +1,24 @@
-import { describe, expect, it } from 'vitest'
-import { resolveNavigation } from './guards'
+import { describe, expect, it, test } from 'vitest'
+import { resolveNavigation, type NavigationContext } from './guards'
+
+const ctx = (over: Partial<NavigationContext> = {}): NavigationContext => ({
+  authEnabled: true, authenticated: true, isAdmin: false, ...over
+})
+const to = (name: string, meta: Record<string, unknown> = {}, fullPath = `/${name}`) =>
+  ({ name, meta, fullPath }) as never
 
 describe('resolveNavigation', () => {
   it('账号关闭时三个 auth 路由都回首页', () => {
     for (const name of ['login', 'register', 'account']) {
       expect(
-        resolveNavigation({ name, meta: {}, fullPath: `/${name}` }, { authEnabled: false, authenticated: false })
+        resolveNavigation({ name, meta: {}, fullPath: `/${name}` }, { authEnabled: false, authenticated: false, isAdmin: false })
       ).toEqual({ name: 'home' })
     }
   })
 
   it('账号关闭时普通路由放行', () => {
     expect(
-      resolveNavigation({ name: 'game', meta: {}, fullPath: '/games/x' }, { authEnabled: false, authenticated: true })
+      resolveNavigation({ name: 'game', meta: {}, fullPath: '/games/x' }, { authEnabled: false, authenticated: true, isAdmin: false })
     ).toBe(true)
   })
 
@@ -20,7 +26,7 @@ describe('resolveNavigation', () => {
     expect(
       resolveNavigation(
         { name: 'account', meta: { requiresAuth: true }, fullPath: '/account' },
-        { authEnabled: true, authenticated: false }
+        { authEnabled: true, authenticated: false, isAdmin: false }
       )
     ).toEqual({ name: 'login', query: { next: '/account' } })
   })
@@ -29,8 +35,24 @@ describe('resolveNavigation', () => {
     expect(
       resolveNavigation(
         { name: 'account', meta: { requiresAuth: true }, fullPath: '/account' },
-        { authEnabled: true, authenticated: true }
+        { authEnabled: true, authenticated: true, isAdmin: false }
       )
     ).toBe(true)
+  })
+
+  test('requiresAdmin：非 admin 重定向首页，admin 放行', () => {
+    expect(resolveNavigation(to('admin', { requiresAuth: true, requiresAdmin: true }), ctx())).toEqual({ name: 'home' })
+    expect(resolveNavigation(to('admin', { requiresAuth: true, requiresAdmin: true }), ctx({ isAdmin: true }))).toBe(true)
+  })
+
+  test('未登录访问 /submit → login 带 next 回跳', () => {
+    expect(resolveNavigation(to('submit-new', { requiresAuth: true }, '/submit/new'), ctx({ authenticated: false })))
+      .toEqual({ name: 'login', query: { next: '/submit/new' } })
+  })
+
+  test('auth 未启用：submit/admin 全家重定向首页', () => {
+    for (const name of ['submit', 'submit-new', 'submit-edit', 'admin', 'admin-submission']) {
+      expect(resolveNavigation(to(name, { requiresAuth: true }), ctx({ authEnabled: false }))).toEqual({ name: 'home' })
+    }
   })
 })

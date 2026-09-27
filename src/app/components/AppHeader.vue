@@ -31,6 +31,7 @@ const sticker = computed(() => {
 })
 
 const user = computed(() => session.state.user)
+const isAdmin = computed(() => user.value?.role === 'admin')
 
 function logout(): void {
   session.logout()
@@ -71,7 +72,13 @@ function logout(): void {
         <details v-else ref="detailsRef" class="relative ml-auto sm:ml-0">
           <summary class="list-none cursor-pointer select-none border-2 border-ink bg-surface px-2 py-1 text-xs font-bold [&::-webkit-details-marker]:hidden">{{ user.display_name }} ▾</summary>
           <div class="absolute right-0 z-50 mt-1 w-32 border-2 border-ink bg-surface shadow-hard">
-            <RouterLink to="/account" class="block px-3 py-2 text-xs font-bold hover:bg-paper">我的账号</RouterLink>
+            <RouterLink to="/submit" class="block px-3 py-2 text-xs font-bold hover:bg-paper">提交作品</RouterLink>
+            <RouterLink
+              v-if="isAdmin"
+              to="/admin"
+              class="block border-t-2 border-ink px-3 py-2 text-xs font-bold hover:bg-paper"
+            >审核</RouterLink>
+            <RouterLink to="/account" class="block border-t-2 border-ink px-3 py-2 text-xs font-bold hover:bg-paper">我的账号</RouterLink>
             <button type="button" class="block w-full border-t-2 border-ink px-3 py-2 text-left text-xs font-bold hover:bg-paper" @click="logout">登出</button>
           </div>
         </details>

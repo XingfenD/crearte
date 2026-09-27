@@ -14,6 +14,11 @@ export const router = createRouter({
     { path: '/login', name: 'login', component: () => import('@/views/LoginView.vue') },
     { path: '/register', name: 'register', component: () => import('@/views/RegisterView.vue') },
     { path: '/account', name: 'account', component: () => import('@/views/AccountView.vue'), meta: { requiresAuth: true } },
+    { path: '/submit', name: 'submit', component: () => import('@/views/SubmitListView.vue'), meta: { requiresAuth: true } },
+    { path: '/submit/new', name: 'submit-new', component: () => import('@/views/SubmitFormView.vue'), meta: { requiresAuth: true } },
+    { path: '/submit/:id', name: 'submit-edit', component: () => import('@/views/SubmitFormView.vue'), props: true, meta: { requiresAuth: true } },
+    { path: '/admin', name: 'admin', component: () => import('@/views/AdminView.vue'), meta: { requiresAuth: true, requiresAdmin: true } },
+    { path: '/admin/submissions/:id', name: 'admin-submission', component: () => import('@/views/AdminSubmissionView.vue'), props: true, meta: { requiresAuth: true, requiresAdmin: true } },
     { path: '/:pathMatch(.*)*', name: 'not-found', component: () => import('@/views/NotFoundView.vue') }
   ],
   scrollBehavior(to, _from, savedPosition) {
@@ -26,6 +31,7 @@ export const router = createRouter({
 router.beforeEach((to) =>
   resolveNavigation(to, {
     authEnabled,
-    authenticated: session.state.status === 'authenticated'
+    authenticated: session.state.status === 'authenticated',
+    isAdmin: session.state.user?.role === 'admin'
   })
 )
