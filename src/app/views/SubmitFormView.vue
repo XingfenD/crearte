@@ -2,6 +2,7 @@
 import { computed, nextTick, onBeforeUnmount, reactive, ref, watch } from 'vue'
 import { RouterLink, useRoute, useRouter } from 'vue-router'
 import { contentClient, toContentMessage, validateUploadInput } from '@/content'
+import { EMPTY_FEATURES, FEATURE_ITEMS, collectFeatures, featuresToForm } from '@/content/features'
 import { parseTags, slugify, validateWorkPayload, VERSION_PATTERN, WORK_ID_PATTERN, type FieldKey } from '@/content/validation'
 import type { SubmissionKind, SubmissionView, UploadResult, WorkPayload } from '@/content/types'
 import { GAME_TYPES } from '@/data/types'
@@ -22,7 +23,8 @@ const form = reactive({
   workId: '', name: '', url: '', authorName: '', authorUrl: '',
   description: '', durationMin: '5', durationMax: '20', type: 'puzzle',
   tagsText: '', intro: '', runtime: 'external' as 'external' | 'virtual',
-  version: '', entry: 'index.html'
+  version: '', entry: 'index.html',
+  features: { ...EMPTY_FEATURES }
 })
 
 const existing = ref<SubmissionView | null>(null)
@@ -64,7 +66,9 @@ function buildPayload(): WorkPayload {
     type: form.type as WorkPayload['type'],
     tags: parseTags(form.tagsText),
     ...(form.intro.trim() ? { intro: form.intro.trim() } : {}),
-    ...(form.runtime === 'virtual' ? { runtime: 'virtual' as const, version: form.version.trim(), entry: form.entry.trim() || 'index.html' } : {})
+    // features 仅对 virtual 有意义（SW 按作品 features 注入 CSP）；两个键总是输出，
+    // 显式空对象 = 不放宽——后端据此把「缺键（旧提交）」与「显式清空」区分开
+    ...(form.runtime === 'virtual' ? { runtime: 'virtual' as const, version: form.version.trim(), entry: form.entry.trim() || 'index.html', features: collectFeatures(form.features) } : {})
   }
 }
 
@@ -139,6 +143,7 @@ async function prefill(workId: string): Promise<void> {
     form.intro = game.intro ?? ''
     form.runtime = game.runtime === 'virtual' ? 'virtual' : 'external'
     form.entry = game.entry ?? 'index.html'
+    form.features = featuresToForm(game.features)
     // new_version 必须提供新版本号：预填后清空强制用户输入
     form.version = kind.value === 'new_version' ? '' : (game.version ?? '')
     if (kind.value === 'new_version' && game.runtime !== 'virtual') {
@@ -175,6 +180,7 @@ async function loadExisting(id: string): Promise<void> {
     form.runtime = p.runtime === 'virtual' ? 'virtual' : 'external'
     form.version = p.version ?? ''
     form.entry = p.entry ?? 'index.html'
+    form.features = featuresToForm(p.features)
     bundleLinkedOnly.value = Boolean(s.bundle_upload_id)
     bundleInvalidated.value = false
     coverLinkedOnly.value = Boolean(s.cover_upload_id)
@@ -417,6 +423,13 @@ const labelClass = 'font-mono text-[0.6875rem] tracking-[0.05em]'
             <span v-if="progress?.which === 'bundle'" data-testid="upload-progress" class="block font-mono text-[0.6875rem]">
               上传中 {{ progress.total > 0 ? Math.round((progress.received / progress.total) * 100) : '…' }}%
             </span>
+          </div>
+          <div class="space-y-2">
+            <p :class="labelClass">运行权限（高级，仅当作品代码确需时勾选）</p>
+            <label v-for="item in FEATURE_ITEMS" :key="item.key" class="flex items-start gap-2 text-sm">
+              <input v-model="form.features[item.key]" type="checkbox" :data-testid="`feature-${item.key}`" class="mt-1">
+              <span><span class="font-bold">{{ item.label }}</span><span class="ml-1 text-xs text-ink-soft">{{ item.hint }}</span></span>
+            </label>
           </div>
         </template>
       </fieldset>

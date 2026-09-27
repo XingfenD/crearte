@@ -1,4 +1,5 @@
 import { ContentApiError, toContentErrorCode } from './errors'
+import type { FeatureFlags } from '@/data/types'
 import type { SubmissionDraft, SubmissionUpdate, SubmissionView, UploadInput, UploadProgress, UploadResult } from './types'
 
 export const MAX_BUNDLE_BYTES = 100 * 1024 * 1024
@@ -25,6 +26,7 @@ export interface ContentClient {
   adminReject(id: string, note: string): Promise<void>
   adminUnpublish(workId: string): Promise<void>
   adminRepublish(workId: string): Promise<void>
+  adminSetFeatures(workId: string, features: FeatureFlags): Promise<void>
   adminSetRevoked(workId: string, version: string, revoked: boolean): Promise<void>
 }
 
@@ -171,6 +173,9 @@ export function createContentClient(options: ContentClientOptions): ContentClien
     },
     adminRepublish(workId) {
       return send<{ ok: boolean }>(`/api/admin/works/${encodeURIComponent(workId)}/republish`, { method: 'POST', body: '{}' }).then(() => undefined)
+    },
+    adminSetFeatures(workId, features) {
+      return send<{ ok: boolean }>(`/api/admin/works/${encodeURIComponent(workId)}/features`, { method: 'PUT', body: JSON.stringify({ features }) }).then(() => undefined)
     },
     adminSetRevoked(workId, version, revoked) {
       return send<{ ok: boolean }>(`/api/admin/works/${encodeURIComponent(workId)}/versions/${encodeURIComponent(version)}/revoke`, { method: 'POST', body: JSON.stringify({ revoked }) }).then(() => undefined)

@@ -1,4 +1,4 @@
-import type { GameType } from '@/data/types'
+import type { FeatureFlags, GameType } from '@/data/types'
 
 export type SubmissionKind = 'new_work' | 'new_version' | 'metadata_change'
 export type SubmissionStatus = 'draft' | 'pending' | 'approved' | 'rejected'
@@ -16,6 +16,8 @@ export interface WorkPayload {
   runtime?: 'external' | 'virtual'
   version?: string
   entry?: string
+  /** 作品运行权限（CSP 开关等）。virtual 作品由提交表单显式输出；缺省 = 不放宽 */
+  features?: FeatureFlags
 }
 
 export interface SubmissionView {
