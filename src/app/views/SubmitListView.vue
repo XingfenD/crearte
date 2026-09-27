@@ -26,6 +26,12 @@ const actionError = ref<string | null>(null)
 // 危险操作两步确认：记录待确认的 (id, 动作)
 const confirm = ref<{ id: string; action: 'withdraw' | 'delete' } | null>(null)
 
+// StatePanel 直出 error.message（后端原文，如 "admin role required"），过一遍 toContentMessage
+// 与 actionError / AdminView.panelError 保持一致的中文映射。不动 StatePanel/useAsync 冻结面
+function panelError(e: Error | null): Error | null {
+  return e ? new Error(toContentMessage(e)) : null
+}
+
 function nameOf(s: SubmissionView): string {
   return s.payload?.name?.trim() || s.work_id
 }
@@ -83,7 +89,7 @@ function doConfirm(s: SubmissionView): void {
     <p v-if="actionError" role="alert" class="mt-4 border-2 border-ink bg-highlight px-3 py-2 text-xs font-bold">{{ actionError }}</p>
 
     <div class="mt-6">
-      <StatePanel :loading="loading" :error="error" @retry="reload">
+      <StatePanel :loading="loading" :error="panelError(error)" @retry="reload">
         <p v-if="submissions.length === 0" class="border-2 border-ink bg-surface p-6 text-sm text-ink-soft shadow-hard">
           还没有提交。把你的作品分享给所有人——
           <RouterLink class="text-accent-ink underline decoration-2 underline-offset-2" to="/submit/new">提交第一个作品</RouterLink>

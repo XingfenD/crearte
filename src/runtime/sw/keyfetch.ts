@@ -15,10 +15,10 @@ const defaultSleep = (ms: number) => new Promise<void>((resolve) => setTimeout(r
 export async function fetchBundleKey(url: string, opts: FetchKeyOptions = {}): Promise<BundleKeyMaterial> {
   const maxRetries = opts.maxRetries ?? 3
   const sleep = opts.sleep ?? defaultSleep
-  // ⚠️ 不要在这里设 `Cache-Control: no-cache` 请求头：它不是 CORS 安全列表头，跳源部署下
+  // ⚠️ 不要在这里设 `Cache-Control: no-cache` 请求头：它不是 CORS 安全列表头，跨源部署下
   // 会触发预检，而后端 ACAH 只有 `Authorization, Content-Type` → 预检失败 → 取钥 GET 被拦
   // （实测 `GET -1`，bundle 装不上、作品不可玩）。防缓存由下面的 `cache: 'no-store'` 保证
-  // （严于 no-store：浏览器不存也不重验，故也不会发 If-None-Match）。
+  // （严于 no-cache：浏览器不存也不重验，故也不会发 If-None-Match）。
   const headers: Record<string, string> = {}
   if (opts.token) headers.Authorization = `Bearer ${opts.token}`
   let backoff = 0
