@@ -24,6 +24,9 @@ The format loosely follows Keep a Changelog and can be adapted to the team's hab
 - The 4 legacy catalog entries (2048 / a-dark-room / arclight-nightcast / case-files) moved out of `src/games/` into e2e fixtures: in production the backend is now their single source of truth. **The shipped static catalog is therefore empty** (`build-data.mjs` without `--with-fixtures` reads `src/games/`, which holds only `.gitkeep`), so a production deploy shows the API-sourced catalog only — the static pipeline stays for future PR contributions until each is imported and its JSON removed. See the deploy ordering constraint in README.
 - 存量 4 作品（2048 / a-dark-room / arclight-nightcast / case-files）从 `src/games/` 迁入 e2e 夹具：生产中它们以后端为唯一真源。**因此随包发布的静态目录为空**（`build-data.mjs` 不带 `--with-fixtures` 时读 `src/games/`，其中只剩 `.gitkeep`）→ 生产部署只展示 API 源目录；静态通道保留给后续 PR 贡献（被 import 后同样删除对应静态文件）。部署顺序约束见 README。
 
+- `docs/superpowers/` (superpowers design specs/plans/handoffs) is no longer tracked by git and is now gitignored; the design docs added on this branch were also stripped from its commit history. Local copies stay on disk.
+- `docs/superpowers/`（superpowers 设计文档/计划/交接）不再被 git 追踪并加入 gitignore；本分支提交历史中新增的设计文档也已一并抹除。本地副本保留在磁盘上。
+
 ### Fixed / 修复
 
 - Cross-origin bundle-key fetch: removed the redundant author-level `Cache-Control: no-cache` request header in the SW key fetch. It is not a CORS-safelisted header, so on any cross-origin deploy it forced a preflight that the backend's narrow `Access-Control-Allow-Headers` rejected, blocking the key GET and leaving virtual works unplayable. `cache: 'no-store'` already prevents caching (and is stricter), so the header was pure liability.
