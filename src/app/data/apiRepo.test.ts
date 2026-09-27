@@ -42,6 +42,8 @@ describe('ApiContentRepository', () => {
     const again = await repo2.listGames()
     expect(again.map((g) => g.id)).toEqual(['g1'])
     expect(fetchMock).toHaveBeenCalled()
+    // N1：锁死「条件请求发送」半边语义——缺此断言时删掉 If-None-Match 发送仍全绿（变异 M1 存活）
+    expect((fetchMock.mock.calls[1][1]?.headers as Record<string, string>)['If-None-Match']).toBe('W/"e1"')
   })
 
   test('Cache-Control: no-store 时不缓存 ETag', async () => {
@@ -85,8 +87,12 @@ describe('ApiContentRepository', () => {
 
   test('listDocs/getDoc 委托静态源', async () => {
     const listDocs = vi.fn(async () => [{ slug: 's', title: 't', order: 1 }])
-    const repo = new ApiContentRepository('http://api', { listDocs, getDoc: async () => { throw new NotFoundError('x') } })
+    const getDoc = vi.fn(async () => { throw new NotFoundError('x') })
+    const repo = new ApiContentRepository('http://api', { listDocs, getDoc })
     expect((await repo.listDocs())[0].slug).toBe('s')
     expect(listDocs).toHaveBeenCalled()
+    // N2：getDoc 委托此前从未被执行，用例名与覆盖面不符
+    await expect(repo.getDoc('s')).rejects.toThrow(NotFoundError)
+    expect(getDoc).toHaveBeenCalledWith('s')
   })
 })

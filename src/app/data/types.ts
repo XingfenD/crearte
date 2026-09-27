@@ -48,6 +48,8 @@ export interface GameSummary {
   cover?: string
   addedAt: string
   runtime?: GameRuntimeMode
+  /** 前端合并标注（非服务端契约）：目录数据来自 API 源还是静态源；纯静态模式下为 undefined */
+  source?: 'api' | 'static'
 }
 
 export interface Game extends GameSummary {
