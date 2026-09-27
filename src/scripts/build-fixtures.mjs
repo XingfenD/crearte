@@ -71,9 +71,9 @@ for (const file of (await readdir(catalogDir)).filter((f) => f.endsWith('.json')
   const catalog = JSON.parse(await readFile(path.join(catalogDir, file), 'utf8'))
   const { _corruptSha, _corruptV2Sha, _plaintext, ...game } = catalog
   // C 模式夹具由 mock 服务直接托管源文件，不打包；原样输出供 build-data --with-fixtures 合并
-  if (game.runtime === 'hosted') {
+  if (game.runtime === 'hosted' || game.runtime === 'external') {
     await writeFile(path.join(outDir, 'games', `${game.id}.json`), JSON.stringify(game, null, 2) + '\n')
-    console.log(`[fixtures] ${game.id}: hosted (no bundle)`)
+    console.log(`[fixtures] ${game.id}: ${game.runtime} (no bundle)`)
     continue
   }
   const files = await collect(path.join(gamesDir, game.id))
