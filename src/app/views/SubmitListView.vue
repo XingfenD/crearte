@@ -30,6 +30,12 @@ function nameOf(s: SubmissionView): string {
   return s.payload?.name?.trim() || s.work_id
 }
 
+// updated_at 是 RFC3339 UTC 时间戳，直接 slice(0,10) 会在本地跨日时偏移一天，故走本地化格式化
+function updatedOn(s: SubmissionView): string {
+  const at = new Date(s.updated_at)
+  return Number.isNaN(at.getTime()) ? s.updated_at : at.toLocaleDateString('zh-CN')
+}
+
 async function run(id: string, fn: () => Promise<unknown>): Promise<void> {
   if (busyId.value) return
   busyId.value = id
@@ -107,6 +113,8 @@ function doConfirm(s: SubmissionView): void {
               class="mt-2 inline-block text-xs text-accent-ink underline decoration-2 underline-offset-2"
             >查看已发布作品 →</RouterLink>
 
+            <p class="mt-2 font-mono text-[0.625rem] text-ink-soft">更新于 {{ updatedOn(s) }}</p>
+
             <div class="mt-3 flex flex-wrap gap-2 text-xs font-bold">
               <RouterLink
                 v-if="s.status === 'draft' || s.status === 'rejected'"
@@ -128,7 +136,7 @@ function doConfirm(s: SubmissionView): void {
                 @click="askConfirm(s, 'withdraw')"
               >撤回</button>
               <button
-                v-if="s.status === 'draft' || s.status === 'rejected'"
+                v-if="s.status === 'draft'"
                 type="button"
                 class="border-2 border-ink bg-surface px-2 py-1 disabled:opacity-50"
                 :disabled="busyId === s.id"
