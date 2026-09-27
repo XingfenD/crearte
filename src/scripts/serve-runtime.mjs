@@ -155,6 +155,15 @@ const server = createServer(async (req, res) => {
 
     if (await bundleKeyMock(req, res, url)) return
 
+    // 内容 API 在 mock 服务器中不存在：统一 404 JSON，使 apiRepo 抛 NotFoundError → mergeRepo 回落静态源。
+    // 若无此分支，/api/games* 会落入 SPA fallback 返 200+HTML，response.json() 抛解析错、详情页全灭。
+    // 规格 spec:10 的 e2e 新 spec 用 page.route 拦截，优先级高于本服务器，互不影响。
+    if (url.pathname.startsWith('/api/')) {
+      res.writeHead(404, { 'Content-Type': MIME['.json'] })
+      res.end('{"error":{"code":"not_found","message":"content API is not mocked"}}')
+      return
+    }
+
     if (isGameHost) {
       const gameId = host.split('.')[0]
       if (url.pathname === '/__bootstrap') {
