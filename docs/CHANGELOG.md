@@ -6,6 +6,21 @@ All notable changes to this template should be documented in this file.
 The format loosely follows Keep a Changelog and can be adapted to the team's habits.
 本文档参考了 Keep a Changelog 的思路，也可以根据团队习惯调整。
 
+## [0.10.2] - 2026-09-27
+
+### Added / 新增
+
+- Fullscreen support for the embedded play area: a 全屏/退出全屏 button in the control bar puts the whole cabinet (title bar, stage, and controls) into fullscreen, with the stage expanding from its fixed aspect ratio to fill the viewport; state tracks `fullscreenchange` so Esc and external exits restore the layout correctly.
+- 内嵌游玩区支持全屏：控制条新增「全屏/退出全屏」按钮，整个展柜（标题栏、播放区、控制按钮）进入全屏，播放区由固定纵横比改为撑满视口；状态跟随 `fullscreenchange` 事件，Esc 或外部退出都能正确还原布局。
+
+### Fixed / 修复
+
+- The play iframe's sandbox now includes `allow-fullscreen`: works' own fullscreen requests (the `allowfullscreen` attribute and Permissions Policy were already in place) were blocked by the sandbox flag, so in-work fullscreen buttons never worked.
+- 播放 iframe 的 sandbox 补上 `allow-fullscreen`：此前作品自身的全屏请求被 sandbox 旗标拦截（`allowfullscreen` 属性与 Permissions Policy 均已就位也没用），作品内的全屏按钮不可用。
+
+- The bootstrap page now falls back to `document.referrer`'s origin when `VITE_HOST_ORIGIN` is missing or misconfigured: previously it would post every signal to a hardcoded default origin, the browser would silently reject them all, and the host would only surface an opaque 60s bootstrap timeout. Parent-side origin validation is unchanged, so this does not weaken the security model.
+- bootstrap 页在 `VITE_HOST_ORIGIN` 缺失或配错时回退使用 `document.referrer` 的 origin：此前所有信号都发往硬编码默认 origin 并被浏览器静默拒绝，父级只能看到一句莫名的 60s 超时。父侧 origin 校验不变，不削弱安全模型。
+
 ## [0.10.1] - 2026-09-27
 
 ### Added / 新增

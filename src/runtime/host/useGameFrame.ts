@@ -33,7 +33,9 @@ export function useGameFrame(options: GameFrameOptions) {
   let bridgeWarn: ReturnType<typeof setTimeout> | null = null
 
   const target = computed(() => options.targets()[targetIndex.value] ?? null)
-  const sandbox = 'allow-scripts allow-same-origin allow-pointer-lock'
+  // allow-fullscreen：缺此旗标时作品自身的 requestFullscreen 会被 sandbox 挡掉
+  // （iframe 的 allowfullscreen 属性与 Permissions Policy 都救不回来）
+  const sandbox = 'allow-scripts allow-same-origin allow-pointer-lock allow-fullscreen'
   const allow = computed(() => {
     const parts = ['fullscreen', 'autoplay']
     if (options.features().gamepad) parts.push('gamepad')

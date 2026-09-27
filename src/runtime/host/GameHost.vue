@@ -1,9 +1,11 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { PhArrowsInSimple, PhArrowsOutSimple } from '@phosphor-icons/vue'
 import type { Game } from '../../app/data/types'
 import { runtimeConfig } from './config'
 import { resolveRuntimeTargets, type RuntimeTarget } from './adapters'
 import { useGameFrame } from './useGameFrame'
+import { useFullscreen } from './useFullscreen'
 import { DEFAULT_FEATURES } from '../bridge/protocol'
 
 const props = defineProps<{ game: Game }>()
@@ -19,6 +21,8 @@ const frame = useGameFrame({
   onEvent: (event) => { if (event.type === 'game:error') lastError.value = event.message }
 })
 const emit = defineEmits<{ exit: [] }>()
+// 全屏目标 = 整个游玩区（展柜 + 控制按钮）；状态由 fullscreenchange 同步，Esc/他方抢占都能正确回落
+const fullscreen = useFullscreen()
 const targets = computed<RuntimeTarget[]>(() => resolveRuntimeTargets(props.game, {
   baseDomain: config.baseDomain,
   protocol: location.protocol,
@@ -59,19 +63,23 @@ function onIframeLoad(): void {
 }
 onMounted(() => {
   window.addEventListener('message', onMessage)
+  document.addEventListener('fullscreenchange', fullscreen.sync)
   frame.start()
 })
 onBeforeUnmount(() => {
   window.removeEventListener('message', onMessage)
+  document.removeEventListener('fullscreenchange', fullscreen.sync)
   frame.stop()
 })
 function onMessage(event: MessageEvent): void { frame.onMessage(event) }
 </script>
 
 <template>
-  <div class="space-y-3">
-    <!-- 展柜外框：与封面框/控制按钮同一套墨纸语言（base 层全局 border-radius:0） -->
-    <div class="border-2 border-ink bg-paper shadow-hard">
+  <div class="space-y-3" :ref="(el) => fullscreen.attach(el as HTMLElement)"
+       :class="fullscreen.isFullscreen.value && 'fixed inset-0 z-50 flex flex-col overflow-y-auto bg-paper p-3'">
+    <!-- 展柜外框：与封面框/控制按钮同一套墨纸语言（base 层全局 border-radius:0）；全屏时撑满纵向空间 -->
+    <div class="border-2 border-ink bg-paper shadow-hard"
+         :class="fullscreen.isFullscreen.value && 'flex min-h-0 flex-1 flex-col'">
       <!-- 标题栏：作品名 + 运行时徽标 + 状态 -->
       <div class="flex flex-wrap items-center gap-x-3 gap-y-1 border-b-2 border-ink px-3 py-2">
         <span class="min-w-0 flex-1 truncate text-sm font-bold" :title="game.name">{{ game.name }}</span>
@@ -81,8 +89,8 @@ function onMessage(event: MessageEvent): void { frame.onMessage(event) }
           {{ statusInfo.label }}
         </span>
       </div>
-      <!-- 播放区：内容区不做主题化（bg-ink 仅作屏幕底色），保证作品忠实呈现 -->
-      <div class="relative overflow-hidden bg-ink" :class="aspectClass">
+      <!-- 播放区：内容区不做主题化（bg-ink 仅作屏幕底色），保证作品忠实呈现；全屏时撑满剩余空间 -->
+      <div class="relative overflow-hidden bg-ink" :class="fullscreen.isFullscreen.value ? 'min-h-0 flex-1' : aspectClass">
         <iframe
           v-if="!degradedToExternal"
           :key="frameKey"
@@ -128,6 +136,12 @@ function onMessage(event: MessageEvent): void { frame.onMessage(event) }
       <button class="btn-surface lift px-3 py-1.5" @click="frame.resume()">继续</button>
       <button class="btn-surface lift px-3 py-1.5" @click="restart()">重开</button>
       <button class="btn-surface lift px-3 py-1.5" @click="frame.clearSave()">清除存档</button>
+      <button v-if="!fullscreen.isFullscreen.value" class="btn-surface lift px-3 py-1.5" @click="fullscreen.toggle()">
+        <PhArrowsOutSimple :size="14" weight="bold" aria-hidden="true" />全屏
+      </button>
+      <button v-else class="btn-surface lift px-3 py-1.5" @click="fullscreen.toggle()">
+        <PhArrowsInSimple :size="14" weight="bold" aria-hidden="true" />退出全屏
+      </button>
       <button class="btn-surface lift px-3 py-1.5" @click="emit('exit')">退出</button>
       <span v-if="frame.state.value.score !== null" class="font-mono text-xs text-ink-soft">得分：{{ frame.state.value.score }}</span>
       <span v-if="frame.state.value.storageKeys !== null" class="font-mono text-xs text-ink-soft">存档：{{ frame.state.value.storageKeys }} 项</span>
