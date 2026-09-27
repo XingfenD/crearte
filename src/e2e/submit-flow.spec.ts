@@ -104,7 +104,8 @@ test('新建 virtual 提交：slug 联动 → 上传 → 存草稿 → 提交 �
 
 test('work_id/version 修改后已传 bundle 作废并提示重传', async ({ page }) => {
   await seedSession(page)
-  installSubmissionApi(page, { subs: [] })
+  const state: { subs: Sub[] } = { subs: [] }
+  installSubmissionApi(page, state)
   await fillNewWorkForm(page)
   await page.locator('[data-testid=runtime-virtual]').check()
   await page.locator('[data-testid=version]').fill('v1')
@@ -112,7 +113,14 @@ test('work_id/version 修改后已传 bundle 作废并提示重传', async ({ pa
   await expect(page.locator('[data-testid=bundle-done]')).toBeVisible()
   await page.locator('[data-testid=version]').fill('v2')
   await expect(page.locator('[data-testid=bundle-done]')).toHaveCount(0)
+  // 注意：save() 会先把 notice 清空（SubmitFormView.vue:231），故此断言必须在点击存草稿之前
   await expect(page.getByText('请重新上传 bundle')).toBeVisible()
+
+  // spec:132 硬拦截：上面两行只证明 watcher 置了 bundleInvalidated，这里直接验 save() 的
+  // 早退分支（SubmitFormView.vue:242-244）——点存草稿必须报「已失效」，且**没有任何写请求发出**
+  await page.locator('[data-testid=save-draft]').click()
+  await expect(page.getByRole('alert')).toContainText('已失效')
+  expect(state.subs).toHaveLength(0)
 })
 
 test('429：存草稿展示限流文案与 Retry-After', async ({ page }) => {

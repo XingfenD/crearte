@@ -36,6 +36,9 @@ test('API 目录挂掉：降级纯静态，19 款照常展示', async ({ page })
   await expect.poll(() => api.hits()).toBeGreaterThan(0)
   await expect(page.getByRole('heading', { name: '2048', exact: true })).toBeVisible()
   await expect(page.getByRole('heading', { name: '相对路径夹具' })).toBeVisible()
+  // 题称「19 款」就得数满 19 款（dist/data/index.json 实测 19）：只断言两个 heading 时，
+  // 静态源整体没挂上也会绿
+  await expect(page.locator('a[href^="/games/"]')).toHaveCount(19)
   await expect(page.getByText('加载失败')).toHaveCount(0)
 })
 

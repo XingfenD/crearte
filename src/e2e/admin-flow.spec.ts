@@ -102,7 +102,8 @@ test('作品管理：下架 / 版本吊销与恢复 / republish', async ({ page 
   expect(calls.some((c) => c.includes('/api/admin/works/live-game/unpublish'))).toBe(true)
   expect(calls.some((c) => c.includes('/api/admin/works/live-game/versions/v3/revoke') && c.includes('"revoked":true'))).toBe(true)
   expect(calls.some((c) => c.includes('/api/admin/works/live-game/versions/v3/revoke') && c.includes('"revoked":false'))).toBe(true)
-  expect(calls.some((c) => c.includes('/api/admin/works/live-game/republish'))).toBe(true)
+  // 前三条调用被按钮 disabled 串行化保护，唯 republish 是最后一步、fetch 可能在途 → poll 消竞态
+  await expect.poll(() => calls.some((c) => c.includes('/api/admin/works/live-game/republish'))).toBe(true)
 })
 
 test('非 admin：header 无审核入口，/admin 重定向首页', async ({ page }) => {
