@@ -6,6 +6,13 @@ All notable changes to this template should be documented in this file.
 The format loosely follows Keep a Changelog and can be adapted to the team's habits.
 本文档参考了 Keep a Changelog 的思路，也可以根据团队习惯调整。
 
+## [0.10.5] - 2026-09-28
+
+### Changed / 变更
+
+- BaseSelect now hides the native dropdown arrow (`appearance-none`) and draws the site's own caret icon, matching the catalog sort control's paper-ink look; the closed-state select on the submit form (提交类型 / 类型) no longer reads as a default browser widget. Attrs and class fall-through still land on the `<select>` element, so e2e selectors are unaffected. (The opened option list remains OS-rendered — that is a browser limitation of native `<select>`.)
+- BaseSelect 隐藏原生下拉箭头（appearance-none）并自绘站点 caret 图标，与目录页排序控件的纸墨外观一致；提交表单（提交类型 / 类型）收起态的下拉不再是浏览器默认观感。透传属性与 class 仍落在 `<select>` 上，e2e 选择器不受影响。（展开后的选项列表仍由操作系统渲染——这是原生 `<select>` 的浏览器限制。）
+
 ## [0.10.4] - 2026-09-28
 
 ### Changed / 变更
