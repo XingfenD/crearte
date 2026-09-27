@@ -6,6 +6,13 @@ All notable changes to this template should be documented in this file.
 The format loosely follows Keep a Changelog and can be adapted to the team's habits.
 本文档参考了 Keep a Changelog 的思路，也可以根据团队习惯调整。
 
+## [0.10.1] - 2026-09-27
+
+### Added / 新增
+
+- Loading a work now shows a real determinate progress bar: the bootstrap page forwards the service worker's `runtime:progress` (received/total bytes) to the host, `useGameFrame` records it in the pre-existing (previously unused) `progress` state, and the cabinet overlay renders an ink-framed bar with percentage. The in-iframe bootstrap page's own progress UI is restyled to the same paper-ink language, so download, decrypt, install and startup read as one continuous themed flow.
+- 作品加载现在显示真实确定态进度条：bootstrap 页将 SW 的 `runtime:progress`（已接收/总字节）转报父级，`useGameFrame` 记入早已预留但从未使用的 `progress` 状态，展柜遮罩渲染墨框进度条与百分比。iframe 内 bootstrap 页自身进度 UI 同步改为纸墨主题，下载/解密/安装/启动全程观感一致。
+
 ## [0.10.0] - 2026-09-27
 
 ### Added / 新增

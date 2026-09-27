@@ -102,8 +102,16 @@ function onMessage(event: MessageEvent): void { frame.onMessage(event) }
              class="btn-ink lift">在新标签打开 ↗</a>
         </div>
         <div v-if="frame.state.value.phase === 'booting' && !degradedToExternal"
-             class="absolute inset-0 grid place-items-center bg-paper/95 font-mono text-xs text-ink">
-          正在加载作品…
+             class="absolute inset-0 grid place-items-center bg-paper/95">
+          <div class="w-64 max-w-[80%] space-y-2">
+            <p class="font-mono text-xs text-ink">
+              正在加载作品…<span v-if="frame.state.value.progress !== null"> {{ frame.state.value.progress }}%</span>
+            </p>
+            <div class="h-4 border-2 border-ink bg-surface shadow-hard-sm">
+              <div class="h-full bg-accent transition-[width] duration-200"
+                   :style="{ width: `${frame.state.value.progress ?? 0}%` }" />
+            </div>
+          </div>
         </div>
         <div v-if="frame.state.value.phase === 'error'"
              class="absolute inset-0 grid place-items-center bg-paper/95 p-6 text-center">
