@@ -6,6 +6,13 @@ All notable changes to this template should be documented in this file.
 The format loosely follows Keep a Changelog and can be adapted to the team's habits.
 本文档参考了 Keep a Changelog 的思路，也可以根据团队习惯调整。
 
+## [0.10.5] - 2026-09-28
+
+### Added / 新增
+
+- Rebuilt the on-site docs from 2 stale pages to 4: 「关于本站」now covers both work kinds (external-link vs site-hosted) and the account/submission entry points; 「提交作品指南」is rewritten around the real in-site flow (register → submission kinds → field table → draft/review lifecycle) with the GitHub PR static route demoted to secondary; new 「站内运行作品指南」documents bundle requirements (zip ≤ 100MB, static only, entry file), versioning/updates, CSP feature switches, per-work subdomain storage isolation and save management; new 「常见问题与审核标准」aligns rejection criteria with the actual review flow and answers the 名称/展示名称, auto-slug, bundle-invalidation, rate-limit and account-security questions. All copy is checked against the implementation (schema limits, FEATURE_ITEMS, validation messages).
+- 站内文档从两篇过时页面重建为四篇：「关于本站」补齐外链/站内运行两类作品与注册提交入口；「提交作品指南」以真实站内流程重写（注册 → 提交类型 → 字段表 → 草稿/审核生命周期），GitHub PR 静态收录降为次要途径；新增「站内运行作品指南」（zip ≤ 100MB、纯静态、入口文件、版本号与更新、CSP 运行权限开关、独立子域存储隔离与存档管理）；新增「常见问题与审核标准」，拒绝标准对齐真实审核流程，并解答 名称/展示名称、slug 自动生成、bundle 作废、上传限流与账号安全问题。全部文案与实现核对过（schema 上限、FEATURE_ITEMS、校验提示语）。
+
 ## [0.10.4] - 2026-09-28
 
 ### Changed / 变更
