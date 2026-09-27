@@ -10,8 +10,8 @@ The format loosely follows Keep a Changelog and can be adapted to the team's hab
 
 ### Changed / 变更
 
-- BaseSelect now hides the native dropdown arrow (`appearance-none`) and draws the site's own caret icon, matching the catalog sort control's paper-ink look; the closed-state select on the submit form (提交类型 / 类型) no longer reads as a default browser widget. Attrs and class fall-through still land on the `<select>` element, so e2e selectors are unaffected. (The opened option list remains OS-rendered — that is a browser limitation of native `<select>`.)
-- BaseSelect 隐藏原生下拉箭头（appearance-none）并自绘站点 caret 图标，与目录页排序控件的纸墨外观一致；提交表单（提交类型 / 类型）收起态的下拉不再是浏览器默认观感。透传属性与 class 仍落在 `<select>` 上，e2e 选择器不受影响。（展开后的选项列表仍由操作系统渲染——这是原生 `<select>` 的浏览器限制。）
+- BaseSelect is now a custom listbox instead of a native `<select>`: the closed trigger keeps the paper-ink frame with a self-drawn caret, and the opened option panel is now site-styled (ink border, hard shadow, highlighted selected row with a check mark) rather than the OS-rendered popup that could not be themed. Includes keyboard navigation (↑↓ / Enter / Esc), click-outside close, focus return, and `listbox`/`option` ARIA semantics. The API changed from slotted `<option>` elements to an `options` prop (matching BaseTabs), and both submit-form selects (提交类型 / 类型) are migrated with the disabled state passed explicitly.
+- BaseSelect 由原生 `<select>` 改为自定义 listbox：收起态保持纸墨边框 + 自绘 caret，展开后的选项面板改为站点风格（墨色边框、硬阴影、选中项高亮带勾），不再是无法套用主题的操作系统原生弹层。支持键盘导航（↑↓ / Enter / Esc）、点击外部收起、焦点归还，以及 `listbox`/`option` 无障碍语义。API 由 `<option>` 插槽改为 `options` prop（与 BaseTabs 同构），提交表单的两个下拉（提交类型 / 类型）已迁移并显式传入 disabled 态。
 
 ## [0.10.4] - 2026-09-28
 
