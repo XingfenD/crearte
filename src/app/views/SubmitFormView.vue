@@ -1,6 +1,12 @@
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, reactive, ref, watch } from 'vue'
 import { RouterLink, useRoute, useRouter } from 'vue-router'
+import BaseButton from '@/components/ui/BaseButton.vue'
+import BaseCheckbox from '@/components/ui/BaseCheckbox.vue'
+import BaseInput from '@/components/ui/BaseInput.vue'
+import BaseSelect from '@/components/ui/BaseSelect.vue'
+import BaseTextarea from '@/components/ui/BaseTextarea.vue'
+import FileInput from '@/components/ui/FileInput.vue'
 import { contentClient, toContentMessage, validateUploadInput } from '@/content'
 import { EMPTY_FEATURES, FEATURE_ITEMS, collectFeatures, featuresToForm } from '@/content/features'
 import { parseTags, slugify, validateWorkPayload, VERSION_PATTERN, WORK_ID_PATTERN, type FieldKey } from '@/content/validation'
@@ -290,10 +296,6 @@ async function save(submit: boolean): Promise<void> {
 function err(key: FieldKey): string | undefined {
   return showErrors.value ? fieldErrors.value[key] : undefined
 }
-const inputClass = 'w-full border-2 border-ink bg-surface px-3 py-2 disabled:opacity-60'
-// file 输入：外框对齐 inputClass，内部「选择文件」按钮做成 btn-ink 风格（黑底纸色字）
-const fileInputClass = 'w-full cursor-pointer border-2 border-ink bg-surface px-3 py-2 disabled:cursor-not-allowed disabled:opacity-60 ' +
-  'file:mr-3 file:cursor-pointer file:border-2 file:border-ink file:bg-ink file:px-3 file:py-1 file:text-sm file:font-extrabold file:text-paper hover:file:bg-accent-ink'
 const labelClass = 'font-mono text-[0.6875rem] tracking-[0.05em]'
 </script>
 
@@ -314,11 +316,11 @@ const labelClass = 'font-mono text-[0.6875rem] tracking-[0.05em]'
       <!-- 1. 提交类型 -->
       <fieldset class="space-y-2" :disabled="readOnly">
         <legend :class="labelClass">提交类型</legend>
-        <select v-if="!editing" v-model="kind" data-testid="kind-select" :class="inputClass">
+        <BaseSelect v-if="!editing" v-model="kind" data-testid="kind-select">
           <option value="new_work">{{ KIND_LABELS.new_work }}</option>
           <option value="new_version">{{ KIND_LABELS.new_version }}（已收录的 virtual 作品）</option>
           <option value="metadata_change">{{ KIND_LABELS.metadata_change }}（已收录作品）</option>
-        </select>
+        </BaseSelect>
         <p v-else class="text-sm font-bold">{{ KIND_LABELS[kind] }}</p>
       </fieldset>
 
@@ -327,61 +329,61 @@ const labelClass = 'font-mono text-[0.6875rem] tracking-[0.05em]'
         <legend :class="labelClass">基本信息</legend>
         <div class="space-y-1.5">
           <label class="font-mono text-[0.6875rem]" for="sf-workid">作品 id（slug，收录后不可改）</label>
-          <input id="sf-workid" v-model="form.workId" data-testid="work-id" type="text" :class="inputClass"
-            :readonly="editing" :aria-invalid="Boolean(err('workId'))" @blur="kind !== 'new_work' && !editing && prefill(form.workId.trim())">
+          <BaseInput id="sf-workid" v-model="form.workId" data-testid="work-id" type="text"
+            :readonly="editing" :invalid="Boolean(err('workId'))" @blur="kind !== 'new_work' && !editing && prefill(form.workId.trim())" />
           <p v-if="err('workId')" class="text-xs font-bold text-accent-ink">{{ err('workId') }}</p>
         </div>
         <div class="space-y-1.5">
           <label class="font-mono text-[0.6875rem]" for="sf-name">名称</label>
-          <input id="sf-name" v-model="form.name" type="text" :class="inputClass" :aria-invalid="Boolean(err('name'))">
+          <BaseInput id="sf-name" v-model="form.name" type="text" :invalid="Boolean(err('name'))" />
           <p v-if="err('name')" class="text-xs font-bold text-accent-ink">{{ err('name') }}</p>
         </div>
         <div class="space-y-1.5">
           <label class="font-mono text-[0.6875rem]" for="sf-url">作品原始链接</label>
-          <input id="sf-url" v-model="form.url" type="url" :class="inputClass" :aria-invalid="Boolean(err('url'))">
+          <BaseInput id="sf-url" v-model="form.url" type="url" :invalid="Boolean(err('url'))" />
           <p v-if="err('url')" class="text-xs font-bold text-accent-ink">{{ err('url') }}</p>
         </div>
         <div class="grid gap-4 sm:grid-cols-2">
           <div class="space-y-1.5">
             <label class="font-mono text-[0.6875rem]" for="sf-author">作者名</label>
-            <input id="sf-author" v-model="form.authorName" type="text" :class="inputClass" :aria-invalid="Boolean(err('authorName'))">
+            <BaseInput id="sf-author" v-model="form.authorName" type="text" :invalid="Boolean(err('authorName'))" />
             <p v-if="err('authorName')" class="text-xs font-bold text-accent-ink">{{ err('authorName') }}</p>
           </div>
           <div class="space-y-1.5">
             <label class="font-mono text-[0.6875rem]" for="sf-author-url">作者链接（可选）</label>
-            <input id="sf-author-url" v-model="form.authorUrl" type="url" :class="inputClass">
+            <BaseInput id="sf-author-url" v-model="form.authorUrl" type="url" />
           </div>
         </div>
         <div class="space-y-1.5">
           <label class="font-mono text-[0.6875rem]" for="sf-desc">描述</label>
-          <textarea id="sf-desc" v-model="form.description" rows="3" :class="inputClass" :aria-invalid="Boolean(err('description'))" />
+          <BaseTextarea id="sf-desc" v-model="form.description" rows="3" :aria-invalid="Boolean(err('description'))" />
           <p v-if="err('description')" class="text-xs font-bold text-accent-ink">{{ err('description') }}</p>
         </div>
         <div class="grid gap-4 sm:grid-cols-3">
           <div class="space-y-1.5">
             <label class="font-mono text-[0.6875rem]" for="sf-dur-min">最短时长（分钟）</label>
-            <input id="sf-dur-min" v-model="form.durationMin" type="number" min="1" :class="inputClass">
+            <BaseInput id="sf-dur-min" v-model="form.durationMin" type="number" min="1" />
           </div>
           <div class="space-y-1.5">
             <label class="font-mono text-[0.6875rem]" for="sf-dur-max">最长时长（分钟）</label>
-            <input id="sf-dur-max" v-model="form.durationMax" type="number" min="1" :class="inputClass">
+            <BaseInput id="sf-dur-max" v-model="form.durationMax" type="number" min="1" />
           </div>
           <div class="space-y-1.5">
             <label class="font-mono text-[0.6875rem]" for="sf-type">类型</label>
-            <select id="sf-type" v-model="form.type" :class="inputClass">
+            <BaseSelect id="sf-type" v-model="form.type">
               <option v-for="t in GAME_TYPES" :key="t" :value="t">{{ GAME_TYPE_LABELS[t] }}</option>
-            </select>
+            </BaseSelect>
           </div>
         </div>
         <p v-if="err('duration') || err('type')" class="text-xs font-bold text-accent-ink">{{ err('duration') ?? err('type') }}</p>
         <div class="space-y-1.5">
           <label class="font-mono text-[0.6875rem]" for="sf-tags">标签（逗号分隔，最多 8 个）</label>
-          <input id="sf-tags" v-model="form.tagsText" type="text" :class="inputClass" :aria-invalid="Boolean(err('tags'))">
+          <BaseInput id="sf-tags" v-model="form.tagsText" type="text" :invalid="Boolean(err('tags'))" />
           <p v-if="err('tags')" class="text-xs font-bold text-accent-ink">{{ err('tags') }}</p>
         </div>
         <div class="space-y-1.5">
           <label class="font-mono text-[0.6875rem]" for="sf-intro">玩法简介（可选，支持 Markdown）</label>
-          <textarea id="sf-intro" v-model="form.intro" rows="4" :class="inputClass" />
+          <BaseTextarea id="sf-intro" v-model="form.intro" rows="4" />
         </div>
       </fieldset>
 
@@ -401,20 +403,20 @@ const labelClass = 'font-mono text-[0.6875rem] tracking-[0.05em]'
           <div class="grid gap-4 sm:grid-cols-2">
             <div class="space-y-1.5">
               <label class="font-mono text-[0.6875rem]" for="sf-version">版本号</label>
-              <input id="sf-version" v-model="form.version" data-testid="version" type="text" placeholder="v1" :class="inputClass"
-                :readonly="kind === 'metadata_change'" :aria-invalid="Boolean(err('version'))">
+              <BaseInput id="sf-version" v-model="form.version" data-testid="version" type="text" placeholder="v1"
+                :readonly="kind === 'metadata_change'" :invalid="Boolean(err('version'))" />
               <p v-if="err('version')" class="text-xs font-bold text-accent-ink">{{ err('version') }}</p>
             </div>
             <div class="space-y-1.5">
               <label class="font-mono text-[0.6875rem]" for="sf-entry">入口文件</label>
-              <input id="sf-entry" v-model="form.entry" type="text" :class="inputClass" :aria-invalid="Boolean(err('entry'))">
+              <BaseInput id="sf-entry" v-model="form.entry" type="text" :invalid="Boolean(err('entry'))" />
               <p v-if="err('entry')" class="text-xs font-bold text-accent-ink">{{ err('entry') }}</p>
             </div>
           </div>
           <div class="space-y-1.5">
             <label class="font-mono text-[0.6875rem]" for="sf-bundle">bundle（zip ≤ 100MB，服务端加密存储）</label>
-            <input id="sf-bundle" data-testid="bundle-file" type="file" accept=".zip,application/zip,application/x-zip-compressed"
-              :class="fileInputClass" :disabled="bundleDisabled" @change="onBundleFile">
+            <FileInput id="sf-bundle" data-testid="bundle-file" accept=".zip,application/zip,application/x-zip-compressed"
+              :disabled="bundleDisabled" @change="onBundleFile" />
             <p v-if="bundleDisabledHint" class="text-xs text-ink-soft">{{ bundleDisabledHint }}</p>
             <p v-if="bundle" data-testid="bundle-done" class="border-2 border-ink bg-paper px-2 py-1 font-mono text-[0.6875rem]">
               已上传 {{ (bundle.bytes / 1024 / 1024).toFixed(2) }} MB · sha256 {{ bundle.sha256.slice(0, 12) }}…
@@ -426,10 +428,10 @@ const labelClass = 'font-mono text-[0.6875rem] tracking-[0.05em]'
           </div>
           <div class="space-y-2">
             <p :class="labelClass">运行权限（高级，仅当作品代码确需时勾选）</p>
-            <label v-for="item in FEATURE_ITEMS" :key="item.key" class="flex items-start gap-2 text-sm">
-              <input v-model="form.features[item.key]" type="checkbox" :data-testid="`feature-${item.key}`" class="mt-1">
-              <span><span class="font-bold">{{ item.label }}</span><span class="ml-1 text-xs text-ink-soft">{{ item.hint }}</span></span>
-            </label>
+            <BaseCheckbox v-for="item in FEATURE_ITEMS" :key="item.key"
+              v-model="form.features[item.key]" :data-testid="`feature-${item.key}`">
+              <span class="font-bold">{{ item.label }}</span><span class="ml-1 text-xs text-ink-soft">{{ item.hint }}</span>
+            </BaseCheckbox>
           </div>
         </template>
       </fieldset>
@@ -437,8 +439,8 @@ const labelClass = 'font-mono text-[0.6875rem] tracking-[0.05em]'
       <!-- 4. 封面 -->
       <fieldset class="space-y-2" :disabled="readOnly">
         <legend :class="labelClass">封面（可选，png/jpeg/webp ≤ 5MB）</legend>
-        <input data-testid="cover-file" type="file" aria-label="封面文件" accept=".png,.jpg,.jpeg,.webp,image/png,image/jpeg,image/webp"
-          :class="fileInputClass" @change="onCoverFile">
+        <FileInput data-testid="cover-file" aria-label="封面文件" accept=".png,.jpg,.jpeg,.webp,image/png,image/jpeg,image/webp"
+          @change="onCoverFile" />
         <img v-if="coverPreview" :src="coverPreview" alt="封面预览" class="mt-2 w-40 border-2 border-ink">
         <p v-else-if="cover" class="font-mono text-[0.6875rem]">已上传封面 {{ cover.upload_id.slice(0, 8) }}…</p>
         <p v-else-if="coverLinkedOnly" class="font-mono text-[0.6875rem]">已关联封面（重新选择文件可替换）</p>
@@ -447,12 +449,12 @@ const labelClass = 'font-mono text-[0.6875rem] tracking-[0.05em]'
 
       <!-- 5. 操作 -->
       <div v-if="!readOnly" class="flex gap-3">
-        <button type="button" data-testid="save-draft" class="btn-ink lift disabled:opacity-50" :disabled="busy !== null" @click="save(false)">
+        <BaseButton variant="ink" lift data-testid="save-draft" :disabled="busy !== null" @click="save(false)">
           {{ busy === 'draft' ? '保存中…' : '存草稿' }}
-        </button>
-        <button type="button" data-testid="submit-review" class="btn-ink lift bg-highlight disabled:opacity-50" :disabled="busy !== null" @click="save(true)">
+        </BaseButton>
+        <BaseButton variant="ink" lift class="bg-highlight" data-testid="submit-review" :disabled="busy !== null" @click="save(true)">
           {{ busy === 'submit' ? '提交中…' : '提交审核' }}
-        </button>
+        </BaseButton>
         <RouterLink to="/submit" class="border-2 border-ink bg-surface px-3 py-2 text-sm font-bold">取消</RouterLink>
       </div>
     </form>

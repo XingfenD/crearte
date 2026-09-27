@@ -82,6 +82,14 @@
     box-shadow: var(--shadow-hard-sm);
   }
   .btn-surface:hover { background: var(--color-paper); }
+  .btn-ink:disabled, .btn-surface:disabled { opacity: 0.5; }
+  /* 紧凑尺寸（表格行内操作、分页等），叠加在 btn-ink / btn-surface 之上 */
+  .btn-sm {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.75rem;
+    font-weight: 700;
+    box-shadow: none;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {

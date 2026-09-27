@@ -2,6 +2,7 @@
 import { computed, ref } from 'vue'
 import { RouterLink } from 'vue-router'
 import StatePanel from '@/components/StatePanel.vue'
+import BaseButton from '@/components/ui/BaseButton.vue'
 import { useAsync } from '@/composables/useAsync'
 import { contentClient, toContentMessage, type SubmissionView } from '@/content'
 
@@ -127,27 +128,25 @@ function doConfirm(s: SubmissionView): void {
                 :to="`/submit/${s.id}`"
                 class="border-2 border-ink bg-surface px-2 py-1 hover:bg-paper"
               >编辑</RouterLink>
-              <button
+              <BaseButton
                 v-if="s.status === 'draft' || s.status === 'rejected'"
-                type="button"
-                class="border-2 border-ink bg-highlight px-2 py-1 disabled:opacity-50"
+                size="sm"
+                class="bg-highlight"
                 :disabled="busyId === s.id"
                 @click="submitNow(s)"
-              >{{ busyId === s.id ? '处理中…' : (s.status === 'rejected' ? '重新提交' : '提交') }}</button>
-              <button
+              >{{ busyId === s.id ? '处理中…' : (s.status === 'rejected' ? '重新提交' : '提交') }}</BaseButton>
+              <BaseButton
                 v-if="s.status === 'pending'"
-                type="button"
-                class="border-2 border-ink bg-surface px-2 py-1 disabled:opacity-50"
+                size="sm"
                 :disabled="busyId === s.id"
                 @click="askConfirm(s, 'withdraw')"
-              >撤回</button>
-              <button
+              >撤回</BaseButton>
+              <BaseButton
                 v-if="s.status === 'draft'"
-                type="button"
-                class="border-2 border-ink bg-surface px-2 py-1 disabled:opacity-50"
+                size="sm"
                 :disabled="busyId === s.id"
                 @click="askConfirm(s, 'delete')"
-              >删除</button>
+              >删除</BaseButton>
             </div>
 
             <div v-if="confirm?.id === s.id" class="mt-3 border-2 border-ink bg-paper p-3 text-xs">
@@ -155,10 +154,10 @@ function doConfirm(s: SubmissionView): void {
                 {{ confirm.action === 'withdraw' ? '撤回后提交将被删除（已上传文件由服务端清理），需重新创建。确认撤回？' : '删除后不可恢复。确认删除？' }}
               </p>
               <div class="mt-2 flex gap-2 font-bold">
-                <button type="button" class="border-2 border-ink bg-accent-ink px-2 py-1 text-paper disabled:opacity-50" :disabled="busyId === s.id" @click="doConfirm(s)">
+                <BaseButton size="sm" class="bg-accent-ink text-paper" :disabled="busyId === s.id" @click="doConfirm(s)">
                   {{ busyId === s.id ? '处理中…' : '确认' }}
-                </button>
-                <button type="button" class="border-2 border-ink bg-surface px-2 py-1" @click="confirm = null">取消</button>
+                </BaseButton>
+                <BaseButton size="sm" @click="confirm = null">取消</BaseButton>
               </div>
             </div>
           </li>

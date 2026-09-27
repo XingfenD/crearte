@@ -2,6 +2,10 @@
 import { computed, ref } from 'vue'
 import { RouterLink } from 'vue-router'
 import StatePanel from '@/components/StatePanel.vue'
+import BaseButton from '@/components/ui/BaseButton.vue'
+import BaseCheckbox from '@/components/ui/BaseCheckbox.vue'
+import BasePagination from '@/components/ui/BasePagination.vue'
+import BaseTabs from '@/components/ui/BaseTabs.vue'
 import { useAsync } from '@/composables/useAsync'
 import { apiRepo } from '@/data'
 import type { GameSummary } from '@/data/types'
@@ -36,6 +40,15 @@ const versionOf = ref<Record<string, string | null>>({})
 const featuresOf = ref<Record<string, EditableFeatures>>({})
 
 const KIND_LABELS: Record<string, string> = { new_work: '新作品', new_version: '新版本', metadata_change: '元数据更新' }
+const TAB_ITEMS = [
+  { value: 'queue', label: '审核队列' },
+  { value: 'works', label: '作品管理' }
+]
+const STATUS_ITEMS = [
+  { value: 'pending', label: '待审' },
+  { value: 'approved', label: '已通过' },
+  { value: 'rejected', label: '已拒绝' }
+]
 const queueSubs = computed(() => queueData.value?.submissions ?? [])
 const queueTotal = computed(() => queueData.value?.total ?? 0)
 const historySubs = computed(() => historyData.value?.submissions ?? [])
@@ -108,22 +121,24 @@ function switchStatus(next: 'pending' | 'approved' | 'rejected'): void {
   <section class="mx-auto w-full max-w-5xl px-4 py-10">
     <h1 class="font-display text-[1.75rem] font-black leading-tight">审核管理</h1>
 
-    <div class="mt-4 flex gap-2 text-sm font-bold">
-      <button type="button" class="border-2 border-ink px-3 py-1.5" :class="tab === 'queue' ? 'bg-accent-ink text-paper' : 'bg-surface'" @click="switchTab('queue')">审核队列</button>
-      <button type="button" class="border-2 border-ink px-3 py-1.5" :class="tab === 'works' ? 'bg-accent-ink text-paper' : 'bg-surface'" @click="switchTab('works')">作品管理</button>
-    </div>
+    <BaseTabs
+      class="mt-4"
+      :model-value="tab"
+      :items="TAB_ITEMS"
+      @update:model-value="switchTab($event as 'queue' | 'works')"
+    />
 
     <p v-if="actionError" role="alert" class="mt-4 border-2 border-ink bg-highlight px-3 py-2 text-xs font-bold">{{ actionError }}</p>
 
     <!-- Tab 1：审核队列 -->
     <div v-if="tab === 'queue'" class="mt-6">
-      <div class="flex gap-2 text-xs font-bold">
-        <button v-for="s in (['pending', 'approved', 'rejected'] as const)" :key="s" type="button"
-          class="border-2 border-ink px-2 py-1" :class="status === s ? 'bg-highlight' : 'bg-surface'"
-          @click="switchStatus(s)">
-          {{ s === 'pending' ? '待审' : s === 'approved' ? '已通过' : '已拒绝' }}
-        </button>
-      </div>
+      <BaseTabs
+        tone="highlight"
+        size="sm"
+        :model-value="status"
+        :items="STATUS_ITEMS"
+        @update:model-value="switchStatus($event as 'pending' | 'approved' | 'rejected')"
+      />
       <StatePanel class="mt-4" :loading="queueLoading" :error="panelError(queueError)" @retry="reloadQueue">
         <p v-if="queueSubs.length === 0" class="border-2 border-ink bg-surface p-6 text-sm text-ink-soft shadow-hard">该状态下没有提交。</p>
         <table v-else class="w-full border-2 border-ink bg-surface text-sm shadow-hard">
@@ -142,11 +157,7 @@ function switchStatus(next: 'pending' | 'approved' | 'rejected'): void {
             </tr>
           </tbody>
         </table>
-        <div class="mt-3 flex items-center gap-3 text-xs font-bold">
-          <button type="button" class="border-2 border-ink bg-surface px-2 py-1 disabled:opacity-40" :disabled="offset === 0" @click="offset = Math.max(0, offset - LIMIT)">上一页</button>
-          <span class="font-mono">{{ offset + 1 }}–{{ Math.min(offset + LIMIT, queueTotal) }} / {{ queueTotal }}</span>
-          <button type="button" class="border-2 border-ink bg-surface px-2 py-1 disabled:opacity-40" :disabled="offset + LIMIT >= queueTotal" @click="offset += LIMIT">下一页</button>
-        </div>
+        <BasePagination v-model:offset="offset" class="mt-3" :limit="LIMIT" :total="queueTotal" />
       </StatePanel>
     </div>
 
@@ -164,34 +175,31 @@ function switchStatus(next: 'pending' | 'approved' | 'rejected'): void {
                 <td class="px-3 py-2 font-mono text-[0.6875rem]">{{ g.runtime ?? 'external' }}</td>
                 <td class="px-3 py-2 font-mono text-[0.6875rem]">
                   <template v-if="g.runtime === 'virtual'">
-                    <button type="button" class="border-2 border-ink bg-surface px-2 py-0.5 text-xs font-bold" @click="toggleVersions(g.id)">
+                    <BaseButton size="sm" @click="toggleVersions(g.id)">
                       {{ expanded === g.id ? (versionOf[g.id] ?? '加载中…') : '查看' }}
-                    </button>
+                    </BaseButton>
                   </template>
                   <template v-else>—</template>
                 </td>
                 <td class="px-3 py-2">
-                  <button type="button" class="border-2 border-ink bg-surface px-2 py-1 text-xs font-bold disabled:opacity-50"
-                    :disabled="busyKey !== null"
-                    @click="run(`unpub-${g.id}`, () => contentClient.adminUnpublish(g.id), reloadWorks)">下架</button>
-                  <button v-if="expanded === g.id && versionOf[g.id]" type="button"
-                    class="ml-2 border-2 border-ink bg-surface px-2 py-1 text-xs font-bold disabled:opacity-50" :disabled="busyKey !== null"
-                    @click="run(`revoke-${g.id}`, () => contentClient.adminSetRevoked(g.id, versionOf[g.id]!, true))">吊销密钥</button>
-                  <button v-if="expanded === g.id && versionOf[g.id]" type="button"
-                    class="ml-2 border-2 border-ink bg-surface px-2 py-1 text-xs font-bold disabled:opacity-50" :disabled="busyKey !== null"
-                    @click="run(`restore-${g.id}`, () => contentClient.adminSetRevoked(g.id, versionOf[g.id]!, false))">恢复密钥</button>
+                  <BaseButton size="sm" :disabled="busyKey !== null"
+                    @click="run(`unpub-${g.id}`, () => contentClient.adminUnpublish(g.id), reloadWorks)">下架</BaseButton>
+                  <BaseButton v-if="expanded === g.id && versionOf[g.id]" size="sm" class="ml-2" :disabled="busyKey !== null"
+                    @click="run(`revoke-${g.id}`, () => contentClient.adminSetRevoked(g.id, versionOf[g.id]!, true))">吊销密钥</BaseButton>
+                  <BaseButton v-if="expanded === g.id && versionOf[g.id]" size="sm" class="ml-2" :disabled="busyKey !== null"
+                    @click="run(`restore-${g.id}`, () => contentClient.adminSetRevoked(g.id, versionOf[g.id]!, false))">恢复密钥</BaseButton>
                 </td>
               </tr>
               <tr v-if="expanded === g.id && featuresOf[g.id]" :data-testid="`work-detail-${g.id}`">
                 <td colspan="4" class="border-b-[1.5px] border-ink bg-paper px-3 py-3">
                   <div class="space-y-2">
                     <p class="font-mono text-[0.6875rem] tracking-[0.05em]">运行权限（仅对站内运行作品生效；保存后该作品的 CSP 立即按新开关放行）</p>
-                    <label v-for="item in FEATURE_ITEMS" :key="item.key" class="flex items-start gap-2 text-sm">
-                      <input v-model="featuresOf[g.id][item.key]" type="checkbox" :data-testid="`admin-feature-${g.id}-${item.key}`" class="mt-1">
-                      <span><span class="font-bold">{{ item.label }}</span><span class="ml-1 text-xs text-ink-soft">{{ item.hint }}</span></span>
-                    </label>
-                    <button type="button" data-testid="admin-feature-save" class="border-2 border-ink bg-surface px-2 py-1 text-xs font-bold disabled:opacity-50"
-                      :disabled="busyKey !== null" @click="saveFeatures(g.id)">保存权限</button>
+                    <BaseCheckbox v-for="item in FEATURE_ITEMS" :key="item.key"
+                      v-model="featuresOf[g.id][item.key]" :data-testid="`admin-feature-${g.id}-${item.key}`">
+                      <span class="font-bold">{{ item.label }}</span><span class="ml-1 text-xs text-ink-soft">{{ item.hint }}</span>
+                    </BaseCheckbox>
+                    <BaseButton size="sm" data-testid="admin-feature-save"
+                      :disabled="busyKey !== null" @click="saveFeatures(g.id)">保存权限</BaseButton>
                   </div>
                 </td>
               </tr>
@@ -213,21 +221,17 @@ function switchStatus(next: 'pending' | 'approved' | 'rejected'): void {
                 <td class="px-3 py-2 font-mono text-[0.6875rem]">{{ versionOfSub(s) }}</td>
                 <td class="px-3 py-2 font-mono text-[0.625rem]">{{ s.updated_at.slice(0, 10) }}</td>
                 <td class="px-3 py-2">
-                  <button type="button" class="border-2 border-ink bg-surface px-2 py-1 text-xs font-bold disabled:opacity-50" :disabled="busyKey !== null"
-                    @click="run(`repub-${s.work_id}`, () => contentClient.adminRepublish(s.work_id), () => { reloadWorks(); reloadHistory() })">恢复上架</button>
-                  <button v-if="s.payload?.version" type="button" class="ml-2 border-2 border-ink bg-surface px-2 py-1 text-xs font-bold disabled:opacity-50" :disabled="busyKey !== null"
-                    @click="run(`hrev-${s.work_id}-${s.payload.version}`, () => contentClient.adminSetRevoked(s.work_id, s.payload.version!, true))">吊销密钥</button>
-                  <button v-if="s.payload?.version" type="button" class="ml-2 border-2 border-ink bg-surface px-2 py-1 text-xs font-bold disabled:opacity-50" :disabled="busyKey !== null"
-                    @click="run(`hres-${s.work_id}-${s.payload.version}`, () => contentClient.adminSetRevoked(s.work_id, s.payload.version!, false))">恢复密钥</button>
+                  <BaseButton size="sm" :disabled="busyKey !== null"
+                    @click="run(`repub-${s.work_id}`, () => contentClient.adminRepublish(s.work_id), () => { reloadWorks(); reloadHistory() })">恢复上架</BaseButton>
+                  <BaseButton v-if="s.payload?.version" size="sm" class="ml-2" :disabled="busyKey !== null"
+                    @click="run(`hrev-${s.work_id}-${s.payload.version}`, () => contentClient.adminSetRevoked(s.work_id, s.payload.version!, true))">吊销密钥</BaseButton>
+                  <BaseButton v-if="s.payload?.version" size="sm" class="ml-2" :disabled="busyKey !== null"
+                    @click="run(`hres-${s.work_id}-${s.payload.version}`, () => contentClient.adminSetRevoked(s.work_id, s.payload.version!, false))">恢复密钥</BaseButton>
                 </td>
               </tr>
             </tbody>
           </table>
-          <div class="mt-3 flex items-center gap-3 text-xs font-bold">
-            <button type="button" class="border-2 border-ink bg-surface px-2 py-1 disabled:opacity-40" :disabled="worksOffset === 0" @click="worksOffset = Math.max(0, worksOffset - LIMIT)">上一页</button>
-            <span class="font-mono">{{ worksOffset + 1 }}–{{ Math.min(worksOffset + LIMIT, historyTotal) }} / {{ historyTotal }}</span>
-            <button type="button" class="border-2 border-ink bg-surface px-2 py-1 disabled:opacity-40" :disabled="worksOffset + LIMIT >= historyTotal" @click="worksOffset += LIMIT">下一页</button>
-          </div>
+          <BasePagination v-model:offset="worksOffset" class="mt-3" :limit="LIMIT" :total="historyTotal" />
         </StatePanel>
       </section>
     </div>

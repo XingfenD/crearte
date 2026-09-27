@@ -2,6 +2,7 @@
 import { ref, watch } from 'vue'
 import { PhX } from '@phosphor-icons/vue'
 import type { GameSummary } from '@/data/types'
+import BaseButton from '@/components/ui/BaseButton.vue'
 import FilterSidebar from './FilterSidebar.vue'
 
 const props = defineProps<{ open: boolean; games: GameSummary[]; count: number }>()
@@ -46,11 +47,12 @@ function onClose(): void {
       <FilterSidebar :games="games" />
     </div>
     <div class="border-t-[1.5px] border-ink p-4">
-      <button
-        type="button"
-        class="btn-ink lift w-full hover:shadow-hard active:shadow-none"
+      <BaseButton
+        variant="ink"
+        lift
+        class="w-full hover:shadow-hard active:shadow-none"
         @click="dialog?.close()"
-      >查看 {{ count }} 款结果</button>
+      >查看 {{ count }} 款结果</BaseButton>
     </div>
   </dialog>
 </template>
