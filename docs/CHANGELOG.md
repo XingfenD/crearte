@@ -32,6 +32,9 @@ The format loosely follows Keep a Changelog and can be adapted to the team's hab
 - Cross-origin bundle-key fetch: removed the redundant author-level `Cache-Control: no-cache` request header in the SW key fetch. It is not a CORS-safelisted header, so on any cross-origin deploy it forced a preflight that the backend's narrow `Access-Control-Allow-Headers` rejected, blocking the key GET and leaving virtual works unplayable. `cache: 'no-store'` already prevents caching (and is stricter), so the header was pure liability.
 - 跨源取钥：移除 SW 取钥中冗余的作者级 `Cache-Control: no-cache` 请求头。它不是 CORS 安全列表头，跨源部署下会强制触发预检，而后端较窄的 `Access-Control-Allow-Headers` 会拒绝该预检 → 取钥 GET 被拦 → virtual 作品不可玩。防缓存已由 `cache: 'no-store'`（更严）保证，故该头纯属累赘。
 
+- Submit form: the bundle-upload disabled hint now names exactly which field is missing (work id and/or version) instead of always showing both. This fixes the confusion where the version placeholder `v1` looks like an entered value while the file input stays unclickable.
+- 提交表单：bundle 上传禁用提示现在精确指出缺失字段（作品 id 与/或版本号），不再固定同时显示两者；解决了版本号占位符 `v1` 看似已填写、文件选择却始终点不了的困惑。
+
 ## [0.8.0] - 2026-09-27
 
 ### Added / 新增

@@ -93,6 +93,15 @@ const bundleDisabled = computed(() =>
   readOnly.value || busy.value !== null
 )
 
+// 精确提示缺哪个字段：占位符（如版本号 v1）容易被误认为已填写
+const bundleDisabledHint = computed(() => {
+  if (!bundleDisabled.value || kind.value === 'metadata_change') return ''
+  const missing: string[] = []
+  if (!WORK_ID_PATTERN.test(form.workId.trim())) missing.push('作品 id')
+  if (!VERSION_PATTERN.test(form.version.trim())) missing.push('版本号')
+  return missing.length > 0 ? `先填写${missing.join(' 与 ')}后可上传` : ''
+})
+
 // new_version / metadata_change 预填
 let prefillTimer: ReturnType<typeof setTimeout> | null = null
 watch([() => form.workId, kind], () => {
@@ -397,7 +406,7 @@ const labelClass = 'font-mono text-[0.6875rem] tracking-[0.05em]'
             <label class="font-mono text-[0.6875rem]" for="sf-bundle">bundle（zip ≤ 100MB，服务端加密存储）</label>
             <input id="sf-bundle" data-testid="bundle-file" type="file" accept=".zip,application/zip,application/x-zip-compressed"
               :disabled="bundleDisabled" @change="onBundleFile">
-            <p v-if="bundleDisabled && kind !== 'metadata_change'" class="text-xs text-ink-soft">先填写作品 id 与版本号后可上传</p>
+            <p v-if="bundleDisabledHint" class="text-xs text-ink-soft">{{ bundleDisabledHint }}</p>
             <p v-if="bundle" data-testid="bundle-done" class="border-2 border-ink bg-paper px-2 py-1 font-mono text-[0.6875rem]">
               已上传 {{ (bundle.bytes / 1024 / 1024).toFixed(2) }} MB · sha256 {{ bundle.sha256.slice(0, 12) }}…
             </p>
