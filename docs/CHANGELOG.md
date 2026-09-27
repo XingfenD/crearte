@@ -6,6 +6,13 @@ All notable changes to this template should be documented in this file.
 The format loosely follows Keep a Changelog and can be adapted to the team's habits.
 本文档参考了 Keep a Changelog 的思路，也可以根据团队习惯调整。
 
+## [0.10.6] - 2026-09-28
+
+### Changed / 变更
+
+- Polished user-facing copy: the FAQ now states plainly that a rejected submission can be revised and resubmitted (dropped the "rejection is not the end" slogan); the virtual-works guide says to bundle all resources into the zip instead of "self-contained"; the version rule is stated in plain language (lowercase letters, digits, `. _ -`, 1–64 chars, first char alphanumeric) instead of a raw regex, in both the guide and the form's validation message; the CSP permission-switch precondition is reworded in plain language; the README e2e:stack note fixes the stilted "script start" phrasing.
+- 润色面向用户的文案：FAQ 改为直述被拒绝后可按审核意见修改并重新提交（删去「拒绝不是终点」的口号句）；站内运行作品指南把「请自包含所有资源」改为「请把所有资源打进包内」；版本号规则改为人话（英文小写字母、数字和 . _ -，1–64 字符，首字符须为字母或数字），文档与表单校验提示同步替换原正则表达式；CSP 运行权限开关的前提条件改为平实说法；README e2e:stack 一节的「脚本起始」改为「脚本启动时」。
+
 ## [0.10.5] - 2026-09-28
 
 ### Added / 新增

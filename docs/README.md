@@ -58,7 +58,7 @@ cd src && npm run e2e:stack
 ```
 
 - 依赖：docker、go ≥ 1.24（脚本用 `/usr/local/go/bin/go`）、兄弟仓 `crearte-server`；缺任一依赖时自动降级 skip（退出码 0）
-- 跑完 cleanup 自动清容器/临时 worktree/stack.json；脚本起始也会清上次残留（防陈旧 `ready:true` 误判）
+- 跑完 cleanup 自动清容器/临时 worktree/stack.json；脚本启动时也会清上次残留（防陈旧 `ready:true` 误判）
 - ⚠️ **已知限制**：full-loop 的 Step5（revoke 410 + 降级）当前会 FAILED，因后端 `cors.go` 的 `Access-Control-Allow-Headers` 不含 `If-None-Match`（浏览器对 ETag 响应自动携带、前端无从规避）→ admin「作品管理」的作品列表再验证被预检拒。Step1-4（投稿→过审→目录可见→可玩）已验证通过。后端修复见上「环境变量」节的 CORS 注记
 
 或不用 compose（仅静态预览；账号请求需要同源反代 `api` 服务）：

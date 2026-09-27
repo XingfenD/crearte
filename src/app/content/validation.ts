@@ -45,7 +45,7 @@ export function validateWorkPayload(payload: WorkPayload, kind: SubmissionKind):
   if (payload.tags.length > TAG_MAX) errors.tags = `标签最多 ${TAG_MAX} 个`
   const runtime = payload.runtime ?? 'external'
   if (kind !== 'metadata_change' && runtime === 'virtual') {
-    if (!VERSION_PATTERN.test(payload.version ?? '')) errors.version = '版本号需匹配 ^[a-z0-9][a-z0-9._-]{0,63}$'
+    if (!VERSION_PATTERN.test(payload.version ?? '')) errors.version = '版本号只能用小写字母、数字和 . _ -（1–64 字符，首字符须为字母或数字）'
     if (!(payload.entry ?? '').trim()) errors.entry = '入口文件必填（如 index.html）'
   }
   return errors
