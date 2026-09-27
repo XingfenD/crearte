@@ -6,6 +6,19 @@ All notable changes to this template should be documented in this file.
 The format loosely follows Keep a Changelog and can be adapted to the team's habits.
 本文档参考了 Keep a Changelog 的思路，也可以根据团队习惯调整。
 
+## [0.10.0] - 2026-09-27
+
+### Added / 新增
+
+- Submission form now collects runtime permission flags for virtual works (`eval` / `inlineScript`, default off with inline guidance): previously the form never sent `features`, so works needing `unsafe-eval` (e.g. Alpine.js) or `unsafe-inline` were blocked by the service worker's default CSP with no way to declare otherwise. Both the draft-edit and prefill paths round-trip the flags.
+- 提交表单现为站内作品收集运行权限开关（`eval` / `inlineScript`，默认关闭并附适用场景说明）：此前表单不提交 `features`，需要 `unsafe-eval`（如 Alpine.js）或 `unsafe-inline` 的作品会被 SW 默认 CSP 拦截且无从声明。草稿编辑与预填两条回填路径同步回填勾选态。
+
+- Admin console works tab can revise a published work's permission flags in place (saves via `PUT /api/admin/works/:id/features`; takes effect immediately through the detail API → host → SW chain), and the review detail page shows the flags a submission requested (read-only).
+- 管理台「作品管理」可就地修订已发布作品的权限开关（经 `PUT /api/admin/works/:id/features` 保存，经详情 API→宿主→SW 链立即生效）；审核详情页只读展示提交者申请的开关。
+
+- Embedded play area now renders as a themed "cabinet": 2px ink frame with hard shadow, a title bar with the work name, runtime badge (站内运行 / 托管运行 / 已降级外链) and status dot, and the loading/error/degrade overlays restyled to the paper-ink design language.
+- 内嵌游玩区改为「展柜式」呈现：2px 墨框 + 硬阴影，标题栏含作品名、运行时徽标（站内运行/托管运行/已降级外链）与状态点，加载/失败/降级遮罩同步改为纸墨设计语言。
+
 ## [0.9.0] - 2026-09-27
 
 ### Added / 新增
