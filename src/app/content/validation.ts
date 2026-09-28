@@ -35,9 +35,13 @@ export function validateWorkPayload(payload: WorkPayload, kind: SubmissionKind):
   const errors: Partial<Record<FieldKey, string>> = {}
   if (!WORK_ID_PATTERN.test(payload.id)) errors.workId = '名称需为小写字母、数字或连字符（1–63 字符，首尾非连字符，你的命名空间内唯一）'
   if (!payload.name.trim()) errors.name = '展示名称必填'
-  if (!/^https?:\/\/\S+$/.test(payload.url)) errors.url = '需为有效的 http(s) 链接'
-  if (!payload.author.name.trim()) errors.authorName = '作者必填'
-  if (!payload.description.trim()) errors.description = '描述必填'
+  if (payload.url) {
+    if (!/^https?:\/\/\S+$/.test(payload.url)) errors.url = '需为有效的 http(s) 链接'
+  } else if ((payload.runtime ?? 'external') === 'external') {
+    errors.url = '外链作品必须填写作品原始链接'
+  }
+  if (payload.author?.name && payload.author.name.length > 60) errors.authorName = '作者名不得超过 60 字符'
+  if (payload.description && payload.description.length > 140) errors.description = '描述不得超过 140 字符'
   const { min, max } = payload.durationMinutes
   if (!Number.isInteger(min) || !Number.isInteger(max) || min < 1 || max < min) {
     errors.duration = '时长需为整数，且 1 ≤ 最短 ≤ 最长'
