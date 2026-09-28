@@ -7,9 +7,10 @@ import BaseInput from '@/components/ui/BaseInput.vue'
 import BaseSelect from '@/components/ui/BaseSelect.vue'
 import BaseTextarea from '@/components/ui/BaseTextarea.vue'
 import FileInput from '@/components/ui/FileInput.vue'
+import { session } from '@/auth'
 import { contentClient, toContentMessage, validateUploadInput } from '@/content'
 import { EMPTY_FEATURES, FEATURE_ITEMS, collectFeatures, featuresToForm } from '@/content/features'
-import { parseTags, slugify, validateWorkPayload, VERSION_PATTERN, WORK_ID_PATTERN, type FieldKey } from '@/content/validation'
+import { parseTags, slugify, validateWorkPayload, SLUG_PATTERN, VERSION_PATTERN, type FieldKey } from '@/content/validation'
 import type { SubmissionKind, SubmissionView, UploadResult, WorkPayload } from '@/content/types'
 import { GAME_TYPES } from '@/data/types'
 import { GAME_TYPE_LABELS } from '@/lib/labels'
@@ -25,6 +26,7 @@ const router = useRouter()
 const submissionId = computed(() => props.id ?? (route.params.id as string | undefined))
 
 const kind = ref<SubmissionKind>('new_work')
+const myUsername = computed(() => session.state.user?.username ?? '')
 const form = reactive({
   workId: '', name: '', url: '', authorName: '', authorUrl: '',
   description: '', durationMin: '5', durationMax: '20', type: 'puzzle',
@@ -69,7 +71,7 @@ const TYPE_OPTIONS = GAME_TYPES.map((t) => ({ value: t, label: GAME_TYPE_LABELS[
 
 function buildPayload(): WorkPayload {
   return {
-    id: form.workId.trim(),
+    id: `${myUsername.value}/${form.workId.trim()}`,
     name: form.name.trim(),
     url: form.url.trim(),
     author: { name: form.authorName.trim(), ...(form.authorUrl.trim() ? { url: form.authorUrl.trim() } : {}) },
@@ -105,7 +107,7 @@ watch([() => form.workId, () => form.version], () => {
 
 const bundleDisabled = computed(() =>
   form.runtime !== 'virtual' || kind.value === 'metadata_change' ||
-  !WORK_ID_PATTERN.test(form.workId.trim()) || !VERSION_PATTERN.test(form.version.trim()) ||
+  !SLUG_PATTERN.test(form.workId.trim()) || !VERSION_PATTERN.test(form.version.trim()) ||
   readOnly.value || busy.value !== null
 )
 
@@ -113,7 +115,7 @@ const bundleDisabled = computed(() =>
 const bundleDisabledHint = computed(() => {
   if (!bundleDisabled.value || kind.value === 'metadata_change') return ''
   const missing: string[] = []
-  if (!WORK_ID_PATTERN.test(form.workId.trim())) missing.push('名称')
+  if (!SLUG_PATTERN.test(form.workId.trim())) missing.push('名称')
   if (!VERSION_PATTERN.test(form.version.trim())) missing.push('版本号')
   return missing.length > 0 ? `先填写${missing.join(' 与 ')}后可上传` : ''
 })
@@ -122,7 +124,7 @@ const bundleDisabledHint = computed(() => {
 let prefillTimer: ReturnType<typeof setTimeout> | null = null
 watch([() => form.workId, kind], () => {
   if (editing.value || (kind.value !== 'new_version' && kind.value !== 'metadata_change')) return
-  if (!WORK_ID_PATTERN.test(form.workId.trim())) return
+  if (!SLUG_PATTERN.test(form.workId.trim())) return
   if (prefillTimer) clearTimeout(prefillTimer)
   prefillTimer = setTimeout(() => void prefill(form.workId.trim()), 600)
 })
@@ -130,13 +132,13 @@ watch([() => form.workId, kind], () => {
 // 切 kind 后重置 slug 锁定：new_work 手改过 workId 再切走又切回，应恢复名称→slug 自动联动
 watch(kind, () => { slugTouched.value = false })
 
-async function prefill(workId: string): Promise<void> {
+async function prefill(slug: string): Promise<void> {
   error.value = null
   try {
     // apiRepo 在 authEnabled 为真时必非 null（submit 路由受 requiresAuth 守卫，见 Task 5），
     // 此守卫只为满足 TS 的 `ApiContentRepository | null` 类型，实际不可达
     if (!apiRepo) throw new Error('内容 API 未启用')
-    const game = await apiRepo.getGame(workId)
+    const game = await apiRepo.getGame(`${myUsername.value}/${slug}`)
     // hosted 在本表单无法表达（form.runtime 与 content 层 WorkPayload.runtime 均只有 external|virtual）：
     // 若归一成 external 提交，后端 UpdateMetadata 全列覆盖会把 hosted 作品静默降级 → 直接拒绝预填
     if (game.runtime === 'hosted') {
@@ -178,7 +180,8 @@ async function loadExisting(id: string): Promise<void> {
     existing.value = s
     kind.value = s.kind
     const p = s.payload
-    form.workId = p.id ?? s.work_id
+    const workId = p.id ?? s.work_id
+    form.workId = workId.slice(workId.indexOf('/') + 1)
     form.name = p.name ?? ''
     form.url = p.url ?? ''
     form.authorName = p.author?.name ?? ''
@@ -210,14 +213,14 @@ async function onBundleFile(event: Event): Promise<void> {
   const file = input.files?.[0]
   input.value = ''
   if (!file || busy.value) return
-  const invalid = validateUploadInput({ kind: 'bundle', workId: form.workId.trim(), version: form.version.trim(), file })
+  const invalid = validateUploadInput({ kind: 'bundle', slug: form.workId.trim(), version: form.version.trim(), file })
   if (invalid) { error.value = invalid; return }
   error.value = null
   notice.value = null
   busy.value = 'draft'
   try {
     bundle.value = await contentClient.upload(
-      { kind: 'bundle', workId: form.workId.trim(), version: form.version.trim(), file },
+      { kind: 'bundle', slug: form.workId.trim(), version: form.version.trim(), file },
       (p) => { progress.value = { which: 'bundle', ...p } }
     )
     bundleLinkedOnly.value = false
@@ -341,10 +344,10 @@ const labelClass = 'font-mono text-[0.6875rem] tracking-[0.05em]'
           <p v-if="err('name')" class="text-xs font-bold text-accent-ink">{{ err('name') }}</p>
         </div>
         <div class="space-y-1.5">
-          <label class="font-mono text-[0.6875rem]" for="sf-workid">名称（小写字母、数字或连字符，用于作品链接，收录后不可改）</label>
+          <label class="font-mono text-[0.6875rem]" for="sf-workid">名称（slug，你的命名空间内唯一，小写字母、数字或连字符，收录后不可改）</label>
           <BaseInput id="sf-workid" v-model="form.workId" data-testid="work-id" type="text"
             :readonly="editing" :invalid="Boolean(err('workId'))" @blur="kind !== 'new_work' && !editing && prefill(form.workId.trim())" />
-          <p class="font-mono text-[0.6875rem] text-ink-soft">作品链接将是 /games/{{ form.workId.trim() || '<名称>' }}</p>
+          <p class="font-mono text-[0.6875rem] text-ink-soft">作品链接将是 /games/{{ myUsername || '<你的用户名>' }}/{{ form.workId.trim() || '<名称>' }}</p>
           <p v-if="err('workId')" class="text-xs font-bold text-accent-ink">{{ err('workId') }}</p>
         </div>
         <div class="space-y-1.5">

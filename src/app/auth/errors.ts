@@ -3,7 +3,9 @@ export type AuthErrorCode =
   | 'invalid_email'
   | 'weak_password'
   | 'invalid_display_name'
+  | 'invalid_username'
   | 'email_taken'
+  | 'username_taken'
   | 'invalid_credentials'
   | 'unauthorized'
   | 'rate_limited'
@@ -15,7 +17,9 @@ export const AUTH_ERROR_MESSAGES: Record<AuthErrorCode, string> = {
   invalid_email: '邮箱格式不正确',
   weak_password: '密码需 10–128 个字符',
   invalid_display_name: '昵称需 1–60 个字符，且不能含控制字符',
+  invalid_username: '用户名需为小写字母、数字或连字符（1–39 个字符，首尾非连字符）',
   email_taken: '该邮箱已注册，可直接登录',
+  username_taken: '该用户名已被使用，请换一个',
   invalid_credentials: '邮箱或密码不正确',
   unauthorized: '登录已过期，请重新登录',
   rate_limited: '操作太频繁，请 60 秒后重试',

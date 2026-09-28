@@ -94,9 +94,9 @@ describe('validateUploadInput', () => {
   const png = { name: 'c.png', size: 10, type: 'image/png' } as File
   test('bundle 必须带 work_id/version 且为 zip 且 ≤100MB', () => {
     expect(validateUploadInput({ kind: 'bundle', file: zip })).toMatch(/请先填写名称与版本号/)
-    expect(validateUploadInput({ kind: 'bundle', workId: 'w', version: 'v1', file: zip })).toBeNull()
-    expect(validateUploadInput({ kind: 'bundle', workId: 'w', version: 'v1', file: { ...zip, name: 'a.rar', type: '' } as File })).toMatch(/zip/)
-    expect(validateUploadInput({ kind: 'bundle', workId: 'w', version: 'v1', file: { ...zip, size: 101 * 1024 * 1024 } as File })).toMatch(/超过上限/)
+    expect(validateUploadInput({ kind: 'bundle', slug: 'w', version: 'v1', file: zip })).toBeNull()
+    expect(validateUploadInput({ kind: 'bundle', slug: 'w', version: 'v1', file: { ...zip, name: 'a.rar', type: '' } as File })).toMatch(/zip/)
+    expect(validateUploadInput({ kind: 'bundle', slug: 'w', version: 'v1', file: { ...zip, size: 101 * 1024 * 1024 } as File })).toMatch(/超过上限/)
   })
   test('cover 限 png/jpeg/webp 且 ≤5MB', () => {
     expect(validateUploadInput({ kind: 'cover', file: png })).toBeNull()
@@ -105,14 +105,45 @@ describe('validateUploadInput', () => {
   })
   // 以下三条为纯逻辑分支补测（与后端 uploads.go 的 "file must not be empty"、Windows zip MIME 对齐）
   test('bundle 接受 Windows 的 application/x-zip-compressed', () => {
-    expect(validateUploadInput({ kind: 'bundle', workId: 'w', version: 'v1', file: { ...zip, name: 'a.bin', type: 'application/x-zip-compressed' } as File })).toBeNull()
+    expect(validateUploadInput({ kind: 'bundle', slug: 'w', version: 'v1', file: { ...zip, name: 'a.bin', type: 'application/x-zip-compressed' } as File })).toBeNull()
   })
   test('空文件拒绝（bundle/cover 各自文案）', () => {
-    expect(validateUploadInput({ kind: 'bundle', workId: 'w', version: 'v1', file: { ...zip, size: 0 } as File })).toMatch(/为空文件/)
+    expect(validateUploadInput({ kind: 'bundle', slug: 'w', version: 'v1', file: { ...zip, size: 0 } as File })).toMatch(/为空文件/)
     expect(validateUploadInput({ kind: 'cover', file: { ...png, size: 0 } as File })).toMatch(/为空文件/)
   })
   test('cover 扩展名与 MIME 须同时合法（MIME 合法但扩展名不符仍拒）', () => {
     expect(validateUploadInput({ kind: 'cover', file: { ...png, name: 'c.bin', type: 'image/png' } as File })).toMatch(/png/)
     expect(validateUploadInput({ kind: 'cover', file: { ...png, name: 'c.png', type: '' } as File })).toBeNull()
+  })
+})
+
+describe('createContentClient.upload', () => {
+  test('bundle 分支以 slug 字段上传（不再发 work_id）', async () => {
+    const sent: { form: FormData | null } = { form: null }
+    const XhrStub = class {
+      upload = {} as { onprogress?: unknown }
+      status = 200
+      responseText = JSON.stringify({ upload_id: 'up1', sha256: 'sha256hex', bytes: 128, kid: 'kid1' })
+      onload: (() => void) | null = null
+      onerror: (() => void) | null = null
+      open(_method: string, _url: string) {}
+      setRequestHeader(_name: string, _value: string) {}
+      getResponseHeader(_name: string) { return null }
+      send(form: FormData) {
+        sent.form = form
+        this.onload?.()
+      }
+    }
+    vi.stubGlobal('XMLHttpRequest', XhrStub)
+    const client = createContentClient(opts)
+    const file = { name: 'a.zip', size: 10, type: 'application/zip' } as File
+    const result = await client.upload({ kind: 'bundle', slug: 'my-game', version: 'v1', file })
+    expect(result.upload_id).toBe('up1')
+    expect(result.kid).toBe('kid1')
+    expect(sent.form?.get('kind')).toBe('bundle')
+    expect(sent.form?.get('slug')).toBe('my-game')
+    expect(sent.form?.get('version')).toBe('v1')
+    expect(sent.form?.get('work_id')).toBeNull()
+    expect(sent.form?.has('file')).toBe(true)
   })
 })

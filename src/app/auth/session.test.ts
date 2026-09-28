@@ -5,7 +5,7 @@ import { createAuthSession, toSession } from './session'
 import { createSessionStore } from './storage'
 import type { AuthResponse, AuthUser } from './types'
 
-const USER: AuthUser = { id: 'u1', email: 'a@example.com', display_name: 'A', role: 'user' }
+const USER: AuthUser = { id: 'u1', email: 'a@example.com', display_name: 'A', username: 'alice', role: 'user' }
 const RESPONSE: AuthResponse = { token: 't1', expires_at: '2026-09-26T12:00:00Z', user: USER }
 const CHANGED: AuthResponse = { token: 't2', expires_at: '2026-09-26T13:00:00Z', user: USER }
 const NEW_SESSION: AuthResponse = { token: 't-new', expires_at: '2026-09-27T12:00:00Z', user: USER }
@@ -47,11 +47,11 @@ describe('auth 会话', () => {
   it('register 写入凭证并置为已登录', async () => {
     const { client, clientRaw } = deps()
     const session = createAuthSession({ client, store: createSessionStore(storage, () => NOW) })
-    await session.register('a@example.com', 'A', 'password1234')
+    await session.register('a@example.com', 'alice', 'A', 'password1234')
     expect(session.state.status).toBe('authenticated')
     expect(session.state.user?.email).toBe('a@example.com')
     expect(storage.getItem('crearte.auth.session.v1')).toContain('t1')
-    expect(clientRaw.register).toHaveBeenCalledWith({ email: 'a@example.com', password: 'password1234', displayName: 'A' })
+    expect(clientRaw.register).toHaveBeenCalledWith({ email: 'a@example.com', password: 'password1234', displayName: 'A', username: 'alice' })
   })
 
   it('toSession 把 expires_at 映射成存储里的 expiresAt', () => {

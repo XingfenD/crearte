@@ -26,7 +26,7 @@ describe('auth 客户端', () => {
     fetchMock.mockResolvedValueOnce(jsonResponse({
       token: 't1',
       expires_at: '2026-09-26T12:00:00Z',
-      user: { id: 'u1', email: 'a@example.com', display_name: 'A', role: 'user' }
+      user: { id: 'u1', email: 'a@example.com', display_name: 'A', username: 'alice', role: 'user' }
     }, 200))
     const result = await client().login({ email: 'a@example.com', password: 'password1234' })
     expect(result.token).toBe('t1')
@@ -35,19 +35,19 @@ describe('auth 客户端', () => {
     expect(JSON.parse(String(init.body))).toEqual({ email: 'a@example.com', password: 'password1234' })
   })
 
-  it('register 用 display_name 字段名', async () => {
+  it('register 用 display_name 与 username 字段名', async () => {
     fetchMock.mockResolvedValueOnce(jsonResponse({
       token: 't1', expires_at: '2026-09-26T12:00:00Z',
-      user: { id: 'u1', email: 'a@example.com', display_name: 'A', role: 'user' }
+      user: { id: 'u1', email: 'a@example.com', display_name: 'A', username: 'alice', role: 'user' }
     }, 201))
-    await client().register({ email: 'a@example.com', password: 'password1234', displayName: 'A' })
+    await client().register({ email: 'a@example.com', password: 'password1234', displayName: 'A', username: 'alice' })
     const init = fetchMock.mock.calls[0][1] as RequestInit
-    expect(JSON.parse(String(init.body))).toEqual({ email: 'a@example.com', password: 'password1234', display_name: 'A' })
+    expect(JSON.parse(String(init.body))).toEqual({ email: 'a@example.com', password: 'password1234', display_name: 'A', username: 'alice' })
   })
 
   it('错误体映射为 AuthApiError 并带上 code', async () => {
     fetchMock.mockResolvedValueOnce(jsonResponse({ error: { code: 'email_taken', message: 'email already registered' } }, 409))
-    await expect(client().register({ email: 'a@example.com', password: 'password1234', displayName: 'A' }))
+    await expect(client().register({ email: 'a@example.com', password: 'password1234', displayName: 'A', username: 'alice' }))
       .rejects.toMatchObject({ status: 409, code: 'email_taken' })
   })
 
@@ -101,7 +101,7 @@ describe('auth 客户端', () => {
   })
 
   it('Bearer 头只在带 token 的请求上', async () => {
-    fetchMock.mockResolvedValueOnce(jsonResponse({ user: { id: 'u1', email: 'a@example.com', display_name: 'A', role: 'user' } }, 200))
+    fetchMock.mockResolvedValueOnce(jsonResponse({ user: { id: 'u1', email: 'a@example.com', display_name: 'A', username: 'alice', role: 'user' } }, 200))
     await client().me('token-9')
     const init = fetchMock.mock.calls[0][1] as RequestInit
     expect((init.headers as Record<string, string>).Authorization).toBe('Bearer token-9')
@@ -111,7 +111,7 @@ describe('auth 客户端', () => {
     const auth = {
       token: 't2',
       expires_at: '2026-09-27T12:00:00Z',
-      user: { id: 'u1', email: 'a@example.com', display_name: 'A', role: 'user' }
+      user: { id: 'u1', email: 'a@example.com', display_name: 'A', username: 'alice', role: 'user' }
     }
     fetchMock.mockResolvedValueOnce(jsonResponse(auth, 200))
     const result = await client().changePassword('token-9', { currentPassword: 'old-password', newPassword: 'new-password' })

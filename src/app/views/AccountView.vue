@@ -95,6 +95,10 @@ function logout(): void {
         <dd class="text-sm font-bold">{{ user.display_name }}</dd>
       </div>
       <div class="mt-2 flex flex-wrap items-baseline gap-2">
+        <dt class="font-mono text-[0.6875rem] tracking-[0.05em] text-ink-soft">用户名</dt>
+        <dd class="text-sm">{{ user.username }} <span class="text-ink-soft">（不可修改）</span></dd>
+      </div>
+      <div class="mt-2 flex flex-wrap items-baseline gap-2">
         <dt class="font-mono text-[0.6875rem] tracking-[0.05em] text-ink-soft">邮箱</dt>
         <dd class="text-sm">{{ user.email }}</dd>
       </div>

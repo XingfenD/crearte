@@ -20,6 +20,7 @@ function isAuthUser(value: unknown): value is AuthUser {
   return typeof user.id === 'string' && user.id !== ''
     && typeof user.email === 'string'
     && typeof user.display_name === 'string'
+    && typeof user.username === 'string' && user.username !== ''
     && (user.role === 'user' || user.role === 'admin')
 }
 
