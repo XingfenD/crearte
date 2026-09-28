@@ -40,11 +40,13 @@ test('sandbox 旗标覆盖作品运行所需权限', () => {
   const { frame } = makeFrame([virtual])
   expect(frame.sandbox.split(' ').sort()).toEqual([
     'allow-forms',
-    'allow-fullscreen',
     'allow-pointer-lock',
     'allow-same-origin',
     'allow-scripts'
   ])
+  // allow-fullscreen 不是合法 sandbox 旗标（全屏走 Permissions Policy 的 allow 属性），
+  // 写上会被浏览器判 invalid flag 并在控制台报错
+  expect(frame.sandbox).not.toContain('allow-fullscreen')
 })
 
 test('agent:boot 到达后清除告警', () => {
