@@ -6,6 +6,13 @@ All notable changes to this template should be documented in this file.
 The format loosely follows Keep a Changelog and can be adapted to the team's habits.
 本文档参考了 Keep a Changelog 的思路，也可以根据团队习惯调整。
 
+## [0.11.1] - 2026-09-29
+
+### Fixed / 修复
+
+- The embedded play frame's sandbox now includes `allow-forms`: static-site works that navigate with a form (e.g. a `<form action="query.html" method="get">` search page) submit normally instead of being blocked by the browser; the sandbox already granted `allow-scripts`, so this adds no new cross-origin send capability. A unit test pins the full sandbox flag set.
+- 内嵌游玩 iframe 的 sandbox 补上 `allow-forms`：以表单导航的静态站作品（如 `<form action="query.html" method="get">` 检索页）可正常提交，不再被浏览器阻止；sandbox 本就授予 `allow-scripts`（等价跨域发送能力已存在），此项不扩大威胁面。单测钉住完整 sandbox 旗标集合。
+
 ## [0.11.0] - 2026-09-28
 
 ### Added / 新增
