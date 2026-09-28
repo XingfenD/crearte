@@ -10,10 +10,10 @@ REPO_ROOT="$(dirname "$FRONT_ROOT")"
 # REPO_ROOT=…/crearte_mono/crearte（前端仓根）→ 后端兄弟仓须再上一层：…/crearte_mono/crearte-server。
 # 简报原文 BACKEND="$REPO_ROOT/crearte-server" 在本机指向不存在路径 → stack_ok=0 → 假绿 SKIP（已实测复现）。
 BACKEND="$(dirname "$REPO_ROOT")/crearte-server"
-# 后端命名空间实现只存在于 origin/feat/user-namespace（可用 CREARTE_STACK_BACKEND_REF 覆盖，默认取该 ref）；
-# 兄弟仓工作树可能在 master（无该代码）。
+# 后端命名空间实现已合入 origin/master（可用 CREARTE_STACK_BACKEND_REF 覆盖，默认取该 ref）；
+# 兄弟仓工作树可能落后于 origin/master。
 # 用 worktree 取 origin ref（**不切 xf 的分支、不碰其工作树**），放 /tmp 避免污染仓库。
-BACKEND_REF="${CREARTE_STACK_BACKEND_REF:-origin/feat/user-namespace}"
+BACKEND_REF="${CREARTE_STACK_BACKEND_REF:-origin/master}"
 BACKEND_WT="/tmp/crearte-stack-backend"
 BACKEND_SRC="$BACKEND_WT/src"
 # ⚠️ 默认 GOPROXY=proxy.golang.org 在本机**下载超时**（实测 180s 卡 aws-sdk 四个包，EXIT=124），
