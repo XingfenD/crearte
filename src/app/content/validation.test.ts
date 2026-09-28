@@ -49,14 +49,30 @@ describe('validateWorkPayload', () => {
     expect(validateWorkPayload({ ...good, id: 'alice/Bad_ID' }, 'new_work').workId).toBeTruthy()
     expect(validateWorkPayload({ ...good, name: '  ' }, 'new_work').name).toBeTruthy()
     expect(validateWorkPayload({ ...good, url: 'ftp://x' }, 'new_work').url).toBeTruthy()
-    expect(validateWorkPayload({ ...good, author: { name: '' } }, 'new_work').authorName).toBeTruthy()
-    expect(validateWorkPayload({ ...good, description: '   ' }, 'new_work').description).toBeTruthy()
+    expect(validateWorkPayload({ ...good, author: { name: '' } }, 'new_work').authorName).toBeUndefined()
+    expect(validateWorkPayload({ ...good, description: '   ' }, 'new_work').description).toBeUndefined()
     expect(validateWorkPayload({ ...good, durationMinutes: { min: 20, max: 5 } }, 'new_work').duration).toBeTruthy()
     expect(validateWorkPayload({ ...good, durationMinutes: { min: 0, max: 5 } }, 'new_work').duration).toBeTruthy()
     expect(validateWorkPayload({ ...good, durationMinutes: { min: 1.5, max: 5 } }, 'new_work').duration).toBeTruthy()
     expect(validateWorkPayload({ ...good, durationMinutes: { min: Number.NaN, max: 5 } }, 'new_work').duration).toBeTruthy()
     expect(validateWorkPayload({ ...good, type: 'nope' as never }, 'new_work').type).toBeTruthy()
     expect(validateWorkPayload({ ...good, tags: ['1','2','3','4','5','6','7','8','9'] }, 'new_work').tags).toBeTruthy()
+  })
+  test('三字段可选：virtual 载荷缺 url/author/description 无错误', () => {
+    const virtual = { ...good, runtime: 'virtual' as const, version: 'v1', entry: 'index.html' }
+    const { url, author, description, ...rest } = virtual
+    expect(validateWorkPayload(rest, 'new_work')).toEqual({})
+  })
+  test('external 运行时 url 仍必填；virtual 不要求', () => {
+    const { url, ...rest } = good
+    expect(validateWorkPayload(rest, 'new_work').url).toBe('外链作品必须填写作品原始链接')
+    const virtual = { ...rest, runtime: 'virtual' as const, version: 'v1', entry: 'index.html' }
+    expect(validateWorkPayload(virtual, 'new_work')).toEqual({})
+  })
+  test('非空仍校验：ftp url 与 61 字作者名与 141 字描述照旧报错', () => {
+    expect(validateWorkPayload({ ...good, url: 'ftp://x' }, 'new_work').url).toBeTruthy()
+    expect(validateWorkPayload({ ...good, author: { name: 'a'.repeat(61) } }, 'new_work').authorName).toBeTruthy()
+    expect(validateWorkPayload({ ...good, description: 'a'.repeat(141) }, 'new_work').description).toBeTruthy()
   })
   test('面向用户的文案：workId 错误说「名称」，name 错误说「展示名称」', () => {
     expect(validateWorkPayload({ ...good, id: 'alice/Bad_ID' }, 'new_work').workId)

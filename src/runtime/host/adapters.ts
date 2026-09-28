@@ -43,7 +43,7 @@ export function resolveRuntimeTargets(game: Game, opts: { baseDomain: string; pr
   if (game.fallback === 'hosted' && targets[0]?.mode === 'virtual' && game.hostedUrl) {
     targets.push({ mode: 'hosted', url: game.hostedUrl, origin })
   }
-  if (game.fallback !== 'none') {
+  if (game.fallback !== 'none' && game.url) {
     targets.push({ mode: 'external', url: game.url, origin: null })
   }
   return targets

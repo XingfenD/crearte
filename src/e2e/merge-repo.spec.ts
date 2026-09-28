@@ -28,7 +28,7 @@ test('并集合并：同 id API 胜出、source 徽标只给静态源', async ({
   await expect(apiCard).not.toContainText('社区投稿')
 })
 
-test('API 目录挂掉：降级纯静态，19 款照常展示', async ({ page }) => {
+test('API 目录挂掉：降级纯静态，20 款照常展示', async ({ page }) => {
   const api = mockApiGames(page, (route) => route.fulfill({ status: 500, body: 'boom' }))
   await page.goto('http://localhost:4173/games')
   // 防假绿（硬性）：catch-all 的 404 也会让 listGames 降级纯静态，断言全绿但因果错误。
@@ -36,9 +36,9 @@ test('API 目录挂掉：降级纯静态，19 款照常展示', async ({ page })
   await expect.poll(() => api.hits()).toBeGreaterThan(0)
   await expect(page.getByRole('heading', { name: '2048', exact: true })).toBeVisible()
   await expect(page.getByRole('heading', { name: '相对路径夹具' })).toBeVisible()
-  // 题称「19 款」就得数满 19 款（dist/data/index.json 实测 19）：只断言两个 heading 时，
+  // 题称「20 款」就得数满 20 款（dist/data/index.json 实测 20）：只断言两个 heading 时，
   // 静态源整体没挂上也会绿
-  await expect(page.locator('a[href^="/games/"]')).toHaveCount(19)
+  await expect(page.locator('a[href^="/games/"]')).toHaveCount(20)
   await expect(page.getByText('加载失败')).toHaveCount(0)
 })
 

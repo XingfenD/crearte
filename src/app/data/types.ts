@@ -9,7 +9,7 @@ export const GAME_USER_PATTERN = /^[a-z0-9]([a-z0-9-]{0,37}[a-z0-9])?$/
 export const GAME_SLUG_PATTERN = /^[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?$/
 
 export interface Author {
-  name: string
+  name?: string
   url?: string
 }
 
@@ -44,9 +44,9 @@ export interface GameSummary {
   user?: string
   slug?: string
   name: string
-  url: string
-  author: Author
-  description: string
+  url?: string
+  author?: Author
+  description?: string
   durationMinutes: { min: number; max: number }
   type: GameType
   tags: string[]

@@ -6,9 +6,9 @@ export type SubmissionStatus = 'draft' | 'pending' | 'approved' | 'rejected'
 export interface WorkPayload {
   id: string
   name: string
-  url: string
-  author: { name: string; url?: string }
-  description: string
+  url?: string
+  author?: { name?: string; url?: string }
+  description?: string
   durationMinutes: { min: number; max: number }
   type: GameType
   tags: string[]

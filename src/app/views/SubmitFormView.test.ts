@@ -89,3 +89,32 @@ describe('SubmitFormView 命名空间提交', () => {
     expect(body.payload.id).toBe('alice/my-game')
   })
 })
+
+describe('SubmitFormView 三字段可选（作者/描述/链接）', () => {
+  it('virtual 提交省略空的 url/author/description', async () => {
+    h.state.user = alice
+    h.createSubmission.mockResolvedValue({ id: 's1', kind: 'new_work', status: 'draft', work_id: 'alice/my-game', payload: {}, created_at: '', updated_at: '' })
+    const w = mountForm()
+    await w.find('[data-testid="runtime-virtual"]').setValue(true)
+    await w.find('#sf-name').setValue('My Game')
+    await w.find('[data-testid="version"]').setValue('v1')
+    await flushPromises()
+    await w.get('[data-testid="save-draft"]').trigger('click')
+    await flushPromises()
+    expect(h.createSubmission).toHaveBeenCalledTimes(1)
+    const body = h.createSubmission.mock.calls[0][0]
+    expect(body.payload.url).toBeUndefined()
+    expect(body.payload.author).toBeUndefined()
+    expect(body.payload.description).toBeUndefined()
+  })
+
+  it('external 缺 url 被保存拦截并提示', async () => {
+    h.state.user = alice
+    const w = mountForm()
+    await w.find('#sf-name').setValue('My Game')
+    await w.get('[data-testid="save-draft"]').trigger('click')
+    await flushPromises()
+    expect(h.createSubmission).not.toHaveBeenCalled()
+    expect(w.text()).toContain('外链作品必须填写作品原始链接')
+  })
+})

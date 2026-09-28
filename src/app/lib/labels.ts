@@ -1,4 +1,4 @@
-import type { GameType } from '@/data/types'
+import type { GameSummary, GameType } from '@/data/types'
 
 export const GAME_TYPE_LABELS: Record<GameType, string> = {
   puzzle: '解谜',
@@ -15,4 +15,9 @@ export const GAME_TYPE_LABELS: Record<GameType, string> = {
 
 export function durationText(duration: { min: number; max: number }): string {
   return duration.min === duration.max ? `约 ${duration.min} 分钟` : `${duration.min}–${duration.max} 分钟`
+}
+
+// 作者位回退链：显式作者名 → 所有者用户名 → 佚名（作者为可选项后的兜底）
+export function authorDisplayName(game: Pick<GameSummary, 'author' | 'user'>): string {
+  return game.author?.name || game.user || '佚名'
 }

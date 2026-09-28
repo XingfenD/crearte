@@ -1,6 +1,6 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, test, vi } from 'vitest'
 import { NotFoundError } from './repository'
-import { StaticContentRepository } from './staticRepo'
+import { StaticContentRepository, assertGameSummary } from './staticRepo'
 
 const index = {
   schemaVersion: 2,
@@ -107,5 +107,31 @@ describe('StaticContentRepository', () => {
     const repo = new StaticContentRepository('/data')
     await expect(repo.listDocs()).resolves.toEqual([{ slug: 'about', title: '关于', order: 1 }])
     await expect(repo.getDoc('about')).resolves.toMatchObject({ title: '关于', content: '# x' })
+  })
+})
+
+const minimal = {
+  id: 'fixture/minimal',
+  user: 'fixture',
+  slug: 'minimal',
+  name: '最小作品',
+  durationMinutes: { min: 1, max: 2 },
+  type: 'puzzle',
+  tags: [],
+  addedAt: '2026-09-29'
+}
+
+describe('assertGameSummary 可选字段', () => {
+  test('缺 url/author/description 的最小摘要通过', () => {
+    expect(() => assertGameSummary(minimal, 'games[0]')).not.toThrow()
+  })
+  test('author 仅 url 无 name 通过（后端 NewGameAuthor 会输出该形态）', () => {
+    expect(() => assertGameSummary({ ...minimal, author: { url: 'https://a.example' } }, 'games[0]')).not.toThrow()
+  })
+  test('author.name 非字符串仍被拒', () => {
+    expect(() => assertGameSummary({ ...minimal, author: { name: 42 } }, 'games[0]')).toThrow()
+  })
+  test('缺 id/name/durationMinutes 照旧报错', () => {
+    expect(() => assertGameSummary({ name: 'x' }, 'games[0]')).toThrow()
   })
 })
