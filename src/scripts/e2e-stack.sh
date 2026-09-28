@@ -10,9 +10,10 @@ REPO_ROOT="$(dirname "$FRONT_ROOT")"
 # REPO_ROOT=…/crearte_mono/crearte（前端仓根）→ 后端兄弟仓须再上一层：…/crearte_mono/crearte-server。
 # 简报原文 BACKEND="$REPO_ROOT/crearte-server" 在本机指向不存在路径 → stack_ok=0 → 假绿 SKIP（已实测复现）。
 BACKEND="$(dirname "$REPO_ROOT")/crearte-server"
-# 后端内容管线只存在于 origin/feat/content-pipeline；兄弟仓工作树可能在 master（无该代码）。
+# 后端命名空间实现只存在于 origin/feat/user-namespace（可用 CREARTE_STACK_BACKEND_REF 覆盖，默认取该 ref）；
+# 兄弟仓工作树可能在 master（无该代码）。
 # 用 worktree 取 origin ref（**不切 xf 的分支、不碰其工作树**），放 /tmp 避免污染仓库。
-BACKEND_REF="origin/feat/content-pipeline"
+BACKEND_REF="${CREARTE_STACK_BACKEND_REF:-origin/feat/user-namespace}"
 BACKEND_WT="/tmp/crearte-stack-backend"
 BACKEND_SRC="$BACKEND_WT/src"
 # ⚠️ 默认 GOPROXY=proxy.golang.org 在本机**下载超时**（实测 180s 卡 aws-sdk 四个包，EXIT=124），
@@ -20,7 +21,7 @@ BACKEND_SRC="$BACKEND_WT/src"
 export GOPROXY="${GOPROXY:-https://goproxy.cn,direct}"
 STACK_FILE="$FRONT_ROOT/fixtures/generated/stack.json"
 DB_PORT=5433 MINIO_PORT=9001 API_PORT=8091 WEB_PORT=4175
-ADMIN_EMAIL="admin@stack.local" ADMIN_PASSWORD="stack-admin-password"
+ADMIN_EMAIL="admin@stack.local" ADMIN_USERNAME="admin" ADMIN_PASSWORD="stack-admin-password"
 SERVER_BIN="/tmp/crearte-stack-server"
 # ⚠️ 裸 `go` 在本机是 1.18.1，无法解析后端 go.mod（要求 go 1.24.1）→ build 静默失败 →
 # stack_ok=0 → skip 模式 → full-loop.spec 自动跳过 = **假绿**（什么都没测却报通过）。
@@ -55,8 +56,9 @@ if [ "$stack_ok" = 1 ]; then
   git -C "$BACKEND" fetch --quiet origin "$BACKEND_REF" >/dev/null 2>&1
   git -C "$BACKEND" worktree remove --force "$BACKEND_WT" >/dev/null 2>&1
   git -C "$BACKEND" worktree add --detach "$BACKEND_WT" "$BACKEND_REF" >/dev/null 2>&1 || stack_ok=0
-  # 硬校验：取到的树必须真含内容管线路由，否则编出来的是没有 /api/submissions 的后端
+  # 硬校验：取到的树必须真含内容管线 + 命名空间双段路由，否则编出来的是旧后端（full-loop 会全挂）
   grep -q 'api/submissions' "$BACKEND_SRC/internal/api/router.go" 2>/dev/null || stack_ok=0
+  grep -q ':user/:slug' "$BACKEND_SRC/internal/api/router.go" 2>/dev/null || stack_ok=0
 fi
 
 if [ "$stack_ok" = 1 ]; then
@@ -104,7 +106,7 @@ fi
 
 if [ "$stack_ok" = 1 ]; then
   curl -sf -X POST "http://localhost:$API_PORT/api/auth/register" -H 'Content-Type: application/json' \
-    -d "{\"email\":\"$ADMIN_EMAIL\",\"password\":\"$ADMIN_PASSWORD\",\"display_name\":\"Stack Admin\"}" >/dev/null || stack_ok=0
+    -d "{\"email\":\"$ADMIN_EMAIL\",\"username\":\"$ADMIN_USERNAME\",\"password\":\"$ADMIN_PASSWORD\",\"display_name\":\"Stack Admin\"}" >/dev/null || stack_ok=0
   # 复用已编好的 $SERVER_BIN（cmd 含 user 子命令），避免第二次 go run 重新编译
   if [ "$stack_ok" = 1 ]; then
     DATABASE_URL="postgres://crearte:crearte@localhost:$DB_PORT/crearte?sslmode=disable" \
