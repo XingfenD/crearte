@@ -6,6 +6,13 @@ All notable changes to this template should be documented in this file.
 The format loosely follows Keep a Changelog and can be adapted to the team's habits.
 本文档参考了 Keep a Changelog 的思路，也可以根据团队习惯调整。
 
+## [0.12.0] - 2026-09-29
+
+### Changed / 变更
+
+- Submitting a work no longer requires 作者名/描述/作品原始链接: the three fields are marked （可选） and omitted from the payload when empty (`external` works still require a link). The API omits the keys entirely, so the types are now optional and the views fall back gracefully — the author slot shows the owner's username (or 佚名), and the description paragraph and the external-play link disappear when absent; a virtual work without a link degrades straight to an error instead of an empty external target. Includes a minimal fixture and e2e coverage.
+- 提交作品不再强制填写作者名/描述/作品原始链接：三项标注（可选），留空即从载荷省略（外链作品仍必填链接）。API 侧对应键整体省略，类型随之改可选，渲染兜底——作者位回退显示所有者用户名（再退「佚名」），描述段与「开始体验」入口缺省不渲染；无链接的 virtual 作品降级直接报错而非拼空外链。附最小夹具与 e2e 覆盖。
+
 ## [0.11.1] - 2026-09-29
 
 ### Fixed / 修复
