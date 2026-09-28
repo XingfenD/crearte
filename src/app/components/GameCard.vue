@@ -1,13 +1,19 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { RouterLink } from 'vue-router'
-import type { GameSummary } from '@/data/types'
+import { resolveUserSlug, type GameSummary } from '@/data/types'
 import { GAME_TYPE_LABELS, durationText } from '@/lib/labels'
 import GameCover from './GameCover.vue'
 
 const props = withDefaults(defineProps<{ game: GameSummary; headingLevel?: number }>(), { headingLevel: 2 })
 
 const headingTag = computed(() => `h${props.headingLevel}`)
+
+// 复合寻址 /games/:user/:slug：优先显式 user/slug，静态遗留纯 id 回退为单段路径（迁移期由 404 兜底）
+const gamePath = computed(() => {
+  const { user, slug } = resolveUserSlug(props.game)
+  return user ? `/games/${user}/${slug}` : `/games/${slug}`
+})
 
 const MAX_TAGS = 2
 const visibleTags = computed(() => props.game.tags.slice(0, MAX_TAGS))
@@ -16,7 +22,7 @@ const hiddenTags = computed(() => props.game.tags.slice(MAX_TAGS))
 
 <template>
   <RouterLink
-    :to="`/games/${game.id}`"
+    :to="gamePath"
     class="lift block border-2 border-ink bg-surface shadow-hard hover:shadow-hard-lg active:shadow-none"
   >
     <div class="relative border-b-2 border-ink">
