@@ -7,11 +7,13 @@
 ## 提交游戏
 
 1. Fork 仓库并新建分支
-2. 在 `src/games/` 新增 `<id>.json`，参考现有文件：
+2. 在 `src/games/` 新增 `<slug>.json`（文件名即 slug，不含 `/`），JSON 内填复合 `id` = `user/slug`，并显式提供与拆段一致的 `user`、`slug` 字段：
 
 ```json
 {
-  "id": "your-game",
+  "id": "yourname/your-game",
+  "user": "yourname",
+  "slug": "your-game",
   "name": "游戏名",
   "url": "https://example.com/",
   "author": { "name": "作者", "url": "https://github.com/author" },
@@ -30,13 +32,14 @@
 
 ## 硬性规则（CI 会拒绝）
 
-- `id` 必须等于文件名，仅含 `[a-z0-9-]`
+- `id` 是复合作品 id = `user/slug`（`user`：`^[a-z0-9]([a-z0-9-]{0,37}[a-z0-9])?$`；`slug`：`^[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?$`），slug 段必须等于文件名（`<slug>.json`），可显式提供与拆段一致的 `user`/`slug` 字段
 - 字段不允许自创（schema 为 `additionalProperties: false`）
 - `url` 与封面外链仅允许 https
 - `tags` 最多 8 个、每个不超过 12 字、不允许重复
 - `type` 只能取枚举值：`puzzle | action | idle | strategy | simulation | narrative | music | creative | casual | other`
-- 本地封面只能放在 `src/assets/covers/<id>.<png|jpg|jpeg|webp|avif|gif>`，并在 JSON 中写 `/data/assets/covers/<id>.<ext>`
+- 本地封面只能放在 `src/assets/covers/<slug>.<png|jpg|jpeg|webp|avif|gif>`，并在 JSON 中写 `/data/assets/covers/<slug>.<ext>`
 - `durationMinutes.max >= min` 且 `max <= 600`
+- `runtime` 为 `virtual`/`hosted`（自托管）时必须带后端签发的 `playSubdomain`（16 位 hex）或显式的 `playOrigin` 覆盖，否则校验失败；外部链接 `external` 无需。静态投稿者拿不到后端签发的子域，可自建运行地址填 `playOrigin`，或走站内投稿流程由后端签发 `playSubdomain`
 
 ## 提交站点文档
 
