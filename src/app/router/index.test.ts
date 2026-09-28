@@ -3,7 +3,6 @@ import { describe, expect, it } from 'vitest'
 import { createMemoryHistory, createRouter } from 'vue-router'
 import { routes } from './index'
 
-// 用真实路由表 + memory history 验证 game 路由的参数接线（不挂载组件、不触发懒加载）
 function makeRouter() {
   return createRouter({ history: createMemoryHistory(), routes })
 }

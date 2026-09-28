@@ -9,7 +9,6 @@ const props = withDefaults(defineProps<{ game: GameSummary; headingLevel?: numbe
 
 const headingTag = computed(() => `h${props.headingLevel}`)
 
-// 复合寻址 /games/:user/:slug：优先显式 user/slug，静态遗留纯 id 回退为单段路径（迁移期由 404 兜底）
 const gamePath = computed(() => {
   const { user, slug } = resolveUserSlug(props.game)
   return user ? `/games/${user}/${slug}` : `/games/${slug}`

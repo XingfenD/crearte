@@ -11,7 +11,6 @@ export function assertGameSummary(value: unknown, path: string): asserts value i
   assert(Array.isArray(g.tags), `${path}.tags 必须是数组`)
   assert(g.author && typeof g.author.name === 'string', `${path}.author.name 缺失`)
   assert(g.durationMinutes && typeof g.durationMinutes.min === 'number' && typeof g.durationMinutes.max === 'number', `${path}.durationMinutes 非法`)
-  // v2 显式字段可选：API 源始终返回；静态遗留数据（纯 id）缺失时由 resolveUserSlug 回退解析
   if (g.user !== undefined && (typeof g.user !== 'string' || !GAME_USER_PATTERN.test(g.user))) {
     throw new Error(`数据格式错误: ${path}.user 非法`)
   }
@@ -75,7 +74,6 @@ export class StaticContentRepository implements ContentRepository {
   getGame(id: string): Promise<Game> {
     let pending = this.cachedGamesById.get(id)
     if (!pending) {
-      // 复合 id 的落盘文件名把 `/` 映射为 `__`（build-data 落盘规则）；纯 id 原样
       const file = id.replaceAll('/', '__')
       pending = this.fetchJson(`/games/${encodeURIComponent(file)}.json`)
         .then((data) => {

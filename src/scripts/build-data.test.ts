@@ -223,10 +223,8 @@ describe('复合 id（user/slug）静态贡献', () => {
     const index = JSON.parse(await readFile(path.join(root, 'public/data/index.json'), 'utf8'))
     expect(index.schemaVersion).toBe(2)
     expect(index.games[0]).toMatchObject({ id: 'fendy/2048', user: 'fendy', slug: '2048' })
-    // playSubdomain 是详情字段，摘要不带
     expect(index.games[0].playSubdomain).toBeUndefined()
 
-    // 详情落盘文件名：id 的 / 映射为 __
     const detail = JSON.parse(await readFile(path.join(root, 'public/data/games/fendy__2048.json'), 'utf8'))
     expect(detail).toMatchObject({ id: 'fendy/2048', user: 'fendy', slug: '2048', playSubdomain: 'a'.repeat(16) })
     await expect(readFile(path.join(root, 'public/data/games/fendy/2048.json'))).rejects.toThrow()

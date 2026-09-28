@@ -56,7 +56,6 @@ export class ApiContentRepository implements ContentRepository {
     return this.fetchJson('/api/games').then((body) => assertGamesIndex(body).games)
   }
 
-  // id 为复合形式 user/slug（slug 不含 `/`，拆分精确）→ /api/games/:user/:slug；斜杠不转义
   getGame(id: string): Promise<Game> {
     const [user, slug] = id.split('/')
     return this.fetchJson(`/api/games/${user}/${slug}`).then((body) => {

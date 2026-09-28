@@ -76,12 +76,10 @@ describe('StaticContentRepository', () => {
   })
 
   it('summary 的 user/slug 可选：缺失通过（静态遗留数据），存在则校验 pattern', async () => {
-    // 纯 id 无显式字段：通过（迁移期容错）
     fetchMock.mockResolvedValueOnce(jsonResponse(index))
     const legacy = new StaticContentRepository('/data')
     await expect(legacy.listGames()).resolves.toHaveLength(1)
 
-    // 显式字段非法：报数据格式错误
     for (const bad of [{ user: 'Bad' }, { slug: '-x' }, { slug: 'a'.repeat(64) }]) {
       fetchMock.mockResolvedValueOnce(jsonResponse({ schemaVersion: 2, games: [{ ...index.games[0], ...bad }] }))
       const repo = new StaticContentRepository('/data')

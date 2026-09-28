@@ -4,7 +4,6 @@ import { mount } from '@vue/test-utils'
 import GameCard from './GameCard.vue'
 import type { GameSummary } from '@/data/types'
 
-// RouterLink 打成透传 to 的 <a>，专注断言卡片链接的复合寻址路径
 const RouterLinkStub = { props: ['to'], template: '<a :href="to"><slot /></a>' }
 
 const base = {

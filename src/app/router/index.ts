@@ -5,7 +5,6 @@ import { resolveNavigation } from './guards'
 export const routes: RouteRecordRaw[] = [
   { path: '/', name: 'home', component: () => import('@/views/LandingView.vue') },
   { path: '/games', name: 'catalog', component: () => import('@/views/CatalogView.vue') },
-  // 作品按 user/slug 寻址（复合 id = user/slug）；组件 props 即 { user, slug }
   { path: '/games/:user/:slug', name: 'game', component: () => import('@/views/GameView.vue'), props: true },
   { path: '/docs', name: 'docs', component: () => import('@/views/DocsView.vue') },
   { path: '/docs/:slug', name: 'doc', component: () => import('@/views/DocsView.vue'), props: true },
