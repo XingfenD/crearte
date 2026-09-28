@@ -57,7 +57,8 @@ export class ApiContentRepository implements ContentRepository {
   }
 
   getGame(id: string): Promise<Game> {
-    return this.fetchJson(`/api/games/${encodeURIComponent(id)}`).then((body) => {
+    const [user, slug] = id.split('/')
+    return this.fetchJson(`/api/games/${user}/${slug}`).then((body) => {
       assertGameDetail(body, `games/${id}`)
       return body
     })

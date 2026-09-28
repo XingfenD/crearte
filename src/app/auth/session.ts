@@ -15,7 +15,7 @@ export interface AuthSession {
   state: AuthSessionState
   restore(): Promise<void>
   login(email: string, password: string): Promise<void>
-  register(email: string, displayName: string, password: string): Promise<void>
+  register(email: string, username: string, displayName: string, password: string): Promise<void>
   changePassword(currentPassword: string, newPassword: string): Promise<void>
   logout(): void
   logoutAll(): Promise<void>
@@ -78,8 +78,8 @@ export function createAuthSession(deps: { client: AuthClientLike; store: Session
     async login(email, password) {
       apply(toSession(await deps.client.login({ email, password })))
     },
-    async register(email, displayName, password) {
-      apply(toSession(await deps.client.register({ email, password, displayName })))
+    async register(email, username, displayName, password) {
+      apply(toSession(await deps.client.register({ email, password, displayName, username })))
     },
     async changePassword(currentPassword, newPassword) {
       if (!current) throw new AuthApiError(401, 'unauthorized', 'no active session')

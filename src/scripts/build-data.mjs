@@ -7,9 +7,16 @@ import Ajv2020 from 'ajv/dist/2020.js'
 
 export const SRC_ROOT = path.resolve(fileURLToPath(new URL('..', import.meta.url)))
 export const GAME_ID_PATTERN = /^[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?$/
+export const GAME_USER_PATTERN = /^[a-z0-9]([a-z0-9-]{0,37}[a-z0-9])?$/
 export const RESERVED_GAME_IDS = new Set(['www', 'api', 'cdn', 'assets', 'static', 'admin', 'status', 'play'])
 export const DOC_SLUG_PATTERN = /^[a-z0-9-]+$/
 export const LOCAL_COVER_PATTERN = /^\/data\/assets\/covers\/([a-z0-9-]{1,64})\.(png|jpg|jpeg|webp|avif|gif)$/
+
+export function splitGameId(id) {
+  const separator = id.indexOf('/')
+  if (separator === -1) return { user: '', slug: id }
+  return { user: id.slice(0, separator), slug: id.slice(separator + 1) }
+}
 
 export function createValidator(schema) {
   return new Ajv2020({ allErrors: true, strict: true }).compile(schema)
@@ -43,12 +50,12 @@ export function parseFrontmatter(raw, label = 'frontmatter') {
   return { title, order, content: raw.slice(match[0].length).trim(), errors }
 }
 
-async function checkCover(game, coversDir) {
+async function checkCover(game, slug, coversDir) {
   if (!game.cover || game.cover.startsWith('https://')) return null
   const match = LOCAL_COVER_PATTERN.exec(game.cover)
-  if (!match) return 'cover 必须是 https URL 或 /data/assets/covers/<id>.<png|jpg|jpeg|webp|avif|gif>'
-  if (match[1] !== game.id) return `cover 文件名必须与 id 一致（应为 ${game.id}.${match[2]}）`
-  if (!existsSync(path.join(coversDir, `${game.id}.${match[2]}`))) return `cover 文件不存在：assets/covers/${game.id}.${match[2]}`
+  if (!match) return 'cover 必须是 https URL 或 /data/assets/covers/<slug>.<png|jpg|jpeg|webp|avif|gif>'
+  if (match[1] !== slug) return `cover 文件名必须与 slug 段一致（应为 ${slug}.${match[2]}）`
+  if (!existsSync(path.join(coversDir, `${slug}.${match[2]}`))) return `cover 文件不存在：assets/covers/${slug}.${match[2]}`
   return null
 }
 
@@ -80,12 +87,21 @@ export async function loadGames({ gamesDir, coversDir, validate }) {
       for (const err of validate.errors ?? []) errors.push(`${label}${err.instancePath || ''}: ${err.message}`)
       continue
     }
-    if (raw.id !== fileId) {
-      errors.push(`${label}: id "${raw.id}" 必须等于文件名 "${fileId}"`)
+    const { user, slug } = splitGameId(raw.id)
+    if (user ? (slug !== fileId || !GAME_USER_PATTERN.test(user)) : raw.id !== fileId) {
+      errors.push(`${label}: id "${raw.id}" 的 slug 段必须等于文件名 "${fileId}"`)
       continue
     }
-    if (RESERVED_GAME_IDS.has(raw.id) || raw.id.startsWith('__')) {
-      errors.push(`${label}: id "${raw.id}" 是保留字，禁止使用`)
+    if ((raw.user !== undefined && raw.user !== user) || (raw.slug !== undefined && raw.slug !== slug)) {
+      errors.push(`${label}: user/slug 字段与 id "${raw.id}" 拆段不一致`)
+      continue
+    }
+    if (RESERVED_GAME_IDS.has(slug) || slug.startsWith('__')) {
+      errors.push(`${label}: slug "${slug}" 是保留字，禁止使用`)
+      continue
+    }
+    if ((raw.runtime === 'virtual' || raw.runtime === 'hosted') && !raw.playSubdomain && !raw.playOrigin) {
+      errors.push(`${label}: runtime "${raw.runtime}" 需要 playSubdomain 或 playOrigin（自托管需可播放源）`)
       continue
     }
     if (raw.entry?.includes('..') || raw.entry?.startsWith('/')) {
@@ -96,7 +112,7 @@ export async function loadGames({ gamesDir, coversDir, validate }) {
       errors.push(`${label}: durationMinutes.max 必须 >= min`)
       continue
     }
-    const coverError = await checkCover(raw, coversDir)
+    const coverError = await checkCover(raw, slug, coversDir)
     if (coverError) {
       errors.push(`${label}: ${coverError}`)
       continue
@@ -135,6 +151,8 @@ export async function loadDocs({ docsDir }) {
 function pickGame(game, withIntro) {
   return {
     id: game.id,
+    ...(game.user ? { user: game.user } : {}),
+    ...(game.slug ? { slug: game.slug } : {}),
     name: game.name,
     url: game.url,
     author: { name: game.author.name, ...(game.author.url ? { url: game.author.url } : {}) },
@@ -148,6 +166,7 @@ function pickGame(game, withIntro) {
     ...(game.runtime ? { runtime: game.runtime } : {}),
     ...(withIntro && game.version ? { version: game.version } : {}),
     ...(withIntro && game.entry ? { entry: game.entry } : {}),
+    ...(withIntro && game.playSubdomain ? { playSubdomain: game.playSubdomain } : {}),
     ...(withIntro && game.playOrigin ? { playOrigin: game.playOrigin } : {}),
     ...(withIntro && game.hostedUrl ? { hostedUrl: game.hostedUrl } : {}),
     ...(withIntro && game.bundle ? { bundle: { ...game.bundle } } : {}),
@@ -159,7 +178,7 @@ function pickGame(game, withIntro) {
 
 export function buildIndex(games, generatedAt) {
   return {
-    schemaVersion: 1,
+    schemaVersion: 2,
     generatedAt,
     games: [...games].sort((a, b) => a.id.localeCompare(b.id)).map((g) => pickGame(g, false))
   }
@@ -206,7 +225,8 @@ export async function generate({ srcRoot = SRC_ROOT, check = false, withFixtures
   }
   await writeFile(path.join(outDir, 'index.json'), JSON.stringify(buildIndex(games, generatedAt), null, 2) + '\n')
   for (const game of games) {
-    await writeFile(path.join(outDir, 'games', `${game.id}.json`), JSON.stringify(pickGame(game, true), null, 2) + '\n')
+    const file = game.id.replaceAll('/', '__')
+    await writeFile(path.join(outDir, 'games', `${file}.json`), JSON.stringify(pickGame(game, true), null, 2) + '\n')
   }
   const sortedDocs = [...docs].sort((a, b) => a.order - b.order || a.slug.localeCompare(b.slug))
   await writeFile(path.join(outDir, 'docs.json'), JSON.stringify({ generatedAt, docs: sortedDocs }, null, 2) + '\n')

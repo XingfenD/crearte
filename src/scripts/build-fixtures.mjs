@@ -44,6 +44,14 @@ function deriveKid(gameId, version) {
   return createHash('sha256').update(`${gameId}\0${version}`).digest().subarray(0, 16).toString('base64url')
 }
 
+function derivePlaySubdomain(gameId) {
+  return createHash('sha256').update(gameId).digest('hex').slice(0, 16)
+}
+
+function safeName(id) {
+  return id.replaceAll('/', '__')
+}
+
 // CRB1 v1：42B 头 + AES-256-GCM(明文, CEK, IV, AAD=头)，tag 附密文尾（与 Go Seal / WebCrypto 兼容）
 function crb1Encrypt(plaintext, kid) {
   const cek = randomBytes(32)
@@ -70,13 +78,15 @@ await mkdir(path.join(outDir, 'keys'), { recursive: true })
 for (const file of (await readdir(catalogDir)).filter((f) => f.endsWith('.json')).sort()) {
   const catalog = JSON.parse(await readFile(path.join(catalogDir, file), 'utf8'))
   const { _corruptSha, _corruptV2Sha, _plaintext, ...game } = catalog
+  const playSubdomain = derivePlaySubdomain(game.id)
+  const hostedUrl = game.runtime === 'hosted' || game.fallback === 'hosted' ? `http://${playSubdomain}.localhost:4173/` : null
   // C 模式夹具由 mock 服务直接托管源文件，不打包；原样输出供 build-data --with-fixtures 合并
   if (game.runtime === 'hosted' || game.runtime === 'external') {
-    await writeFile(path.join(outDir, 'games', `${game.id}.json`), JSON.stringify(game, null, 2) + '\n')
+    await writeFile(path.join(outDir, 'games', `${safeName(game.id)}.json`), JSON.stringify({ ...game, playSubdomain, ...(hostedUrl ? { hostedUrl } : {}) }, null, 2) + '\n')
     console.log(`[fixtures] ${game.id}: ${game.runtime} (no bundle)`)
     continue
   }
-  const files = await collect(path.join(gamesDir, game.id))
+  const files = await collect(path.join(gamesDir, game.slug))
   const version = 'v1'
   const version2 = 'v2'
   const zipV1 = pack(render(files, version))
@@ -92,27 +102,29 @@ for (const file of (await readdir(catalogDir)).filter((f) => f.endsWith('.json')
       bytes = out.file
       enc = { v: 1, alg: 'AES-256-GCM', kid }
       await writeFile(
-        path.join(outDir, 'keys', `${game.id}__${ver}.json`),
+        path.join(outDir, 'keys', `${safeName(game.id)}__${ver}.json`),
         JSON.stringify({ alg: 'AES-256-GCM', kid, key: out.cek.toString('base64url') }, null, 2) + '\n'
       )
     }
     const sha = createHash('sha256').update(bytes).digest('hex')
     const declaredSha = corruptFlag ? sha.replace(/^./, (c) => (c === '0' ? '1' : '0')) : sha
-    const filename = `${game.id}${suffix}.${_plaintext ? 'zip' : 'bin'}`
+    const filename = `${safeName(game.id)}${suffix}.${_plaintext ? 'zip' : 'bin'}`
     await writeFile(path.join(outDir, 'bundles', filename), bytes)
     return { url: `/data/bundles/${filename}`, bytes: bytes.length, sha256: declaredSha, ...(enc ? { enc } : {}) }
   }
 
   const bundleV1 = await emitVersion(version, zipV1, _corruptSha, '')
   const bundleV2 = await emitVersion(version2, zipV2, _corruptV2Sha, '-v2')
-  await writeFile(path.join(outDir, 'games', `${game.id}.json`), JSON.stringify({
+  await writeFile(path.join(outDir, 'games', `${safeName(game.id)}.json`), JSON.stringify({
     ...game,
     runtime: 'virtual',
     version,
     entry: game.entry ?? 'index.html',
+    playSubdomain,
+    ...(hostedUrl ? { hostedUrl } : {}),
     bundle: bundleV1
   }, null, 2) + '\n')
-  await writeFile(path.join(outDir, 'games-alt', `${game.id}.json`), JSON.stringify({
+  await writeFile(path.join(outDir, 'games-alt', `${safeName(game.id)}.json`), JSON.stringify({
     version: version2,
     bundle: bundleV2
   }, null, 2) + '\n')

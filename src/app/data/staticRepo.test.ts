@@ -3,7 +3,7 @@ import { NotFoundError } from './repository'
 import { StaticContentRepository } from './staticRepo'
 
 const index = {
-  schemaVersion: 1,
+  schemaVersion: 2,
   generatedAt: '2026-09-17T00:00:00.000Z',
   games: [{
     id: '2048',
@@ -58,6 +58,33 @@ describe('StaticContentRepository', () => {
     await expect(repo.getGame('2048')).rejects.toBeInstanceOf(NotFoundError)
     await expect(repo.getGame('2048')).resolves.toMatchObject({ id: '2048' })
     expect(fetchMock).toHaveBeenCalledTimes(2)
+  })
+
+  it('复合 id 的详情文件名把 / 映射为 __；纯 id 文件名原样', async () => {
+    const composite = {
+      ...index.games[0],
+      id: 'fendy/2048',
+      user: 'fendy',
+      slug: '2048'
+    }
+    fetchMock.mockResolvedValueOnce(jsonResponse(composite)).mockResolvedValueOnce(jsonResponse(index.games[0]))
+    const repo = new StaticContentRepository('/data')
+    await expect(repo.getGame('fendy/2048')).resolves.toMatchObject({ id: 'fendy/2048', user: 'fendy' })
+    expect(fetchMock).toHaveBeenNthCalledWith(1, '/data/games/fendy__2048.json')
+    await expect(repo.getGame('2048')).resolves.toMatchObject({ id: '2048' })
+    expect(fetchMock).toHaveBeenNthCalledWith(2, '/data/games/2048.json')
+  })
+
+  it('summary 的 user/slug 可选：缺失通过（静态遗留数据），存在则校验 pattern', async () => {
+    fetchMock.mockResolvedValueOnce(jsonResponse(index))
+    const legacy = new StaticContentRepository('/data')
+    await expect(legacy.listGames()).resolves.toHaveLength(1)
+
+    for (const bad of [{ user: 'Bad' }, { slug: '-x' }, { slug: 'a'.repeat(64) }]) {
+      fetchMock.mockResolvedValueOnce(jsonResponse({ schemaVersion: 2, games: [{ ...index.games[0], ...bad }] }))
+      const repo = new StaticContentRepository('/data')
+      await expect(repo.listGames()).rejects.toThrow('数据格式错误')
+    }
   })
 
   it('非 404 错误抛 Error', async () => {

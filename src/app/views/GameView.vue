@@ -11,12 +11,13 @@ import GameCover from '@/components/GameCover.vue'
 import StatePanel from '@/components/StatePanel.vue'
 import GameHost from '../../runtime/host/GameHost.vue'
 
-const props = defineProps<{ id: string }>()
+const props = defineProps<{ user: string; slug: string }>()
 const router = useRouter()
 const origin = location.origin
+const gameId = computed(() => `${props.user}/${props.slug}`)
 const { data: game, error, loading, reload } = useAsync<Game>(
-  () => repo.getGame(props.id),
-  [computed(() => props.id)]
+  () => repo.getGame(gameId.value),
+  [gameId]
 )
 
 const notFound = computed(() => error.value instanceof NotFoundError)

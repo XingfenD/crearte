@@ -58,7 +58,7 @@ export interface SubmissionUpdate {
 
 export interface UploadInput {
   kind: 'bundle' | 'cover'
-  workId?: string
+  slug?: string
   version?: string
   file: File
 }

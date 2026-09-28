@@ -1,5 +1,7 @@
 {
-  "id": "worker",
+  "id": "fixture/worker",
+  "user": "fixture",
+  "slug": "worker",
   "name": "Worker 夹具",
   "url": "https://example.com/worker",
   "author": { "name": "test" },

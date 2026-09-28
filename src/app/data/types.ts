@@ -5,6 +5,9 @@ export const GAME_TYPES = [
 
 export type GameType = (typeof GAME_TYPES)[number]
 
+export const GAME_USER_PATTERN = /^[a-z0-9]([a-z0-9-]{0,37}[a-z0-9])?$/
+export const GAME_SLUG_PATTERN = /^[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?$/
+
 export interface Author {
   name: string
   url?: string
@@ -38,6 +41,8 @@ export interface GameBundle {
 
 export interface GameSummary {
   id: string
+  user?: string
+  slug?: string
   name: string
   url: string
   author: Author
@@ -56,12 +61,22 @@ export interface Game extends GameSummary {
   intro?: string
   version?: string
   entry?: string
+  playSubdomain?: string
   playOrigin?: string
   hostedUrl?: string
   bundle?: GameBundle
   features?: FeatureFlags
   display?: { aspect?: '16:9' | '4:3' | 'fill' }
   fallback?: 'external' | 'hosted' | 'none'
+}
+
+export function resolveUserSlug(game: Pick<GameSummary, 'id' | 'user' | 'slug'>): { user: string; slug: string } {
+  if (typeof game.user === 'string' && typeof game.slug === 'string') {
+    return { user: game.user, slug: game.slug }
+  }
+  const separator = game.id.indexOf('/')
+  if (separator === -1) return { user: '', slug: game.id }
+  return { user: game.id.slice(0, separator), slug: game.id.slice(separator + 1) }
 }
 
 export interface DocMeta {

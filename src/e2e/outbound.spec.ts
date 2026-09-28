@@ -1,7 +1,7 @@
 import { expect, test } from '@playwright/test'
 
 test('非外链作者主页不被套中间页', async ({ page }) => {
-  await page.goto('http://localhost:4173/games/abs-paths')
+  await page.goto('http://localhost:4173/games/fixture/abs-paths')
 
   const authorLink = page.getByRole('link', { name: 'test', exact: true })
   await expect(authorLink).toHaveAttribute('href', 'mailto:test@example.com')
@@ -11,7 +11,7 @@ test('详情页开始游戏先经中间页，确认后才离开本站', async ({
   await context.route('https://play2048.co/**', (route) =>
     route.fulfill({ status: 200, contentType: 'text/html', body: '<h1 id="target">目标站</h1>' })
   )
-  await page.goto('http://localhost:4173/games/2048')
+  await page.goto('http://localhost:4173/games/fixture/2048')
 
   const [tab] = await Promise.all([
     page.waitForEvent('popup'),
@@ -27,11 +27,11 @@ test('详情页开始游戏先经中间页，确认后才离开本站', async ({
   await tab.getByRole('button', { name: '继续访问' }).click()
   await expect(tab).toHaveURL('https://play2048.co/')
   await expect(tab.locator('#target')).toBeVisible()
-  expect(page.url()).toBe('http://localhost:4173/games/2048')
+  expect(page.url()).toBe('http://localhost:4173/games/fixture/2048')
 })
 
 test('简介里的外链经中间页（普通版）', async ({ page }) => {
-  await page.goto('http://localhost:4173/games/abs-paths')
+  await page.goto('http://localhost:4173/games/fixture/abs-paths')
 
   const [tab] = await Promise.all([
     page.waitForEvent('popup'),

@@ -10,8 +10,11 @@ const stack = existsSync(stackFile)
 test.skip(!stack?.ready, '真栈不可用（docker/后端仓/go 缺失），跳过 full-loop smoke')
 
 const WEB = 'http://localhost:4175'
-const workId = `stack-work-${Date.now().toString(36)}`
-const userEmail = `submitter-${Date.now()}@stack.local`
+const stamp = Date.now().toString(36)
+const username = `submitter-${stamp}`
+const slug = `stack-work-${stamp}`
+const workId = `${username}/${slug}`
+const userEmail = `submitter-${stamp}@stack.local`
 const userPassword = 'stack-user-password'
 // ⚠️ 必须用**外部脚本**，不能用内联 <script>：
 // SW 的 CSP 默认 `script-src 'self'`（csp.ts:14），只有 `features.inlineScript` 为真才补
@@ -41,6 +44,7 @@ test('全链路：注册→提交→过审→目录可见→可玩→revoke→�
   // 1. 用户注册（真实 UI + 真实后端）
   await page.goto(`${WEB}/register`)
   await page.locator('#register-email').fill(userEmail)
+  await page.locator('#register-username').fill(username)
   await page.locator('#register-name').fill('Stack Submitter')
   await page.locator('#register-password').fill(userPassword)
   await page.getByRole('button', { name: '注册' }).click()
@@ -49,8 +53,8 @@ test('全链路：注册→提交→过审→目录可见→可玩→revoke→�
   // 2. 新建 virtual 提交 + 真实上传（服务端加密）
   await page.goto(`${WEB}/submit/new`)
   await page.getByLabel('展示名称').fill('Stack Work')
-  await page.locator('[data-testid=work-id]').fill(workId)
-  await page.getByLabel('作品原始链接').fill(`https://example.com/${workId}`)
+  await page.locator('[data-testid=work-id]').fill(slug)
+  await page.getByLabel('作品原始链接').fill(`https://example.com/${slug}`)
   await page.getByLabel('作者名').fill('Stack Submitter')
   await page.getByLabel('描述').fill('Real-stack smoke work.')
   await page.locator('[data-testid=runtime-virtual]').check()
@@ -97,7 +101,7 @@ test('全链路：注册→提交→过审→目录可见→可玩→revoke→�
   // 5. revoke 当前版本 → 全新上下文重进：安装失败（bundle-key 410），不再可玩
   await adminPage.goto(`${WEB}/admin`)
   await adminPage.getByRole('button', { name: '作品管理' }).click()
-  const row = adminPage.locator(`[data-testid=work-row-${workId}]`)
+  const row = adminPage.locator(`[data-testid="work-row-${workId}"]`)
   await expect(row).toBeVisible()
   await row.getByRole('button', { name: '查看' }).click()
   await row.getByRole('button', { name: '吊销密钥' }).click()

@@ -8,7 +8,7 @@ export interface AuthClientOptions {
 }
 
 export interface AuthClient {
-  register(input: { email: string; password: string; displayName: string }): Promise<AuthResponse>
+  register(input: { email: string; password: string; displayName: string; username: string }): Promise<AuthResponse>
   login(input: { email: string; password: string }): Promise<AuthResponse>
   me(token: string): Promise<AuthUser>
   changePassword(token: string, input: { currentPassword: string; newPassword: string }): Promise<AuthResponse>
@@ -59,7 +59,7 @@ export function createAuthClient(options: AuthClientOptions): AuthClient {
     register(input) {
       return send<AuthResponse>('/api/auth/register', {
         method: 'POST',
-        body: JSON.stringify({ email: input.email, password: input.password, display_name: input.displayName })
+        body: JSON.stringify({ email: input.email, password: input.password, display_name: input.displayName, username: input.username })
       })
     },
     login(input) {

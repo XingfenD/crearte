@@ -1,5 +1,7 @@
 {
-  "id": "2048",
+  "id": "fixture/2048",
+  "user": "fixture",
+  "slug": "2048",
   "runtime": "external",
   "name": "2048",
   "url": "https://play2048.co/",

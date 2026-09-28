@@ -1,5 +1,7 @@
 {
-  "id": "range",
+  "id": "fixture/range",
+  "user": "fixture",
+  "slug": "range",
   "name": "Range 夹具",
   "url": "https://example.com/range",
   "author": { "name": "test" },

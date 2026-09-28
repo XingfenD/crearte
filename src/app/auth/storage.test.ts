@@ -6,7 +6,7 @@ const NOW = Date.parse('2026-09-19T12:00:00Z')
 const session: Session = {
   token: 'token-1',
   expiresAt: '2026-09-26T12:00:00Z',
-  user: { id: 'u1', email: 'a@example.com', display_name: 'Tester', role: 'user' }
+  user: { id: 'u1', email: 'a@example.com', display_name: 'Tester', username: 'tester', role: 'user' }
 }
 
 class MemoryStorage {
@@ -43,6 +43,12 @@ describe('auth 凭证存储', () => {
     expect(createSessionStore(storage, () => NOW).read()).toBeNull()
 
     storage.setItem(SESSION_STORAGE_KEY, JSON.stringify({ ...session, user: { ...session.user, role: 'root' } }))
+    expect(createSessionStore(storage, () => NOW).read()).toBeNull()
+
+    storage.setItem(SESSION_STORAGE_KEY, JSON.stringify({ ...session, user: { ...session.user, username: '' } }))
+    expect(createSessionStore(storage, () => NOW).read()).toBeNull()
+
+    storage.setItem(SESSION_STORAGE_KEY, JSON.stringify({ ...session, user: { ...session.user, username: undefined } }))
     expect(createSessionStore(storage, () => NOW).read()).toBeNull()
   })
 

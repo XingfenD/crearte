@@ -3,16 +3,17 @@ import { ref } from 'vue'
 import { RouterLink, useRouter } from 'vue-router'
 import { session } from '@/auth'
 import { AUTH_ERROR_MESSAGES, toUserMessage } from '@/auth/errors'
-import { validateDisplayName, validateEmail, validatePassword } from '@/auth/validation'
+import { validateDisplayName, validateEmail, validatePassword, validateUsername } from '@/auth/validation'
 import BaseButton from '@/components/ui/BaseButton.vue'
 import BaseInput from '@/components/ui/BaseInput.vue'
 
 const router = useRouter()
 const email = ref('')
+const username = ref('')
 const displayName = ref('')
 const password = ref('')
 const error = ref<string | null>(null)
-const errorField = ref<'email' | 'name' | 'password' | null>(null)
+const errorField = ref<'email' | 'username' | 'name' | 'password' | null>(null)
 const busy = ref(false)
 
 async function submit(): Promise<void> {
@@ -22,6 +23,11 @@ async function submit(): Promise<void> {
   if (validateEmail(email.value)) {
     error.value = AUTH_ERROR_MESSAGES.invalid_email
     errorField.value = 'email'
+    return
+  }
+  if (validateUsername(username.value)) {
+    error.value = AUTH_ERROR_MESSAGES.invalid_username
+    errorField.value = 'username'
     return
   }
   if (validateDisplayName(displayName.value)) {
@@ -36,7 +42,7 @@ async function submit(): Promise<void> {
   }
   busy.value = true
   try {
-    await session.register(email.value.trim().toLowerCase(), displayName.value.trim(), password.value)
+    await session.register(email.value.trim().toLowerCase(), username.value, displayName.value.trim(), password.value)
     await router.replace('/')
   } catch (e) {
     error.value = toUserMessage(e)
@@ -60,6 +66,18 @@ async function submit(): Promise<void> {
           autocomplete="email"
           :invalid="errorField === 'email'"
           :aria-describedby="errorField === 'email' ? 'register-error' : undefined"
+        />
+      </div>
+      <div class="space-y-1.5">
+        <label class="font-mono text-[0.6875rem] tracking-[0.05em]" for="register-username">用户名（小写字母、数字或连字符，注册后不可改）</label>
+        <BaseInput
+          id="register-username"
+          v-model="username"
+          type="text"
+          autocomplete="username"
+          maxlength="39"
+          :invalid="errorField === 'username'"
+          :aria-describedby="errorField === 'username' ? 'register-error' : undefined"
         />
       </div>
       <div class="space-y-1.5">

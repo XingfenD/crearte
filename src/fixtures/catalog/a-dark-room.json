@@ -1,5 +1,7 @@
 {
-  "id": "a-dark-room",
+  "id": "fixture/a-dark-room",
+  "user": "fixture",
+  "slug": "a-dark-room",
   "runtime": "external",
   "name": "A Dark Room",
   "url": "https://adarkroom.doublespeakgames.com/",

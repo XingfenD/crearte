@@ -29,7 +29,7 @@ test('回目录的链接都指向 /games', async ({ page }) => {
   await page.goto('http://localhost:4173/games')
   await expect(page.getByRole('link', { name: '作品', exact: true })).toHaveAttribute('href', '/games')
 
-  await page.goto('http://localhost:4173/games/2048')
+  await page.goto('http://localhost:4173/games/fixture/2048')
   await expect(page.getByRole('link', { name: '返回目录' })).toHaveAttribute('href', '/games')
 
   await page.goto('http://localhost:4173/no-such-page')
@@ -60,12 +60,12 @@ test('精选区按类型均衡取样、上限 6', async ({ page }) => {
   const cards = page.locator('a[href^="/games/"]')
   await expect(cards).toHaveCount(6)
   expect(await cards.evaluateAll((els) => els.map((el) => el.getAttribute('href')))).toEqual([
-    '/games/2048',
-    '/games/a-dark-room',
-    '/games/arclight-nightcast',
-    '/games/abs-paths',
-    '/games/case-files',
-    '/games/corrupt'
+    '/games/fixture/2048',
+    '/games/fixture/a-dark-room',
+    '/games/fixture/arclight-nightcast',
+    '/games/fixture/abs-paths',
+    '/games/fixture/case-files',
+    '/games/fixture/corrupt'
   ])
 })
 

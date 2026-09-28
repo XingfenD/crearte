@@ -33,7 +33,7 @@ export interface ContentClient {
 /** 上传前置校验（纯函数，可单测）：返回错误文案或 null */
 export function validateUploadInput(input: UploadInput): string | null {
   if (input.kind === 'bundle') {
-    if (!input.workId || !input.version) return '请先填写名称与版本号，再上传 bundle'
+    if (!input.slug || !input.version) return '请先填写名称与版本号，再上传 bundle'
     const isZip = input.file.type === 'application/zip' ||
       input.file.type === 'application/x-zip-compressed' || /\.zip$/i.test(input.file.name)
     if (!isZip) return 'bundle 需为 zip 文件'
@@ -69,6 +69,11 @@ function toApiError(status: number, response: Response | null, body: { error?: {
     response ? parseRetryAfter(response.headers) : null,
     code === 'invalid_request' && typeof body?.error?.message === 'string' ? body.error.message : null
   )
+}
+
+function worksPath(workId: string): string {
+  const [user, slug] = workId.split('/')
+  return `/api/admin/works/${user}/${slug}`
 }
 
 export function createContentClient(options: ContentClientOptions): ContentClient {
@@ -134,7 +139,7 @@ export function createContentClient(options: ContentClientOptions): ContentClien
       const form = new FormData()
       form.append('kind', input.kind)
       if (input.kind === 'bundle') {
-        form.append('work_id', input.workId!)
+        form.append('slug', input.slug!)
         form.append('version', input.version!)
       }
       form.append('file', input.file)
@@ -169,16 +174,16 @@ export function createContentClient(options: ContentClientOptions): ContentClien
       return send<{ ok: boolean }>(`/api/admin/submissions/${encodeURIComponent(id)}/reject`, { method: 'POST', body: JSON.stringify({ note }) }).then(() => undefined)
     },
     adminUnpublish(workId) {
-      return send<{ ok: boolean }>(`/api/admin/works/${encodeURIComponent(workId)}/unpublish`, { method: 'POST', body: '{}' }).then(() => undefined)
+      return send<{ ok: boolean }>(`${worksPath(workId)}/unpublish`, { method: 'POST', body: '{}' }).then(() => undefined)
     },
     adminRepublish(workId) {
-      return send<{ ok: boolean }>(`/api/admin/works/${encodeURIComponent(workId)}/republish`, { method: 'POST', body: '{}' }).then(() => undefined)
+      return send<{ ok: boolean }>(`${worksPath(workId)}/republish`, { method: 'POST', body: '{}' }).then(() => undefined)
     },
     adminSetFeatures(workId, features) {
-      return send<{ ok: boolean }>(`/api/admin/works/${encodeURIComponent(workId)}/features`, { method: 'PUT', body: JSON.stringify({ features }) }).then(() => undefined)
+      return send<{ ok: boolean }>(`${worksPath(workId)}/features`, { method: 'PUT', body: JSON.stringify({ features }) }).then(() => undefined)
     },
     adminSetRevoked(workId, version, revoked) {
-      return send<{ ok: boolean }>(`/api/admin/works/${encodeURIComponent(workId)}/versions/${encodeURIComponent(version)}/revoke`, { method: 'POST', body: JSON.stringify({ revoked }) }).then(() => undefined)
+      return send<{ ok: boolean }>(`${worksPath(workId)}/versions/${encodeURIComponent(version)}/revoke`, { method: 'POST', body: JSON.stringify({ revoked }) }).then(() => undefined)
     }
   }
 }

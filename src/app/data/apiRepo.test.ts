@@ -2,7 +2,23 @@ import { afterEach, describe, expect, test, vi } from 'vitest'
 import { NotFoundError } from './repository'
 import { ApiContentRepository } from './apiRepo'
 
-const INDEX = { schemaVersion: 1, generatedAt: 'x', games: [{ id: 'g1', name: 'G', url: 'https://u', author: { name: 'a' }, description: 'd', durationMinutes: { min: 1, max: 2 }, type: 'puzzle', tags: [], addedAt: '2026-09-27' }] }
+const INDEX = {
+  schemaVersion: 2,
+  generatedAt: 'x',
+  games: [{
+    id: 'fendy/2048',
+    user: 'fendy',
+    slug: '2048',
+    name: 'G',
+    url: 'https://u',
+    author: { name: 'a' },
+    description: 'd',
+    durationMinutes: { min: 1, max: 2 },
+    type: 'puzzle',
+    tags: [],
+    addedAt: '2026-09-27'
+  }]
+}
 
 function jsonResponse(body: unknown, init: { status?: number; etag?: string; cacheControl?: string } = {}): Response {
   const headers: Record<string, string> = { 'Content-Type': 'application/json' }
@@ -20,7 +36,7 @@ describe('ApiContentRepository', () => {
     vi.stubGlobal('fetch', vi.fn(async () => jsonResponse(INDEX)))
     const repo = new ApiContentRepository('http://api', docsStub)
     const games = await repo.listGames()
-    expect(games.map((g) => g.id)).toEqual(['g1'])
+    expect(games.map((g) => g.id)).toEqual(['fendy/2048'])
   })
 
   test('ETag 条件请求：第二次带 If-None-Match，304 复用缓存 body', async () => {
@@ -40,7 +56,7 @@ describe('ApiContentRepository', () => {
     await repo2.listGames()
     vi.stubGlobal('fetch', fetchMock)
     const again = await repo2.listGames()
-    expect(again.map((g) => g.id)).toEqual(['g1'])
+    expect(again.map((g) => g.id)).toEqual(['fendy/2048'])
     expect(fetchMock).toHaveBeenCalled()
     // N1：锁死「条件请求发送」半边语义——缺此断言时删掉 If-None-Match 发送仍全绿（变异 M1 存活）
     expect((fetchMock.mock.calls[1][1]?.headers as Record<string, string>)['If-None-Match']).toBe('W/"e1"')
@@ -58,7 +74,7 @@ describe('ApiContentRepository', () => {
   test('404 → NotFoundError；500 → Error；网络错误 → Error', async () => {
     vi.stubGlobal('fetch', vi.fn(async () => new Response('', { status: 404 })))
     const repo = new ApiContentRepository('http://api', docsStub)
-    await expect(repo.getGame('nope')).rejects.toThrow(NotFoundError)
+    await expect(repo.getGame('fendy/nope')).rejects.toThrow(NotFoundError)
 
     vi.stubGlobal('fetch', vi.fn(async () => new Response('', { status: 500 })))
     await expect(repo.listGames()).rejects.toThrow(/请求失败 500/)
@@ -79,10 +95,18 @@ describe('ApiContentRepository', () => {
     expect(fetchMock).toHaveBeenCalledTimes(1)
   })
 
+  test('getGame 拆复合 id 请求 /api/games/:user/:slug（斜杠不转义）', async () => {
+    const fetchMock = vi.fn(async (_url: string) => jsonResponse(INDEX.games[0]))
+    vi.stubGlobal('fetch', fetchMock)
+    const repo = new ApiContentRepository('http://api', docsStub)
+    await expect(repo.getGame('fendy/2048')).resolves.toMatchObject({ id: 'fendy/2048' })
+    expect(fetchMock.mock.calls[0][0]).toBe('http://api/api/games/fendy/2048')
+  })
+
   test('getGame：virtual 缺 bundle 抛数据格式错误', async () => {
     vi.stubGlobal('fetch', vi.fn(async () => jsonResponse({ ...INDEX.games[0], runtime: 'virtual' })))
     const repo = new ApiContentRepository('http://api', docsStub)
-    await expect(repo.getGame('g1')).rejects.toThrow(/bundle 缺失/)
+    await expect(repo.getGame('fendy/2048')).rejects.toThrow(/bundle 缺失/)
   })
 
   test('listDocs/getDoc 委托静态源', async () => {

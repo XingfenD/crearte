@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { normalizeEmail, sanitizeNext, validateDisplayName, validateEmail, validatePassword } from './validation'
+import { normalizeEmail, sanitizeNext, USERNAME_PATTERN, validateDisplayName, validateEmail, validatePassword, validateUsername } from './validation'
 
 describe('auth 表单校验', () => {
   it('邮箱 trim + 小写,并拒绝非法形态', () => {
@@ -63,5 +63,30 @@ describe('auth 表单校验', () => {
     expect(sanitizeNext('/\t/evil.com')).toBe('/')
     expect(sanitizeNext('/\n/evil.com')).toBe('/')
     expect(sanitizeNext('/\r/evil.com')).toBe('/')
+  })
+})
+
+describe('用户名规则', () => {
+  it('小写字母、数字、连字符，1–39 字符，首尾非连字符', () => {
+    expect(validateUsername('alice')).toBeNull()
+    expect(validateUsername('a1-b2-c3')).toBeNull()
+    expect(validateUsername('a')).toBeNull()
+    expect(validateUsername('a'.repeat(39))).toBeNull()
+  })
+
+  it('拒绝空串、大写、下划线、首尾连字符、超长、空格', () => {
+    expect(validateUsername('')).toBe('invalid_username')
+    expect(validateUsername('Alice')).toBe('invalid_username')
+    expect(validateUsername('a_b')).toBe('invalid_username')
+    expect(validateUsername('-abc')).toBe('invalid_username')
+    expect(validateUsername('abc-')).toBe('invalid_username')
+    expect(validateUsername('a'.repeat(40))).toBe('invalid_username')
+    expect(validateUsername('a b')).toBe('invalid_username')
+  })
+
+  it('USERNAME_PATTERN 1–39 边界（与后端同规则）', () => {
+    expect(USERNAME_PATTERN.test('a'.repeat(39))).toBe(true)
+    expect(USERNAME_PATTERN.test('a'.repeat(40))).toBe(false)
+    expect(USERNAME_PATTERN.test('ab-cd')).toBe(true)
   })
 })

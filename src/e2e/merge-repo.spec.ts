@@ -15,14 +15,14 @@ function mockApiGames(page: Page, impl: (route: Route) => Promise<unknown> | unk
 test('并集合并：同 id API 胜出、source 徽标只给静态源', async ({ page }) => {
   mockApiGames(page, (route) => route.fulfill({
     status: 200, contentType: 'application/json',
-    body: JSON.stringify({ schemaVersion: 1, generatedAt: 'x', games: [summary('2048', '2048（API 版）'), summary('api-only', 'API Only')] })
+    body: JSON.stringify({ schemaVersion: 1, generatedAt: 'x', games: [summary('fixture/2048', '2048（API 版）'), summary('api-only', 'API Only')] })
   }))
   await page.goto('http://localhost:4173/games')
   await expect(page.getByRole('heading', { name: '2048（API 版）' })).toBeVisible()
   await expect(page.getByRole('heading', { name: '2048', exact: true })).toHaveCount(0)
   await expect(page.getByRole('heading', { name: 'API Only' })).toBeVisible()
   // 静态夹具（如 rel-paths）带社区投稿徽标；API 作品不带
-  const staticCard = page.locator('a[href="/games/rel-paths"]')
+  const staticCard = page.locator('a[href="/games/fixture/rel-paths"]')
   await expect(staticCard).toContainText('社区投稿')
   const apiCard = page.locator('a[href="/games/api-only"]')
   await expect(apiCard).not.toContainText('社区投稿')
@@ -45,14 +45,14 @@ test('API 目录挂掉：降级纯静态，19 款照常展示', async ({ page })
 test('详情：API 404 回落静态；API 5xx 显示错误态', async ({ page }) => {
   // 静态夹具 rel-paths：API 404 → 回落
   const notFound = mockApiGames(page, (route) => route.fulfill({ status: 404, contentType: 'application/json', body: JSON.stringify({ error: { code: 'not_found', message: 'x' } }) }))
-  await page.goto('http://localhost:4173/games/rel-paths')
+  await page.goto('http://localhost:4173/games/fixture/rel-paths')
   await expect(page.getByRole('heading', { level: 1 })).toContainText('相对路径夹具')
   // 防假绿（硬性）：catch-all 也返 404 JSON，漏挂 route 时「回落静态」结论同样成立。
   expect(notFound.hits()).toBeGreaterThan(0)
 
   // API 5xx：错误态（不回落到静态）——此条不假绿：漏 mock 会回落而非错误态
   mockApiGames(page, (route) => route.fulfill({ status: 503, body: 'down' }))
-  await page.goto('http://localhost:4173/games/2048')
+  await page.goto('http://localhost:4173/games/fixture/2048')
   await expect(page.getByText('加载失败')).toBeVisible()
   await expect(page.getByRole('button', { name: '重试' })).toBeVisible()
 })

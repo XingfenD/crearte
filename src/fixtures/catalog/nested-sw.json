@@ -1,5 +1,7 @@
 {
-  "id": "nested-sw",
+  "id": "fixture/nested-sw",
+  "user": "fixture",
+  "slug": "nested-sw",
   "name": "嵌套 SW 夹具",
   "url": "https://example.com/nested-sw",
   "author": { "name": "test" },

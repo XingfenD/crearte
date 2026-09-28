@@ -1,5 +1,7 @@
 {
-  "id": "abs-paths",
+  "id": "fixture/abs-paths",
+  "user": "fixture",
+  "slug": "abs-paths",
   "name": "绝对路径夹具",
   "url": "https://example.com/abs",
   "author": { "name": "test", "url": "mailto:test@example.com" },

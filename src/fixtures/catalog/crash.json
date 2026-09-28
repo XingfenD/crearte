@@ -1,5 +1,7 @@
 {
-  "id": "crash",
+  "id": "fixture/crash",
+  "user": "fixture",
+  "slug": "crash",
   "name": "崩溃夹具",
   "url": "https://example.com/crash",
   "author": { "name": "test" },

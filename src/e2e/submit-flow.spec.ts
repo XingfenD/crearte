@@ -10,9 +10,9 @@ interface Sub {
 
 function makeSub(over: Partial<Sub> = {}): Sub {
   return {
-    id: 'sub-1', kind: 'new_work', status: 'draft', work_id: 'my-game',
+    id: 'sub-1', kind: 'new_work', status: 'draft', work_id: 'tester/my-game',
     payload: {
-      id: 'my-game', name: 'My Game', url: 'https://example.com/my-game',
+      id: 'tester/my-game', name: 'My Game', url: 'https://example.com/my-game',
       author: { name: 'Tester' }, description: 'An e2e test work.'
     },
     created_at: '2026-09-27T00:00:00Z', updated_at: '2026-09-27T00:00:00Z', ...over

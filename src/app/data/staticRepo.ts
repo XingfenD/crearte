@@ -1,5 +1,5 @@
 import { NotFoundError, type ContentRepository } from './repository'
-import type { Doc, DocMeta, DocsIndex, Game, GameSummary, GamesIndex } from './types'
+import { GAME_SLUG_PATTERN, GAME_USER_PATTERN, type Doc, type DocMeta, type DocsIndex, type Game, type GameSummary, type GamesIndex } from './types'
 
 function assert(condition: unknown, message: string): asserts condition {
   if (!condition) throw new Error(`数据格式错误: ${message}`)
@@ -11,6 +11,12 @@ export function assertGameSummary(value: unknown, path: string): asserts value i
   assert(Array.isArray(g.tags), `${path}.tags 必须是数组`)
   assert(g.author && typeof g.author.name === 'string', `${path}.author.name 缺失`)
   assert(g.durationMinutes && typeof g.durationMinutes.min === 'number' && typeof g.durationMinutes.max === 'number', `${path}.durationMinutes 非法`)
+  if (g.user !== undefined && (typeof g.user !== 'string' || !GAME_USER_PATTERN.test(g.user))) {
+    throw new Error(`数据格式错误: ${path}.user 非法`)
+  }
+  if (g.slug !== undefined && (typeof g.slug !== 'string' || !GAME_SLUG_PATTERN.test(g.slug))) {
+    throw new Error(`数据格式错误: ${path}.slug 非法`)
+  }
   if (g.runtime && !['external', 'virtual', 'hosted'].includes(g.runtime)) {
     throw new Error(`数据格式错误: ${path}.runtime 非法`)
   }
@@ -68,7 +74,8 @@ export class StaticContentRepository implements ContentRepository {
   getGame(id: string): Promise<Game> {
     let pending = this.cachedGamesById.get(id)
     if (!pending) {
-      pending = this.fetchJson(`/games/${encodeURIComponent(id)}.json`)
+      const file = id.replaceAll('/', '__')
+      pending = this.fetchJson(`/games/${encodeURIComponent(file)}.json`)
         .then((data) => {
           assertGameDetail(data, `games/${id}`)
           return data

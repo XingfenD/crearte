@@ -116,7 +116,7 @@ describe('loadGames via generate', () => {
     const enc = { v: 1, alg: 'AES-256-GCM', kid: 'k'.repeat(22) }
     const bundle = { url: '/data/bundles/2048.bin', bytes: 10, sha256: 'a'.repeat(64), enc }
     const okRoot = await fixture({
-      'games/2048.json': { ...validGame, runtime: 'virtual', version: 'v1', bundle },
+      'games/2048.json': { ...validGame, runtime: 'virtual', version: 'v1', playSubdomain: 'a'.repeat(16), bundle },
       'docs/about.json': { slug: 'about', title: '关于', order: 1, content: '正文' }
     })
     const ok = await generate({ srcRoot: okRoot, check: true })
@@ -209,5 +209,121 @@ describe('schema v2 运行时字段', () => {
       display: { aspect: '16:9' },
       fallback: 'external'
     })
+  })
+})
+
+describe('复合 id（user/slug）静态贡献', () => {
+  it('slug 段=文件名：生成 __ 映射文件名、index schemaVersion 2、user/slug 进摘要', async () => {
+    const root = await fixture({
+      'games/2048.json': { ...validGame, id: 'fendy/2048', user: 'fendy', slug: '2048', playSubdomain: 'a'.repeat(16) }
+    })
+    const result = await generate({ srcRoot: root, now: new Date('2026-09-17T00:00:00Z') })
+    expect(result.ok, JSON.stringify(result.errors)).toBe(true)
+
+    const index = JSON.parse(await readFile(path.join(root, 'public/data/index.json'), 'utf8'))
+    expect(index.schemaVersion).toBe(2)
+    expect(index.games[0]).toMatchObject({ id: 'fendy/2048', user: 'fendy', slug: '2048' })
+    expect(index.games[0].playSubdomain).toBeUndefined()
+
+    const detail = JSON.parse(await readFile(path.join(root, 'public/data/games/fendy__2048.json'), 'utf8'))
+    expect(detail).toMatchObject({ id: 'fendy/2048', user: 'fendy', slug: '2048', playSubdomain: 'a'.repeat(16) })
+    await expect(readFile(path.join(root, 'public/data/games/fendy/2048.json'))).rejects.toThrow()
+  })
+
+  it('纯 id 静态贡献原样通过（遗留形态），文件名不映射', async () => {
+    const root = await fixture({ 'games/2048.json': validGame })
+    const result = await generate({ srcRoot: root })
+    expect(result.ok, JSON.stringify(result.errors)).toBe(true)
+    await expect(readFile(path.join(root, 'public/data/games/2048.json'))).resolves.toBeTruthy()
+  })
+
+  it('slug 段与文件名不一致被拒绝', async () => {
+    const root = await fixture({ 'games/2048.json': { ...validGame, id: 'fendy/other' } })
+    const result = await generate({ srcRoot: root, check: true })
+    expect(result.ok).toBe(false)
+    expect(result.errors.join('\n')).toMatch(/slug/)
+  })
+
+  it('id 带非法 user 段（大写/超长/多斜杠）被 schema 拒绝', async () => {
+    for (const id of ['Fendy/2048', `${'a'.repeat(40)}/2048`, 'fendy/2048/x']) {
+      const root = await fixture({ 'games/2048.json': { ...validGame, id } })
+      const result = await generate({ srcRoot: root, check: true })
+      expect(result.ok, `id "${id}" 应校验失败`).toBe(false)
+    }
+  })
+
+  it('显式 user/slug 字段与 id 拆段不一致被拒绝', async () => {
+    for (const extra of [{ user: 'alice' }, { slug: 'other' }, { user: 'fendy', slug: 'other' }]) {
+      const root = await fixture({ 'games/2048.json': { ...validGame, id: 'fendy/2048', ...extra } })
+      const result = await generate({ srcRoot: root, check: true })
+      expect(result.ok, JSON.stringify(extra)).toBe(false)
+      expect(result.errors.join('\n')).toMatch(/不一致/)
+    }
+  })
+
+  it('非法 user/slug/playSubdomain 显式字段被 schema 拒绝', async () => {
+    for (const extra of [{ user: 'Bad' }, { slug: 'x'.repeat(64) }, { playSubdomain: 'nothex' }]) {
+      const root = await fixture({ 'games/2048.json': { ...validGame, ...extra } })
+      const result = await generate({ srcRoot: root, check: true })
+      expect(result.ok, JSON.stringify(extra)).toBe(false)
+    }
+  })
+
+  it('本地封面按 slug 段匹配（复合 id 不再要求与完整 id 一致）', async () => {
+    const ok = await fixture({
+      'games/2048.json': { ...validGame, id: 'fendy/2048', cover: '/data/assets/covers/2048.webp' },
+      'assets/covers/2048.webp': 'webp'
+    })
+    expect((await generate({ srcRoot: ok, check: true })).ok).toBe(true)
+
+    const mismatch = await fixture({
+      'games/2048.json': { ...validGame, id: 'fendy/2048', cover: '/data/assets/covers/other.webp' },
+      'assets/covers/other.webp': 'webp'
+    })
+    const result = await generate({ srcRoot: mismatch, check: true })
+    expect(result.ok).toBe(false)
+    expect(result.errors.join('\n')).toMatch(/slug/)
+  })
+})
+
+describe('自托管静态作品需播放源（playSubdomain 或 playOrigin）', () => {
+  const virtual = {
+    ...validGame,
+    id: 'fendy/2048',
+    user: 'fendy',
+    slug: '2048',
+    runtime: 'virtual',
+    version: 'v1',
+    bundle: { url: '/data/bundles/fendy__2048.zip', bytes: 1, sha256: 'a'.repeat(64) }
+  }
+
+  it('virtual 无播放源被拒绝', async () => {
+    const root = await fixture({ 'games/2048.json': virtual })
+    const result = await generate({ srcRoot: root, check: true })
+    expect(result.ok).toBe(false)
+    expect(result.errors.join('\n')).toMatch(/playSubdomain|playOrigin/)
+  })
+
+  it('hosted 无播放源被拒绝', async () => {
+    const root = await fixture({
+      'games/2048.json': { ...validGame, id: 'fendy/2048', user: 'fendy', slug: '2048', runtime: 'hosted', hostedUrl: 'https://example.com/hosted' }
+    })
+    const result = await generate({ srcRoot: root, check: true })
+    expect(result.ok).toBe(false)
+    expect(result.errors.join('\n')).toMatch(/playSubdomain|playOrigin/)
+  })
+
+  it('virtual 带 playSubdomain 被接受', async () => {
+    const root = await fixture({ 'games/2048.json': { ...virtual, playSubdomain: 'a'.repeat(16) } })
+    const result = await generate({ srcRoot: root, check: true })
+    expect(result.ok, JSON.stringify(result.errors)).toBe(true)
+  })
+
+  it('external 无播放源被接受（外链无需播放源）', async () => {
+    const root = await fixture({
+      'games/2048.json': { ...validGame, id: 'fendy/2048', user: 'fendy', slug: '2048', runtime: 'external' }
+    })
+    const result = await generate({ srcRoot: root, check: true })
+    expect(result.ok, JSON.stringify(result.errors)).toBe(true)
   })
 })
