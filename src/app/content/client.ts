@@ -71,6 +71,11 @@ function toApiError(status: number, response: Response | null, body: { error?: {
   )
 }
 
+function worksPath(workId: string): string {
+  const [user, slug] = workId.split('/')
+  return `/api/admin/works/${user}/${slug}`
+}
+
 export function createContentClient(options: ContentClientOptions): ContentClient {
   const doFetch = options.fetchImpl ?? globalThis.fetch
   const base = options.baseUrl.replace(/\/+$/, '')
@@ -169,16 +174,16 @@ export function createContentClient(options: ContentClientOptions): ContentClien
       return send<{ ok: boolean }>(`/api/admin/submissions/${encodeURIComponent(id)}/reject`, { method: 'POST', body: JSON.stringify({ note }) }).then(() => undefined)
     },
     adminUnpublish(workId) {
-      return send<{ ok: boolean }>(`/api/admin/works/${encodeURIComponent(workId)}/unpublish`, { method: 'POST', body: '{}' }).then(() => undefined)
+      return send<{ ok: boolean }>(`${worksPath(workId)}/unpublish`, { method: 'POST', body: '{}' }).then(() => undefined)
     },
     adminRepublish(workId) {
-      return send<{ ok: boolean }>(`/api/admin/works/${encodeURIComponent(workId)}/republish`, { method: 'POST', body: '{}' }).then(() => undefined)
+      return send<{ ok: boolean }>(`${worksPath(workId)}/republish`, { method: 'POST', body: '{}' }).then(() => undefined)
     },
     adminSetFeatures(workId, features) {
-      return send<{ ok: boolean }>(`/api/admin/works/${encodeURIComponent(workId)}/features`, { method: 'PUT', body: JSON.stringify({ features }) }).then(() => undefined)
+      return send<{ ok: boolean }>(`${worksPath(workId)}/features`, { method: 'PUT', body: JSON.stringify({ features }) }).then(() => undefined)
     },
     adminSetRevoked(workId, version, revoked) {
-      return send<{ ok: boolean }>(`/api/admin/works/${encodeURIComponent(workId)}/versions/${encodeURIComponent(version)}/revoke`, { method: 'POST', body: JSON.stringify({ revoked }) }).then(() => undefined)
+      return send<{ ok: boolean }>(`${worksPath(workId)}/versions/${encodeURIComponent(version)}/revoke`, { method: 'POST', body: JSON.stringify({ revoked }) }).then(() => undefined)
     }
   }
 }

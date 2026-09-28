@@ -57,28 +57,38 @@ describe('createContentClient', () => {
     expect(onUnauthorized).toHaveBeenCalled()
   })
 
-  test('DELETE 204 无 body；adminSetRevoked 组 body 与路径', async () => {
+  test('DELETE 204 无 body；adminSetRevoked 组双段路径与 body', async () => {
     const fetchMock = vi.fn(async (_url: string, _init?: RequestInit) => new Response(null, { status: 204 }))
     vi.stubGlobal('fetch', fetchMock)
     const client = createContentClient(opts)
     await expect(client.deleteSubmission('s1')).resolves.toBeUndefined()
 
     fetchMock.mockImplementation(async () => jsonResponse({ ok: true }))
-    await client.adminSetRevoked('w1', 'v2', true)
+    await client.adminSetRevoked('alice/demo', 'v2', true)
     const [url, init] = fetchMock.mock.calls[1]
-    expect(url).toBe('http://api/api/admin/works/w1/versions/v2/revoke')
+    expect(url).toBe('http://api/api/admin/works/alice/demo/versions/v2/revoke')
     expect(JSON.parse(String(init?.body))).toEqual({ revoked: true })
   })
 
-  test('adminSetFeatures：PUT 路径与 { features } body', async () => {
+  test('adminSetFeatures：PUT 双段路径与 { features } body', async () => {
     const fetchMock = vi.fn(async (_url: string, _init?: RequestInit) => jsonResponse({ ok: true }))
     vi.stubGlobal('fetch', fetchMock)
     const client = createContentClient(opts)
-    await client.adminSetFeatures('w1', { eval: true, inlineScript: false })
+    await client.adminSetFeatures('alice/demo', { eval: true, inlineScript: false })
     const [url, init] = fetchMock.mock.calls[0]
-    expect(url).toBe('http://api/api/admin/works/w1/features')
+    expect(url).toBe('http://api/api/admin/works/alice/demo/features')
     expect(init?.method).toBe('PUT')
     expect(JSON.parse(String(init?.body))).toEqual({ features: { eval: true, inlineScript: false } })
+  })
+
+  test('adminUnpublish / adminRepublish：复合 workId 拆成双段路径', async () => {
+    const fetchMock = vi.fn(async (_url: string, _init?: RequestInit) => jsonResponse({ ok: true }))
+    vi.stubGlobal('fetch', fetchMock)
+    const client = createContentClient(opts)
+    await client.adminUnpublish('bob/my-game')
+    await client.adminRepublish('bob/my-game')
+    expect(fetchMock.mock.calls[0][0]).toBe('http://api/api/admin/works/bob/my-game/unpublish')
+    expect(fetchMock.mock.calls[1][0]).toBe('http://api/api/admin/works/bob/my-game/republish')
   })
 
   test('网络错误 → code network', async () => {
