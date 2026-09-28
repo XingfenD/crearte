@@ -82,7 +82,7 @@ async function main(): Promise<void> {
     fail('当前浏览器不支持 Service Worker，无法站内运行')
     return
   }
-  const gameId = params.get('id') ?? location.hostname.split('.')[0]
+  const gameId = params.get('id') ?? ''
   const bundleUrl = params.get('bundle') ?? ''
   const sha256 = params.get('sha') ?? ''
   const entry = params.get('entry') ?? 'index.html'
@@ -93,7 +93,7 @@ async function main(): Promise<void> {
   if (Boolean(kid) !== Boolean(keyUrl)) {
     console.warn('[bootstrap] 加密参数不完整（kid/key 须同时存在），按明文 bundle 安装')
   }
-  if (!version || !bundleUrl || !sha256) {
+  if (!gameId || !version || !bundleUrl || !sha256) {
     fail('启动参数不完整', location.href)
     return
   }

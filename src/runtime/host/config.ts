@@ -13,9 +13,9 @@ export function runtimeConfig(): RuntimeConfig {
   }
 }
 
-const LABEL = /^[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?$/
+const SUBDOMAIN = /^[0-9a-f]{16}$/
 
-export function derivePlayOrigin(id: string, baseDomain: string, protocol: string): string {
-  if (!LABEL.test(id)) throw new Error(`非法的作品 id: ${id}`)
-  return `${protocol}//${id}.${baseDomain}`
+export function derivePlayOrigin(subdomain: string, baseDomain: string, protocol: string): string {
+  if (!SUBDOMAIN.test(subdomain)) throw new Error(`非法的播放子域: ${subdomain}`)
+  return `${protocol}//${subdomain}.${baseDomain}`
 }

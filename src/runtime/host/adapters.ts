@@ -9,7 +9,9 @@ export interface RuntimeTarget {
 
 export function resolveRuntimeTargets(game: Game, opts: { baseDomain: string; protocol: string; config?: ReturnType<typeof runtimeConfig> }): RuntimeTarget[] {
   const config = opts.config ?? runtimeConfig()
-  const origin = game.playOrigin ?? derivePlayOrigin(game.id, opts.baseDomain, opts.protocol)
+  const origin = game.runtime === 'virtual' || game.runtime === 'hosted'
+    ? game.playOrigin ?? derivePlayOrigin(game.playSubdomain ?? '', opts.baseDomain, opts.protocol)
+    : null
   const targets: RuntimeTarget[] = []
   if (game.runtime === 'virtual' && game.version && game.bundle) {
     const absoluteBundle = new URL(game.bundle.url, `${opts.protocol}//${opts.baseDomain}`).href
@@ -25,7 +27,7 @@ export function resolveRuntimeTargets(game: Game, opts: { baseDomain: string; pr
       const absoluteApi = config.apiBase.startsWith('/') ? '' : config.apiBase
       const keyBase = absoluteApi || (typeof location !== 'undefined' ? location.origin : '')
       if (keyBase) {
-        const keyUrl = new URL(`/api/games/${encodeURIComponent(game.id)}/bundle-key`, keyBase)
+        const keyUrl = new URL(`/api/games/${game.user}/${game.slug}/bundle-key`, keyBase)
         keyUrl.searchParams.set('version', game.version)
         fragment.kid = game.bundle.enc.kid
         fragment.key = keyUrl.href
