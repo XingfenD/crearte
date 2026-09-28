@@ -116,7 +116,7 @@ describe('loadGames via generate', () => {
     const enc = { v: 1, alg: 'AES-256-GCM', kid: 'k'.repeat(22) }
     const bundle = { url: '/data/bundles/2048.bin', bytes: 10, sha256: 'a'.repeat(64), enc }
     const okRoot = await fixture({
-      'games/2048.json': { ...validGame, runtime: 'virtual', version: 'v1', bundle },
+      'games/2048.json': { ...validGame, runtime: 'virtual', version: 'v1', playSubdomain: 'a'.repeat(16), bundle },
       'docs/about.json': { slug: 'about', title: '关于', order: 1, content: '正文' }
     })
     const ok = await generate({ srcRoot: okRoot, check: true })
@@ -283,5 +283,47 @@ describe('复合 id（user/slug）静态贡献', () => {
     const result = await generate({ srcRoot: mismatch, check: true })
     expect(result.ok).toBe(false)
     expect(result.errors.join('\n')).toMatch(/slug/)
+  })
+})
+
+describe('自托管静态作品需播放源（playSubdomain 或 playOrigin）', () => {
+  const virtual = {
+    ...validGame,
+    id: 'fendy/2048',
+    user: 'fendy',
+    slug: '2048',
+    runtime: 'virtual',
+    version: 'v1',
+    bundle: { url: '/data/bundles/fendy__2048.zip', bytes: 1, sha256: 'a'.repeat(64) }
+  }
+
+  it('virtual 无播放源被拒绝', async () => {
+    const root = await fixture({ 'games/2048.json': virtual })
+    const result = await generate({ srcRoot: root, check: true })
+    expect(result.ok).toBe(false)
+    expect(result.errors.join('\n')).toMatch(/playSubdomain|playOrigin/)
+  })
+
+  it('hosted 无播放源被拒绝', async () => {
+    const root = await fixture({
+      'games/2048.json': { ...validGame, id: 'fendy/2048', user: 'fendy', slug: '2048', runtime: 'hosted', hostedUrl: 'https://example.com/hosted' }
+    })
+    const result = await generate({ srcRoot: root, check: true })
+    expect(result.ok).toBe(false)
+    expect(result.errors.join('\n')).toMatch(/playSubdomain|playOrigin/)
+  })
+
+  it('virtual 带 playSubdomain 被接受', async () => {
+    const root = await fixture({ 'games/2048.json': { ...virtual, playSubdomain: 'a'.repeat(16) } })
+    const result = await generate({ srcRoot: root, check: true })
+    expect(result.ok, JSON.stringify(result.errors)).toBe(true)
+  })
+
+  it('external 无播放源被接受（外链无需播放源）', async () => {
+    const root = await fixture({
+      'games/2048.json': { ...validGame, id: 'fendy/2048', user: 'fendy', slug: '2048', runtime: 'external' }
+    })
+    const result = await generate({ srcRoot: root, check: true })
+    expect(result.ok, JSON.stringify(result.errors)).toBe(true)
   })
 })

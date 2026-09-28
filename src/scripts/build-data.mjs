@@ -100,6 +100,10 @@ export async function loadGames({ gamesDir, coversDir, validate }) {
       errors.push(`${label}: slug "${slug}" 是保留字，禁止使用`)
       continue
     }
+    if ((raw.runtime === 'virtual' || raw.runtime === 'hosted') && !raw.playSubdomain && !raw.playOrigin) {
+      errors.push(`${label}: runtime "${raw.runtime}" 需要 playSubdomain 或 playOrigin（自托管需可播放源）`)
+      continue
+    }
     if (raw.entry?.includes('..') || raw.entry?.startsWith('/')) {
       errors.push(`${label}: entry 必须是包根相对路径且不得包含 ".."`)
       continue
