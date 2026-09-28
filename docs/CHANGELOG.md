@@ -10,8 +10,8 @@ The format loosely follows Keep a Changelog and can be adapted to the team's hab
 
 ### Fixed / 修复
 
-- The embedded play frame's sandbox now includes `allow-forms`: static-site works that navigate with a form (e.g. a `<form action="query.html" method="get">` search page) submit normally instead of being blocked by the browser; the sandbox already granted `allow-scripts`, so this adds no new cross-origin send capability. A unit test pins the full sandbox flag set.
-- 内嵌游玩 iframe 的 sandbox 补上 `allow-forms`：以表单导航的静态站作品（如 `<form action="query.html" method="get">` 检索页）可正常提交，不再被浏览器阻止；sandbox 本就授予 `allow-scripts`（等价跨域发送能力已存在），此项不扩大威胁面。单测钉住完整 sandbox 旗标集合。
+- Static-site works that navigate with forms now run: the embedded play frame's sandbox includes `allow-forms` (a `<form action="query.html" method="get">` search page no longer gets blocked), and the runtime CSP's `form-action` is relaxed from `'none'` to `'self'` so same-origin submissions go through while cross-origin form targets stay blocked. The sandbox already granted `allow-scripts`, so neither relaxation adds a new cross-origin send capability. Unit tests pin the full sandbox flag set and the `form-action` directive.
+- 以表单导航的静态站作品现在可以运行了：内嵌游玩 iframe 的 sandbox 补上 `allow-forms`（`<form action="query.html" method="get">` 检索页不再被浏览器阻止），运行时 CSP 的 `form-action` 由 `'none'` 放宽为 `'self'`——放行同源提交、继续阻断跨域表单目标。sandbox 本就授予 `allow-scripts`（等价跨域发送能力已存在），两处放宽均不扩大威胁面。单测分别钉住完整 sandbox 旗标集合与 `form-action` 指令。
 
 ## [0.11.0] - 2026-09-28
 

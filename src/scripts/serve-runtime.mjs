@@ -41,7 +41,7 @@ function buildCsp(features, hostOrigin) {
     "frame-src 'none'",
     "object-src 'none'",
     "base-uri 'self'",
-    "form-action 'none'",
+    "form-action 'self'",
     "manifest-src 'none'",
     `frame-ancestors ${frameAncestor(hostOrigin)}`
   ].join('; ')

@@ -29,7 +29,9 @@ export function buildCsp(features: FeatureFlags, hostOrigin: string): string {
     "frame-src 'none'",
     "object-src 'none'",
     "base-uri 'self'",
-    "form-action 'none'",
+    // 静态站作品常用 <form action="query.html" method="get"> 做站内检索导航，
+    // 'none' 会连同源提交一起挡掉；'self' 放行同源、继续阻断跨域表单目标
+    "form-action 'self'",
     "manifest-src 'none'",
     `frame-ancestors ${frameAncestor(hostOrigin)}`
   ].join('; ')
