@@ -6,6 +6,27 @@ All notable changes to this template should be documented in this file.
 The format loosely follows Keep a Changelog and can be adapted to the team's habits.
 本文档参考了 Keep a Changelog 的思路，也可以根据团队习惯调整。
 
+## [0.11.0] - 2026-09-28
+
+### Added / 新增
+
+- Registration now collects a 用户名 (`username`): required, validated client-side as 1–39 characters of lowercase letters/digits/hyphens with no leading or trailing hyphen, with separate copy for a malformed name and a taken one (`username_taken`); the account page shows it read-only marked 「不可修改」.
+- 注册页新增「用户名」：必填，前端按 1–39 个字符的小写字母/数字/连字符（首尾非连字符）校验，格式不符与已被占用（`username_taken`）分别给文案；账户页只读展示并标注「不可修改」。
+
+- Game links became two-segment `/games/{user}/{slug}` (route `/games/:user/:slug`): content types carry `user` / `slug` / `playSubdomain` alongside the composite id, `resolveUserSlug()` reads the pair from either the explicit fields or the id, and cards and detail views build their links with it.
+- 作品链接改为两段式 `/games/{user}/{slug}`（路由 `/games/:user/:slug`）：内容层类型在复合 id 之外携带 `user`/`slug`/`playSubdomain`，`resolveUserSlug()` 可从显式字段或 id 拆出二者，卡片与详情页据此生成链接。
+
+### Changed / 变更
+
+- The submit form gained namespace semantics: the 名称 field is now a slug that only has to be unique inside your own namespace, its live hint shows the resulting `/games/<你的用户名>/<名称>` link, and payloads carry the composite `id` `<username>/<slug>` assembled from the signed-in session (slug cap 63 characters, bundle uploads and detail prefill resolve `<username>/<slug>`).
+- 提交表单改为命名空间语义：「名称」只要求在自己的命名空间内唯一，字段下实时提示最终链接 `/games/<你的用户名>/<名称>`，提交载荷用登录会话拼成复合 `id` `<用户名>/<slug>`（slug 上限 63 字符，bundle 上传与详情预填均按 `<用户名>/<slug>` 解析）。
+
+- Play origins are taken from the backend instead of derived from the work id: the host builds them from the issued `playSubdomain` hash label (`<label>.<base>`), `derivePlayOrigin` now accepts only 16 hex characters, and the bootstrap page's `location.hostname`-derived id fallback is removed — a missing `id` parameter fails startup outright.
+- 游玩源址改由后端下发而非由作品 id 推导：宿主使用下发的 `playSubdomain` 哈希 label 拼出 `<label>.<base>`，`derivePlayOrigin` 仅接受 16 位十六进制，bootstrap 页基于 `location.hostname` 推导 id 的兜底已移除——缺 `id` 参数直接判定启动参数不完整。
+
+- Schema, fixtures and e2e follow the composite ids: `game.schema.json` accepts `user/slug` ids (the owner prefix stays optional, so bare slugs still validate) with optional `user`/`slug`/`playSubdomain` fields, static fixture and generated-bundle file names map `/` to `__`, and the runtime fixture server plus e2e assertions read the issued `playSubdomain` instead of deriving subdomains from ids.
+- schema、夹具与 e2e 跟进复合 id：`game.schema.json` 接受 `user/slug` 形态的 id（所有者前缀可选，纯 slug 仍可通过）并新增可选 `user`/`slug`/`playSubdomain` 字段；静态夹具与生成 bundle 的文件名把 `/` 映射为 `__`；运行时夹具服务与 e2e 断言改为读取下发的 `playSubdomain`，不再自行由 id 推导子域。
+
 ## [0.10.5] - 2026-09-28
 
 ### Changed / 变更
