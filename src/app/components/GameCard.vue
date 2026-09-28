@@ -32,7 +32,7 @@ const hiddenTags = computed(() => props.game.tags.slice(MAX_TAGS))
     </div>
     <div class="space-y-2 p-3">
       <component :is="headingTag" class="truncate font-display text-[0.875rem] font-black">{{ game.name }}</component>
-      <p class="line-clamp-2 text-xs leading-relaxed text-ink-soft">{{ game.description }}</p>
+      <p v-if="game.description" class="line-clamp-2 text-xs leading-relaxed text-ink-soft">{{ game.description }}</p>
       <div class="flex flex-wrap items-center gap-1.5">
         <span class="border-[1.5px] border-ink px-1 py-0.5 font-mono text-[0.625rem]">
           {{ durationText(game.durationMinutes) }}

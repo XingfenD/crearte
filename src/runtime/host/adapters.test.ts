@@ -112,6 +112,15 @@ test('fallback 链：hosted 再 external', () => {
   expect(targets.map((t) => t.mode)).toEqual(['virtual', 'hosted', 'external'])
 })
 
+test('virtual 无 url：降级链不含 external 目标', () => {
+  const game: Game = {
+    ...base, url: undefined, runtime: 'virtual', version: 'v1', playSubdomain: subdomain,
+    bundle: { url: '/data/bundles/demo.zip', bytes: 10, sha256: 'a'.repeat(64) }
+  }
+  const targets = resolveRuntimeTargets(game, opts)
+  expect(targets.map((t) => t.mode)).toEqual(['virtual'])
+})
+
 test('apiBase 为相对基址（/，同源反代）时 keyUrl 落 location.origin', () => {
   vi.stubGlobal('location', { origin: 'http://site.local' })
   const game: Game = {

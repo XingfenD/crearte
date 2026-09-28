@@ -52,7 +52,7 @@ export function filterGames(games: GameSummary[], state: FilterState): GameSumma
     if (state.tags.length && !state.tags.every((tag) => game.tags.includes(tag))) return false
     if (state.dur !== 'all' && durationBucket(game) !== state.dur) return false
     if (q) {
-      const haystack = [game.name, game.description, game.author.name, ...game.tags].join(' ').toLowerCase()
+      const haystack = [game.name, game.description, game.author?.name, ...game.tags].join(' ').toLowerCase()
       if (!haystack.includes(q)) return false
     }
     return true

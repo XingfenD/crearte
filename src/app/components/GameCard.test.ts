@@ -36,4 +36,12 @@ describe('GameCard 链接（/games/:user/:slug 复合寻址）', () => {
     const w = mountCard({ ...base, id: '2048' })
     expect(w.get('a').attributes('href')).toBe('/games/2048')
   })
+
+  it('描述缺省时不渲染描述行', () => {
+    const { description, ...rest } = base
+    const w = mountCard({ ...rest, id: 'fendy/2048' })
+    expect(w.find('p.line-clamp-2').exists()).toBe(false)
+    const withDesc = mountCard({ ...base, id: 'fendy/2048' })
+    expect(withDesc.find('p.line-clamp-2').exists()).toBe(true)
+  })
 })

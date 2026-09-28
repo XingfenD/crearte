@@ -6,7 +6,7 @@ import { NotFoundError, repo, type Game } from '@/data'
 import { useAsync } from '@/composables/useAsync'
 import { renderMarkdown } from '@/lib/markdown'
 import { toInterstitialIfExternal } from '@/lib/externalLink'
-import { durationText } from '@/lib/labels'
+import { authorDisplayName, durationText } from '@/lib/labels'
 import GameCover from '@/components/GameCover.vue'
 import StatePanel from '@/components/StatePanel.vue'
 import GameHost from '../../runtime/host/GameHost.vue'
@@ -55,17 +55,17 @@ function onExit(): void {
         <p class="font-mono text-[0.6875rem] tracking-[0.05em] text-ink-soft">
           作者：
           <a
-            v-if="game.author.url"
+            v-if="game.author?.url"
             :href="toInterstitialIfExternal(game.author.url, origin)"
             target="_blank"
             rel="noopener"
             class="text-accent-ink underline decoration-2 underline-offset-2"
-          >{{ game.author.name }}</a>
-          <span v-else>{{ game.author.name }}</span>
+          >{{ authorDisplayName(game) }}</a>
+          <span v-else>{{ authorDisplayName(game) }}</span>
           <span class="mx-2">·</span>预计时长：{{ durationText(game.durationMinutes) }}
           <span class="mx-2">·</span>收录于 {{ game.addedAt }}
         </p>
-        <p class="text-sm leading-[1.8] text-ink-soft">{{ game.description }}</p>
+        <p v-if="game.description" class="text-sm leading-[1.8] text-ink-soft">{{ game.description }}</p>
         <div class="flex flex-wrap gap-1.5">
           <span
             v-for="tag in game.tags"
@@ -77,7 +77,7 @@ function onExit(): void {
 
       <GameHost v-if="playable" :game="game" @exit="onExit" />
       <a
-        v-else
+        v-else-if="game.url"
         :href="toInterstitialIfExternal(game.url, origin, 'game')"
         target="_blank"
         rel="noopener"
