@@ -73,9 +73,11 @@ function buildPayload(): WorkPayload {
   return {
     id: `${myUsername.value}/${form.workId.trim()}`,
     name: form.name.trim(),
-    url: form.url.trim(),
-    author: { name: form.authorName.trim(), ...(form.authorUrl.trim() ? { url: form.authorUrl.trim() } : {}) },
-    description: form.description.trim(),
+    ...(form.url.trim() ? { url: form.url.trim() } : {}),
+    ...(form.authorName.trim() || form.authorUrl.trim()
+      ? { author: { ...(form.authorName.trim() ? { name: form.authorName.trim() } : {}), ...(form.authorUrl.trim() ? { url: form.authorUrl.trim() } : {}) } }
+      : {}),
+    ...(form.description.trim() ? { description: form.description.trim() } : {}),
     durationMinutes: { min: Number(form.durationMin), max: Number(form.durationMax) },
     type: form.type as WorkPayload['type'],
     tags: parseTags(form.tagsText),
@@ -146,10 +148,10 @@ async function prefill(slug: string): Promise<void> {
       return
     }
     form.name = game.name
-    form.url = game.url
-    form.authorName = game.author.name
-    form.authorUrl = game.author.url ?? ''
-    form.description = game.description
+    form.url = game.url ?? ''
+    form.authorName = game.author?.name ?? ''
+    form.authorUrl = game.author?.url ?? ''
+    form.description = game.description ?? ''
     form.durationMin = String(game.durationMinutes.min)
     form.durationMax = String(game.durationMinutes.max)
     form.type = game.type
@@ -351,13 +353,13 @@ const labelClass = 'font-mono text-[0.6875rem] tracking-[0.05em]'
           <p v-if="err('workId')" class="text-xs font-bold text-accent-ink">{{ err('workId') }}</p>
         </div>
         <div class="space-y-1.5">
-          <label class="font-mono text-[0.6875rem]" for="sf-url">作品原始链接</label>
+          <label class="font-mono text-[0.6875rem]" for="sf-url">作品原始链接（可选）</label>
           <BaseInput id="sf-url" v-model="form.url" type="url" :invalid="Boolean(err('url'))" />
           <p v-if="err('url')" class="text-xs font-bold text-accent-ink">{{ err('url') }}</p>
         </div>
         <div class="grid gap-4 sm:grid-cols-2">
           <div class="space-y-1.5">
-            <label class="font-mono text-[0.6875rem]" for="sf-author">作者名</label>
+            <label class="font-mono text-[0.6875rem]" for="sf-author">作者名（可选）</label>
             <BaseInput id="sf-author" v-model="form.authorName" type="text" :invalid="Boolean(err('authorName'))" />
             <p v-if="err('authorName')" class="text-xs font-bold text-accent-ink">{{ err('authorName') }}</p>
           </div>
@@ -367,7 +369,7 @@ const labelClass = 'font-mono text-[0.6875rem] tracking-[0.05em]'
           </div>
         </div>
         <div class="space-y-1.5">
-          <label class="font-mono text-[0.6875rem]" for="sf-desc">描述</label>
+          <label class="font-mono text-[0.6875rem]" for="sf-desc">描述（可选）</label>
           <BaseTextarea id="sf-desc" v-model="form.description" rows="3" :aria-invalid="Boolean(err('description'))" />
           <p v-if="err('description')" class="text-xs font-bold text-accent-ink">{{ err('description') }}</p>
         </div>
