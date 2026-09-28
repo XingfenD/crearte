@@ -1,5 +1,7 @@
 {
-  "id": "corrupt",
+  "id": "fixture/corrupt",
+  "user": "fixture",
+  "slug": "corrupt",
   "name": "损坏包夹具",
   "url": "https://example.com/corrupt",
   "author": { "name": "test" },
@@ -11,6 +13,5 @@
   "entry": "index.html",
   "_corruptSha": true,
   "fallback": "hosted",
-  "hostedUrl": "http://corrupt.localhost:4173/",
   "features": { "inlineScript": true }
 }

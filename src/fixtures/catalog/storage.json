@@ -1,5 +1,7 @@
 {
-  "id": "storage",
+  "id": "fixture/storage",
+  "user": "fixture",
+  "slug": "storage",
   "name": "存储夹具",
   "url": "https://example.com/storage",
   "author": { "name": "test" },

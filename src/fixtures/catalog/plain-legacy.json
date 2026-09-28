@@ -1,5 +1,7 @@
 {
-  "id": "plain-legacy",
+  "id": "fixture/plain-legacy",
+  "user": "fixture",
+  "slug": "plain-legacy",
   "name": "明文遗留夹具",
   "url": "https://example.com/plain-legacy",
   "author": { "name": "test" },

@@ -1,5 +1,7 @@
 {
-  "id": "ratelimit",
+  "id": "fixture/ratelimit",
+  "user": "fixture",
+  "slug": "ratelimit",
   "name": "限流退避夹具",
   "url": "https://example.com/ratelimit",
   "author": { "name": "test" },

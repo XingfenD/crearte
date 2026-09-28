@@ -1,5 +1,7 @@
 {
-  "id": "arclight-nightcast",
+  "id": "fixture/arclight-nightcast",
+  "user": "fixture",
+  "slug": "arclight-nightcast",
   "runtime": "external",
   "name": "弧光镇晚间新闻",
   "url": "https://lemuria1907.github.io/Arclight-Nightcast/",

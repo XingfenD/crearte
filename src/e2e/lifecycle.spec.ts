@@ -1,7 +1,7 @@
 import { expect, test } from '@playwright/test'
-import { openGame } from './helpers'
+import { gameOrigin, openGame } from './helpers'
 
-const GAME_ORIGIN = 'http://abs-paths.localhost:4173'
+const GAME_ORIGIN = gameOrigin('abs-paths')
 
 test('安装后 bundle 缓存有内容，缓存被清理后 SW 自愈重下', async ({ page }) => {
   await openGame(page, 'abs-paths')

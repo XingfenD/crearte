@@ -1,5 +1,7 @@
 {
-  "id": "case-files",
+  "id": "fixture/case-files",
+  "user": "fixture",
+  "slug": "case-files",
   "runtime": "external",
   "name": "案件推演系统",
   "url": "https://lemuria1907.github.io/Case-Files/",

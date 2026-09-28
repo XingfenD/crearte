@@ -1,5 +1,7 @@
 {
-  "id": "hosted-demo",
+  "id": "fixture/hosted-demo",
+  "user": "fixture",
+  "slug": "hosted-demo",
   "name": "托管夹具",
   "url": "https://example.com/hosted",
   "author": { "name": "test" },
@@ -9,6 +11,5 @@
   "tags": ["fixture"],
   "addedAt": "2026-09-17",
   "runtime": "hosted",
-  "hostedUrl": "http://hosted-demo.localhost:4173/",
   "features": { "inlineScript": true }
 }

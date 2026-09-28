@@ -1,5 +1,7 @@
 {
-  "id": "update-fail",
+  "id": "fixture/update-fail",
+  "user": "fixture",
+  "slug": "update-fail",
   "name": "更新失败夹具",
   "url": "https://example.com/update-fail",
   "author": { "name": "test" },
@@ -11,6 +13,5 @@
   "entry": "index.html",
   "_corruptV2Sha": true,
   "fallback": "hosted",
-  "hostedUrl": "http://update-fail.localhost:4173/",
   "features": { "inlineScript": true }
 }

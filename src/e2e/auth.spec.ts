@@ -3,7 +3,7 @@ import { expect, test, type Page, type Route } from '@playwright/test'
 const API = 'http://localhost:4173'
 
 interface FixtureState {
-  users: Map<string, { password: string; display_name: string }>
+  users: Map<string, { password: string; display_name: string; username: string }>
   tokens: Map<string, string>
   nextToken: number
   loginFailures: number
@@ -14,7 +14,7 @@ function authResponse(state: FixtureState, email: string, token: string) {
   return {
     token,
     expires_at: new Date(Date.now() + 7 * 24 * 3600 * 1000).toISOString(),
-    user: { id: `u-${email}`, email, display_name: user.display_name, role: 'user' }
+    user: { id: `u-${email}`, email, display_name: user.display_name, username: user.username, role: 'user' }
   }
 }
 
@@ -34,7 +34,7 @@ async function installAuthApi(page: Page): Promise<FixtureState> {
 
     if (path.endsWith('/register')) {
       if (state.users.has(body.email)) return fail(409, 'email_taken')
-      state.users.set(body.email, { password: body.password, display_name: body.display_name })
+      state.users.set(body.email, { password: body.password, display_name: body.display_name, username: body.username })
       const newToken = `t${state.nextToken++}`
       state.tokens.set(newToken, body.email)
       return json(201, authResponse(state, body.email, newToken))
@@ -82,6 +82,7 @@ test('注册 → 账号页改密 → 登出全部', async ({ page }) => {
 
   await page.goto('/register')
   await page.getByLabel('邮箱').fill(EMAIL)
+  await page.locator('#register-username').fill('demo')
   await page.getByLabel('昵称').fill('Demo')
   await page.getByLabel(/密码/).fill(PASSWORD)
   await page.getByRole('button', { name: '注册' }).click()
@@ -116,10 +117,11 @@ test('未登录访问 /account 跳登录并回跳', async ({ page }) => {
 
 test('注册撞 409 提示已注册,登录成功后可回跳 /account', async ({ page }) => {
   const state = await installAuthApi(page)
-  state.users.set(EMAIL, { password: PASSWORD, display_name: 'Demo' })
+  state.users.set(EMAIL, { password: PASSWORD, display_name: 'Demo', username: 'demo' })
 
   await page.goto('/register')
   await page.getByLabel('邮箱').fill(EMAIL)
+  await page.locator('#register-username').fill('demo')
   await page.getByLabel('昵称').fill('Demo')
   await page.getByLabel(/密码/).fill(PASSWORD)
   await page.getByRole('button', { name: '注册' }).click()

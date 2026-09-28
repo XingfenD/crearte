@@ -2,8 +2,8 @@ import { expect, test, type Page, type Route } from '@playwright/test'
 import { API, seedSession } from './helpers'
 
 const PENDING = {
-  id: 'sub-p1', kind: 'new_work', status: 'pending', work_id: 'pending-game',
-  payload: { id: 'pending-game', name: 'Pending Game', url: 'https://example.com/pg', author: { name: 'A' }, description: 'd', durationMinutes: { min: 1, max: 5 }, type: 'puzzle', tags: [], runtime: 'external' },
+  id: 'sub-p1', kind: 'new_work', status: 'pending', work_id: 'mock/pending-game',
+  payload: { id: 'mock/pending-game', name: 'Pending Game', url: 'https://example.com/pg', author: { name: 'A' }, description: 'd', durationMinutes: { min: 1, max: 5 }, type: 'puzzle', tags: [], runtime: 'external' },
   created_at: '2026-09-27T00:00:00Z', updated_at: '2026-09-27T00:00:00Z'
 }
 
@@ -11,8 +11,8 @@ const PENDING = {
 // admin works 列表端点，「恢复上架」(adminRepublish) 唯一入口是 approved 提交历史；
 // work_id 用 live-game 与作品行 mock 同一作品（下架→从历史恢复上架的语义闭环）
 const APPROVED = {
-  id: 'sub-a1', kind: 'new_work', status: 'approved', work_id: 'live-game',
-  payload: { id: 'live-game', name: 'Live', url: 'https://example.com/lg', author: { name: 'a' }, description: 'd', durationMinutes: { min: 1, max: 2 }, type: 'puzzle', tags: [], runtime: 'virtual', version: 'v3' },
+  id: 'sub-a1', kind: 'new_work', status: 'approved', work_id: 'mock/live-game',
+  payload: { id: 'mock/live-game', name: 'Live', url: 'https://example.com/lg', author: { name: 'a' }, description: 'd', durationMinutes: { min: 1, max: 2 }, type: 'puzzle', tags: [], runtime: 'virtual', version: 'v3' },
   created_at: '2026-09-27T00:00:00Z', updated_at: '2026-09-27T00:00:00Z'
 }
 
@@ -39,10 +39,10 @@ function installAdminApi(page: Page, calls: string[]): void {
   // 作品管理 tab：/api/games（页面上下文，可被 page.route 拦截）
   page.route(`${API}/api/games`, (route) => json(route, {
     schemaVersion: 1, generatedAt: 'x',
-    games: [{ id: 'live-game', name: 'Live', url: 'https://example.com/lg', author: { name: 'a' }, description: 'd', durationMinutes: { min: 1, max: 2 }, type: 'puzzle', tags: [], addedAt: '2026-09-27', runtime: 'virtual' }]
+    games: [{ id: 'mock/live-game', name: 'Live', url: 'https://example.com/lg', author: { name: 'a' }, description: 'd', durationMinutes: { min: 1, max: 2 }, type: 'puzzle', tags: [], addedAt: '2026-09-27', runtime: 'virtual' }]
   }))
-  page.route(`${API}/api/games/live-game`, (route) => json(route, {
-    id: 'live-game', name: 'Live', url: 'https://example.com/lg', author: { name: 'a' }, description: 'd', durationMinutes: { min: 1, max: 2 }, type: 'puzzle', tags: [], addedAt: '2026-09-27', runtime: 'virtual', version: 'v3', entry: 'index.html',
+  page.route(`${API}/api/games/mock/live-game`, (route) => json(route, {
+    id: 'mock/live-game', name: 'Live', url: 'https://example.com/lg', author: { name: 'a' }, description: 'd', durationMinutes: { min: 1, max: 2 }, type: 'puzzle', tags: [], addedAt: '2026-09-27', runtime: 'virtual', version: 'v3', entry: 'index.html',
     bundle: { url: 'https://cdn/b.bin', bytes: 1, sha256: 'a'.repeat(64), enc: { v: 1, alg: 'AES-256-GCM', kid: 'k'.repeat(22) } }
   }))
 }
@@ -86,24 +86,24 @@ test('作品管理：下架 / 版本吊销与恢复 / republish', async ({ page 
 
   await page.goto('http://localhost:4173/admin')
   await page.getByRole('button', { name: '作品管理' }).click()
-  await expect(page.locator('[data-testid=work-row-live-game]')).toBeVisible()
+  await expect(page.locator('[data-testid="work-row-mock/live-game"]')).toBeVisible()
 
-  await page.locator('[data-testid=work-row-live-game]').getByRole('button', { name: '查看' }).click()
-  await expect(page.locator('[data-testid=work-row-live-game]')).toContainText('v3')
-  await page.locator('[data-testid=work-row-live-game]').getByRole('button', { name: '下架' }).click()
-  await page.locator('[data-testid=work-row-live-game]').getByRole('button', { name: '吊销密钥' }).click()
-  await page.locator('[data-testid=work-row-live-game]').getByRole('button', { name: '恢复密钥' }).click()
+  await page.locator('[data-testid="work-row-mock/live-game"]').getByRole('button', { name: '查看' }).click()
+  await expect(page.locator('[data-testid="work-row-mock/live-game"]')).toContainText('v3')
+  await page.locator('[data-testid="work-row-mock/live-game"]').getByRole('button', { name: '下架' }).click()
+  await page.locator('[data-testid="work-row-mock/live-game"]').getByRole('button', { name: '吊销密钥' }).click()
+  await page.locator('[data-testid="work-row-mock/live-game"]').getByRole('button', { name: '恢复密钥' }).click()
 
   // 「恢复上架」在本 tab 下方的「已通过提交」历史区（APPROVED seed；历史行无 data-testid，
   // 用 role+name 定位——seed 仅一条故唯一，无 strict mode 冲突）：spec:181 要求的 republish 断言
   await expect(page.getByRole('button', { name: '恢复上架' })).toBeVisible()
   await page.getByRole('button', { name: '恢复上架' }).click()
 
-  expect(calls.some((c) => c.includes('/api/admin/works/live-game/unpublish'))).toBe(true)
-  expect(calls.some((c) => c.includes('/api/admin/works/live-game/versions/v3/revoke') && c.includes('"revoked":true'))).toBe(true)
-  expect(calls.some((c) => c.includes('/api/admin/works/live-game/versions/v3/revoke') && c.includes('"revoked":false'))).toBe(true)
+  expect(calls.some((c) => c.includes('/api/admin/works/mock/live-game/unpublish'))).toBe(true)
+  expect(calls.some((c) => c.includes('/api/admin/works/mock/live-game/versions/v3/revoke') && c.includes('"revoked":true'))).toBe(true)
+  expect(calls.some((c) => c.includes('/api/admin/works/mock/live-game/versions/v3/revoke') && c.includes('"revoked":false'))).toBe(true)
   // 前三条调用被按钮 disabled 串行化保护，唯 republish 是最后一步、fetch 可能在途 → poll 消竞态
-  await expect.poll(() => calls.some((c) => c.includes('/api/admin/works/live-game/republish'))).toBe(true)
+  await expect.poll(() => calls.some((c) => c.includes('/api/admin/works/mock/live-game/republish'))).toBe(true)
 })
 
 test('非 admin：header 无审核入口，/admin 重定向首页', async ({ page }) => {

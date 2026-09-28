@@ -1,5 +1,7 @@
 {
-  "id": "exfil",
+  "id": "fixture/exfil",
+  "user": "fixture",
+  "slug": "exfil",
   "name": "外联夹具",
   "url": "https://example.com/exfil",
   "author": { "name": "test" },

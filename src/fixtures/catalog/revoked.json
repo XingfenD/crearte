@@ -1,5 +1,7 @@
 {
-  "id": "revoked",
+  "id": "fixture/revoked",
+  "user": "fixture",
+  "slug": "revoked",
   "name": "吊销夹具",
   "url": "https://example.com/revoked",
   "author": { "name": "test" },
@@ -10,6 +12,5 @@
   "addedAt": "2026-09-17",
   "entry": "index.html",
   "fallback": "hosted",
-  "hostedUrl": "http://revoked.localhost:4173/",
   "features": { "inlineScript": true }
 }

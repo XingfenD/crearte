@@ -1,5 +1,7 @@
 {
-  "id": "revoke-update",
+  "id": "fixture/revoke-update",
+  "user": "fixture",
+  "slug": "revoke-update",
   "name": "更新吊销夹具",
   "url": "https://example.com/revoke-update",
   "author": { "name": "test" },
@@ -10,6 +12,5 @@
   "addedAt": "2026-09-17",
   "entry": "index.html",
   "fallback": "hosted",
-  "hostedUrl": "http://revoke-update.localhost:4173/",
   "features": { "inlineScript": true }
 }

@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test'
-import { frameDataset, openGame } from './helpers'
+import { fixtureGame, frameDataset, gameOrigin, openGame } from './helpers'
 
 test('绝对路径资产可加载', async ({ page }) => {
   await openGame(page, 'abs-paths')
@@ -17,7 +17,7 @@ test('worker 与 importScripts 可加载', async ({ page }) => {
 })
 
 test('两个游戏的存储互相隔离且持久', async ({ page }) => {
-  await page.goto('http://localhost:4173/games/storage')
+  await page.goto('http://localhost:4173/games/fixture/storage')
   const frame = page.frameLocator('iframe')
   await expect(frame.locator('body')).toHaveAttribute('data-ready', '1')
   await frame.locator('#write').click()
@@ -25,9 +25,9 @@ test('两个游戏的存储互相隔离且持久', async ({ page }) => {
   await page.reload()
   await expect(page.frameLocator('iframe').locator('body')).toHaveAttribute('data-k', 'from-a')
 
-  await page.goto('http://localhost:4173/games/rel-paths')
+  await page.goto('http://localhost:4173/games/fixture/rel-paths')
   await expect(page.frameLocator('iframe').locator('body')).toHaveAttribute('data-ready', '1')
-  const other = page.frames().find((candidate) => candidate.url().startsWith('http://rel-paths.localhost:4173'))
+  const other = page.frames().find((candidate) => candidate.url().startsWith(gameOrigin('rel-paths')))
   expect(other).toBeTruthy()
   expect(await other!.evaluate(() => localStorage.getItem('k'))).toBeNull()
 })
@@ -55,7 +55,7 @@ test('__GAME_HOST__ 暴露注入的游戏元数据', async ({ page }) => {
   const body = page.frameLocator('iframe').locator('body')
   const version = await body.getAttribute('data-version')
   const meta = await body.evaluate(() => window.__GAME_HOST__?.getMeta())
-  expect(meta).toMatchObject({ id: 'abs-paths', version })
+  expect(meta).toMatchObject({ id: fixtureGame('abs-paths').id, version })
 })
 
 test('桥事件：score 上报到宿主 UI', async ({ page }) => {

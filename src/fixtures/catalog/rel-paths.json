@@ -1,5 +1,7 @@
 {
-  "id": "rel-paths",
+  "id": "fixture/rel-paths",
+  "user": "fixture",
+  "slug": "rel-paths",
   "name": "相对路径夹具",
   "url": "https://example.com/rel",
   "author": { "name": "test" },
