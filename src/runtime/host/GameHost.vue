@@ -98,7 +98,6 @@ function onMessage(event: MessageEvent): void { frame.onMessage(event) }
           :src="iframeSrc"
           :sandbox="frame.sandbox"
           :allow="frame.allow.value"
-          allowfullscreen
           referrerpolicy="no-referrer"
           :title="game.name"
           class="h-full w-full border-0 bg-white"

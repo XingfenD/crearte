@@ -6,6 +6,13 @@ All notable changes to this template should be documented in this file.
 The format loosely follows Keep a Changelog and can be adapted to the team's habits.
 本文档参考了 Keep a Changelog 的思路，也可以根据团队习惯调整。
 
+## [0.11.1] - 2026-09-29
+
+### Fixed / 修复
+
+- Static-site works that navigate with forms now run: the embedded play frame's sandbox includes `allow-forms` (a `<form action="query.html" method="get">` search page no longer gets blocked), and the runtime CSP's `form-action` is relaxed from `'none'` to `'self'` so same-origin submissions go through while cross-origin form targets stay blocked. The sandbox already granted `allow-scripts`, so neither relaxation adds a new cross-origin send capability. The invalid `allow-fullscreen` sandbox flag (never part of the HTML spec; fullscreen is governed by the iframe's Permissions Policy `allow` attribute and the `allowfullscreen` attribute) is removed, silencing the browser's invalid-flag console error. The now-redundant legacy `allowfullscreen` attribute is dropped as well (the `allow` attribute takes precedence over it, so keeping both only produced a console warning). Unit tests pin the full sandbox flag set and the `form-action` directive.
+- 以表单导航的静态站作品现在可以运行了：内嵌游玩 iframe 的 sandbox 补上 `allow-forms`（`<form action="query.html" method="get">` 检索页不再被浏览器阻止），运行时 CSP 的 `form-action` 由 `'none'` 放宽为 `'self'`——放行同源提交、继续阻断跨域表单目标。sandbox 本就授予 `allow-scripts`（等价跨域发送能力已存在），两处放宽均不扩大威胁面。同时移除了无效的 `allow-fullscreen` sandbox 旗标（HTML 规范从未收录，全屏由 iframe 的 Permissions Policy `allow` 属性与 `allowfullscreen` 属性管辖）——浏览器不再报 invalid flag。`allow` 属性优先于旧式 `allowfullscreen`，后者已纯属冗余（并存只会在控制台产生 warning），一并移除；新增 GameHost 组件测试钉住 iframe 的 allow 属性含 fullscreen 且无 allowfullscreen。单测分别钉住完整 sandbox 旗标集合与 `form-action` 指令。
+
 ## [0.11.0] - 2026-09-28
 
 ### Added / 新增

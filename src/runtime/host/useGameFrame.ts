@@ -33,9 +33,10 @@ export function useGameFrame(options: GameFrameOptions) {
   let bridgeWarn: ReturnType<typeof setTimeout> | null = null
 
   const target = computed(() => options.targets()[targetIndex.value] ?? null)
-  // allow-fullscreen：缺此旗标时作品自身的 requestFullscreen 会被 sandbox 挡掉
-  // （iframe 的 allowfullscreen 属性与 Permissions Policy 都救不回来）
-  const sandbox = 'allow-scripts allow-same-origin allow-pointer-lock allow-fullscreen'
+  // 全屏不走 sandbox 旗标：HTML 规范的 sandbox 旗标列表里没有 allow-fullscreen，
+  // 写上会被浏览器判为 invalid flag 并在控制台报错；作品内 requestFullscreen
+  // 由下方 allow（Permissions Policy，含 fullscreen）与 iframe 的 allowfullscreen 属性放行
+  const sandbox = 'allow-scripts allow-same-origin allow-forms allow-pointer-lock'
   const allow = computed(() => {
     const parts = ['fullscreen', 'autoplay']
     if (options.features().gamepad) parts.push('gamepad')

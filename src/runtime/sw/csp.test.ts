@@ -20,6 +20,11 @@ describe('buildCsp', () => {
     expect(csp).toContain('style-src \'self\';')
     expect(csp).not.toContain('wasm-unsafe-eval')
   })
+  test('form-action 仅限同源：静态站表单导航放行，跨域表单提交仍阻断', () => {
+    const csp = buildCsp(DEFAULT_FEATURES, HOST)
+    expect(csp).toContain("form-action 'self'")
+    expect(csp).not.toContain("form-action 'none'")
+  })
   test('恶意 hostOrigin 不得注入指令', () => {
     const csp = buildCsp(DEFAULT_FEATURES, "https://evil.test; script-src-elem 'unsafe-inline'")
     expect(csp).not.toContain('script-src-elem')
