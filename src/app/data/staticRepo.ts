@@ -7,9 +7,9 @@ function assert(condition: unknown, message: string): asserts condition {
 
 export function assertGameSummary(value: unknown, path: string): asserts value is GameSummary {
   const g = value as GameSummary
-  assert(g && typeof g.id === 'string' && typeof g.name === 'string' && typeof g.url === 'string', `${path} 缺少 id/name/url`)
+  assert(g && typeof g.id === 'string' && typeof g.name === 'string' && (g.url === undefined || typeof g.url === 'string'), `${path} 缺少 id/name`)
   assert(Array.isArray(g.tags), `${path}.tags 必须是数组`)
-  assert(g.author && typeof g.author.name === 'string', `${path}.author.name 缺失`)
+  assert(g.author === undefined || typeof g.author.name === 'string', `${path}.author.name 缺失`)
   assert(g.durationMinutes && typeof g.durationMinutes.min === 'number' && typeof g.durationMinutes.max === 'number', `${path}.durationMinutes 非法`)
   if (g.user !== undefined && (typeof g.user !== 'string' || !GAME_USER_PATTERN.test(g.user))) {
     throw new Error(`数据格式错误: ${path}.user 非法`)
