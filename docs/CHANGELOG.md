@@ -6,6 +6,13 @@ All notable changes to this template should be documented in this file.
 The format loosely follows Keep a Changelog and can be adapted to the team's habits.
 本文档参考了 Keep a Changelog 的思路，也可以根据团队习惯调整。
 
+## [0.14.0] - 2026-09-29
+
+### Added / 新增
+
+- New author page `/users/:user` (route `author`) aggregating a user's published works: breadcrumb `目录 / @user`, header `@user` with the work count, the catalog's card grid filtered to the namespace (default sort), and an empty state 「该作者暂无已上架作品」 with a 返回目录 button. Author names cross-link to it from both the work detail page and every catalog card — the link target always comes from the namespace `user`, never the free-form `author.name`, so the `author.url` external fallback stays reachable only when no `user` exists. GameCard was rebuilt around a stretched-link (the title anchor's pseudo-element covers the whole card) so the full-body click is kept without nested anchors. Covered by unit tests for the view, the card and the detail-page author line, plus a noauth e2e that lists the author's works, verifies every card links into `/games/fixture/…`, and checks the empty state.
+- 新增作者主页 `/users/:user`（路由 `author`）聚合某用户的已上架作品：面包屑 `目录 / @user`、`@user` 标题与作品计数、与目录同款的作品卡片网格（按命名空间过滤，默认排序），以及空态「该作者暂无已上架作品」与「返回目录」按钮。作者名从作品详情页与每张目录卡片互链至作者页——链接目标永远取命名空间 `user`，与自由填写的 `author.name` 无涉，故 `author.url` 外链兜底仅在无 `user` 时可达。GameCard 改为拉伸链接（标题锚点伪元素铺满整卡），整卡点击得以保留且不再有锚点嵌套。附视图、卡片与详情页作者行单测，以及一条 noauth e2e（列出该作者作品、校验每张卡链接进 `/games/fixture/…`、覆盖空态）。
+
 ## [0.12.0] - 2026-09-29
 
 ### Changed / 变更
