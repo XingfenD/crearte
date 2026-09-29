@@ -6,6 +6,13 @@ All notable changes to this template should be documented in this file.
 The format loosely follows Keep a Changelog and can be adapted to the team's habits.
 本文档参考了 Keep a Changelog 的思路，也可以根据团队习惯调整。
 
+## [0.13.0] - 2026-09-29
+
+### Added / 新增
+
+- Submitting and reviewing a work now supports inline preview: once a bundle is uploaded (fresh upload in the form, or a linked upload when editing a draft/rejected submission) the submit form shows a 「试玩预览」 toggle, and the admin review detail page shows the same toggle. Both mount the **same** `GameHost` player and runtime chain as published works (play-subdomain `/__bootstrap` → SW download → sha256 verify → key fetch → decrypt → unzip → agent bridge) — there is no second player. The only preview-specific pieces are the authenticated upload endpoints (ciphertext + key, fetched with the session token via the bootstrap `t` parameter the SW already understands) and `resolvePreviewTarget`, which shares the single bootstrap-fragment builder with the published path. Approved submissions (pending object deleted, work already public) and external works get no preview entry, and the form's preview entry disappears while a bundle is invalidated by a work_id/version change. The preview is lazily mounted on click so opening the page never auto-downloads the bundle. Covered by unit tests plus an end-to-end spec that plays a real encrypted fixture through the full chain, including a wrong-token 401 failure case.
+- 提交与审核作品现在支持内联试玩：bundle 上传成功（表单新上传）或编辑态已关联上传（草稿/被拒提交）后，提交表单出现「试玩预览」折叠按钮；审核详情页提供同一入口。两者挂载的都是与已发布作品**完全相同**的 `GameHost` 播放器与运行链路（游玩子域 `/__bootstrap` → SW 下载 → sha256 校验 → 取钥 → 解密 → 解压 → agent 桥）——不存在第二份播放器。预览态特有的部分只有带鉴权的上传端点（密文 + 密钥，经 bootstrap 既有的 `t` 参数携带会话 token 拉取）与 `resolvePreviewTarget`（与已发布路径共用同一份 bootstrap fragment 构造）。已通过审核的提交（pending 对象已删、作品已公开）与外链作品不显示预览入口；bundle 因 work_id/version 变更作废时预览入口同步消失。预览为点击后懒挂载，打开页面不会自动下载 bundle。附单测与一条走通完整链路的 e2e（真实加密夹具，含错误 token 的 401 失败用例）。
+
 ## [0.12.0] - 2026-09-29
 
 ### Changed / 变更

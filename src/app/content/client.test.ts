@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, test, vi } from 'vitest'
 import { ContentApiError } from './errors'
-import { createContentClient, validateUploadInput } from './client'
+import { createContentClient, toAbsoluteApiUrl, uploadBundleKeyPath, uploadBundlePath, validateUploadInput } from './client'
 
 function jsonResponse(body: unknown, init: { status?: number; retryAfter?: string } = {}): Response {
   const headers: Record<string, string> = {}
@@ -133,7 +133,7 @@ describe('createContentClient.upload', () => {
     const XhrStub = class {
       upload = {} as { onprogress?: unknown }
       status = 200
-      responseText = JSON.stringify({ upload_id: 'up1', sha256: 'sha256hex', bytes: 128, kid: 'kid1' })
+      responseText = JSON.stringify({ upload_id: 'up1', sha256: 'sha256hex', bytes: 128, kid: 'kid1', play_subdomain: '0123456789abcdef' })
       onload: (() => void) | null = null
       onerror: (() => void) | null = null
       open(_method: string, _url: string) {}
@@ -150,10 +150,34 @@ describe('createContentClient.upload', () => {
     const result = await client.upload({ kind: 'bundle', slug: 'my-game', version: 'v1', file })
     expect(result.upload_id).toBe('up1')
     expect(result.kid).toBe('kid1')
+    // 预览链路要用的游玩子域必须透传（后端上传响应下发）
+    expect(result.play_subdomain).toBe('0123456789abcdef')
     expect(sent.form?.get('kind')).toBe('bundle')
     expect(sent.form?.get('slug')).toBe('my-game')
     expect(sent.form?.get('version')).toBe('v1')
     expect(sent.form?.get('work_id')).toBeNull()
     expect(sent.form?.has('file')).toBe(true)
+  })
+})
+
+describe('预览 URL 构建', () => {
+  test('upload 预览路径：bundle 与 bundle-key', () => {
+    expect(uploadBundlePath('up-1')).toBe('/api/uploads/up-1/bundle')
+    expect(uploadBundleKeyPath('up-1')).toBe('/api/uploads/up-1/bundle-key')
+  })
+
+  test('绝对基址（跨域部署）直接拼接', () => {
+    expect(toAbsoluteApiUrl('https://api.example.com', uploadBundlePath('up-1')))
+      .toBe('https://api.example.com/api/uploads/up-1/bundle')
+    expect(toAbsoluteApiUrl('https://api.example.com/', uploadBundleKeyPath('up-1')))
+      .toBe('https://api.example.com/api/uploads/up-1/bundle-key')
+  })
+
+  test('相对/空基址（同源反代）落当前页面 origin——SW 在游玩子域，相对路径会解析错', () => {
+    vi.stubGlobal('location', { origin: 'https://crearte.example' })
+    expect(toAbsoluteApiUrl('/', uploadBundlePath('up-1')))
+      .toBe('https://crearte.example/api/uploads/up-1/bundle')
+    expect(toAbsoluteApiUrl('', uploadBundleKeyPath('up-1')))
+      .toBe('https://crearte.example/api/uploads/up-1/bundle-key')
   })
 })

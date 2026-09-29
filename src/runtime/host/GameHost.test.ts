@@ -26,4 +26,11 @@ describe('GameHost iframe 属性', () => {
     expect(iframe.attributes('allow')).toContain('fullscreen')
     expect(iframe.attributes('allowfullscreen')).toBeUndefined()
   })
+
+  it('「退出」按钮仅目录详情页渲染（showExit 默认开；表单/审核页内联预览传 false 隐藏）', () => {
+    const withExit = mount(GameHost, { props: { game } })
+    expect(withExit.findAll('button').some((b) => b.text() === '退出')).toBe(true)
+    const withoutExit = mount(GameHost, { props: { game, showExit: false } })
+    expect(withoutExit.findAll('button').some((b) => b.text() === '退出')).toBe(false)
+  })
 })

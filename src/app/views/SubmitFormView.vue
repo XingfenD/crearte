@@ -9,11 +9,13 @@ import BaseTextarea from '@/components/ui/BaseTextarea.vue'
 import FileInput from '@/components/ui/FileInput.vue'
 import { session } from '@/auth'
 import { contentClient, toContentMessage, validateUploadInput } from '@/content'
+import { previewUploadFromSubmission, previewUploadOf, type PreviewSource } from '@/content/preview'
 import { EMPTY_FEATURES, FEATURE_ITEMS, collectFeatures, featuresToForm } from '@/content/features'
 import { parseTags, slugify, validateWorkPayload, SLUG_PATTERN, VERSION_PATTERN, type FieldKey } from '@/content/validation'
 import type { SubmissionKind, SubmissionView, UploadResult, WorkPayload } from '@/content/types'
 import { GAME_TYPES } from '@/data/types'
 import { GAME_TYPE_LABELS } from '@/lib/labels'
+import SubmissionPreview from '@/components/SubmissionPreview.vue'
 // 预填走 apiRepo 直连（spec:126「apiRepo 直连，不走 merge」）：白得 ETag 缓存 / in-flight 去重 /
 // assertGameDetail 形状校验，且 404 抛 NotFoundError —— 与 GameView.vue:5,22 的既有惯例一致。
 // ⚠️ 绝不可改用 contentClient：Task 4 审查已删除 gameDetail（e744794），且 content 层的 404 抛
@@ -55,6 +57,7 @@ const showErrors = ref(false)
 const busy = ref<'draft' | 'submit' | 'load' | null>(null)
 const slugTouched = ref(false)
 const notice = ref<string | null>(null) // 「请重新上传 bundle」等非错误提示
+const showPreview = ref(false) // 试玩预览懒挂载：点开才开始下载/安装 bundle
 
 onBeforeUnmount(() => {
   if (prefillTimer) clearTimeout(prefillTimer)
@@ -120,6 +123,22 @@ const bundleDisabledHint = computed(() => {
   if (!SLUG_PATTERN.test(form.workId.trim())) missing.push('名称')
   if (!VERSION_PATTERN.test(form.version.trim())) missing.push('版本号')
   return missing.length > 0 ? `先填写${missing.join(' 与 ')}后可上传` : ''
+})
+
+// 试玩预览输入：优先用本次会话新上传的 bundle（未保存也能预览），否则用编辑态已关联的上传
+// （元信息来自提交详情的 bundle 摘要）。bundle 因 work_id/version 变更作废时不预览——
+// 旧上传的密文对不上当前版本号，跑起来也是过期内容。
+const previewSource = computed<PreviewSource | null>(() => {
+  if (bundleInvalidated.value) return null
+  if (bundle.value) {
+    const upload = previewUploadOf(bundle.value)
+    return upload ? { payload: buildPayload(), upload } : null
+  }
+  if (existing.value) {
+    const upload = previewUploadFromSubmission(existing.value)
+    return upload ? { payload: existing.value.payload, upload } : null
+  }
+  return null
 })
 
 // new_version / metadata_change 预填
@@ -448,6 +467,16 @@ const labelClass = 'font-mono text-[0.6875rem] tracking-[0.05em]'
           </div>
         </template>
       </fieldset>
+
+      <!-- 3b. 试玩预览：复用已发布作品的运行链路（游玩子域 bootstrap + SW 解密安装 + agent 桥），
+           不另做播放器；密文/密钥走后端带鉴权的上传端点，仅本人与审核可见 -->
+      <div v-if="previewSource" class="space-y-2">
+        <BaseButton size="sm" data-testid="toggle-preview" @click="showPreview = !showPreview">
+          {{ showPreview ? '收起试玩预览' : '试玩预览' }}
+        </BaseButton>
+        <p class="text-xs text-ink-soft">在浏览器里实际运行这个 bundle（提交前自检、提交后复查）。仅你与审核可见。</p>
+        <SubmissionPreview v-if="showPreview" :source="previewSource" />
+      </div>
 
       <!-- 4. 封面 -->
       <fieldset class="space-y-2" :disabled="readOnly">

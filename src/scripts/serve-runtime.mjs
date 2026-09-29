@@ -83,6 +83,53 @@ for (const file of await readdir(path.join(fixtures, 'generated', 'games')).catc
 // 必须带 ACAO:*——SW 从 <id>.localhost 跨域取钥。响应永不落磁盘日志（key 材料）。
 const rateLimitHits = new Map()
 
+// 上传预览 mock：待审 bundle 的带鉴权读取（提交表单 / 审核页内联试玩）。
+// 语义与 bundleKeyMock 一致：ACAO:*（SW 从 <id>.localhost 跨域拉取）+ expose Retry-After + no-store；
+// Bearer 必须是 e2e-token（seedSession 签发的会话）——「错误 token」失败用例靠它拿到 401。
+// 内容复用 abs-paths 夹具的密文与密钥：kid/sha256 由 spec 从 generated 夹具读出一致下发。
+const PREVIEW_BUNDLE_FILE = 'fixture__abs-paths.bin'
+const PREVIEW_KEY_FILE = 'fixture__abs-paths__v1.json'
+
+function previewPreflight(req, res) {
+  res.writeHead(204, {
+    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Methods': 'GET, OPTIONS',
+    'Access-Control-Allow-Headers': req.headers['access-control-request-headers'] ?? 'Authorization',
+    'Access-Control-Max-Age': '60'
+  })
+  res.end()
+}
+
+async function uploadPreviewMock(req, res, url) {
+  const isBundle = /^\/api\/uploads\/[^/]+\/bundle$/.test(url.pathname)
+  const isKey = /^\/api\/uploads\/[^/]+\/bundle-key$/.test(url.pathname)
+  if (!isBundle && !isKey) return false
+  if (req.method === 'OPTIONS') { previewPreflight(req, res); return true }
+  const send = (status, body, contentType) => {
+    const headers = {
+      'Content-Type': contentType,
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Expose-Headers': 'Retry-After',
+      'Cache-Control': 'no-store'
+    }
+    if (body) headers['Content-Length'] = body.length
+    res.writeHead(status, headers)
+    res.end(body)
+  }
+  if (req.headers.authorization !== 'Bearer e2e-token') {
+    send(401, JSON.stringify({ error: { code: 'unauthorized', message: 'authentication required' } }), 'application/json; charset=utf-8')
+    return true
+  }
+  const [dir, file] = isKey ? ['keys', PREVIEW_KEY_FILE] : ['bundles', PREVIEW_BUNDLE_FILE]
+  try {
+    const body = await readFile(path.join(fixtures, 'generated', dir, file))
+    send(200, body, isKey ? 'application/json; charset=utf-8' : 'application/octet-stream')
+  } catch {
+    send(404, JSON.stringify({ error: { code: 'not_found', message: 'unknown upload' } }), 'application/json; charset=utf-8')
+  }
+  return true
+}
+
 async function bundleKeyMock(req, res, url) {
   const match = url.pathname.match(/^\/api\/games\/([a-z0-9-]+)\/([a-z0-9-]+)\/bundle-key$/)
   if (!match) return false
@@ -157,6 +204,8 @@ const server = createServer(async (req, res) => {
     }
 
     if (await bundleKeyMock(req, res, url)) return
+
+    if (await uploadPreviewMock(req, res, url)) return
 
     // 内容 API 在 mock 服务器中不存在：统一 404 JSON，使 apiRepo 抛 NotFoundError → mergeRepo 回落静态源。
     // 若无此分支，/api/games* 会落入 SPA fallback 返 200+HTML，response.json() 抛解析错、详情页全灭。

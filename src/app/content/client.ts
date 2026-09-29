@@ -76,6 +76,28 @@ function worksPath(workId: string): string {
   return `/api/admin/works/${user}/${slug}`
 }
 
+/** 待审 bundle 预览读取路径（SW 从游玩子域跨源拉取，须绝对化） */
+export function uploadBundlePath(uploadId: string): string {
+  return `/api/uploads/${encodeURIComponent(uploadId)}/bundle`
+}
+
+export function uploadBundleKeyPath(uploadId: string): string {
+  return `/api/uploads/${encodeURIComponent(uploadId)}/bundle-key`
+}
+
+/**
+ * 把 API 路径解析为绝对 URL：SW 运行在游玩子域 origin 上，相对路径会解析到子域而非站点，
+ * 必须显式落到 API 基址。apiBase 为绝对地址（跨域部署）时直接拼接；为 '/' 或空（同源反代）
+ * 时落到当前页面 origin（站点同源代理 /api）。
+ */
+export function toAbsoluteApiUrl(baseUrl: string, path: string): string {
+  const base = baseUrl.trim().replace(/\/+$/, '')
+  if (base === '' || base.startsWith('/')) {
+    return new URL(path, globalThis.location.origin).href
+  }
+  return `${base}${path}`
+}
+
 export function createContentClient(options: ContentClientOptions): ContentClient {
   const doFetch = options.fetchImpl ?? globalThis.fetch
   const base = options.baseUrl.replace(/\/+$/, '')
@@ -118,7 +140,7 @@ export function createContentClient(options: ContentClientOptions): ContentClien
         let body: { error?: { code?: unknown; message?: unknown } } & Partial<UploadResult> | null = null
         try { body = JSON.parse(xhr.responseText) } catch { /* 保留 null */ }
         if (xhr.status >= 200 && xhr.status < 300 && body && body.upload_id) {
-          resolve({ upload_id: body.upload_id, sha256: String(body.sha256 ?? ''), bytes: Number(body.bytes ?? 0), ...(body.kid ? { kid: String(body.kid) } : {}) })
+          resolve({ upload_id: body.upload_id, sha256: String(body.sha256 ?? ''), bytes: Number(body.bytes ?? 0), ...(body.kid ? { kid: String(body.kid) } : {}), ...(body.play_subdomain ? { play_subdomain: String(body.play_subdomain) } : {}) })
           return
         }
         const code = toContentErrorCode(body?.error?.code)

@@ -1,9 +1,10 @@
 import { session } from '@/auth'
-import { createContentClient, type ContentClient } from './client'
+import { createContentClient, toAbsoluteApiUrl, type ContentClient } from './client'
 import { ContentApiError } from './errors'
 
 export * from './client'
 export * from './errors'
+export * from './preview'
 export * from './types'
 
 const apiBase = (import.meta.env.VITE_API_BASE_URL ?? '').trim()
@@ -25,3 +26,8 @@ export const contentClient: ContentClient = apiBase
       onUnauthorized: () => session.invalidate()
     })
   : disabledClient
+
+/** API 路径 → 绝对 URL（预览链路专用：SW 在游玩子域发起跨源请求，见 client.ts 说明） */
+export function apiUrl(path: string): string {
+  return toAbsoluteApiUrl(apiBase, path)
+}

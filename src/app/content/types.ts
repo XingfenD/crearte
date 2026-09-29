@@ -20,6 +20,14 @@ export interface WorkPayload {
   features?: FeatureFlags
 }
 
+/** 待审 bundle 的上传元信息（详情端点返回，预览拼 fragment 用；密文/密钥走 /api/uploads/:id/*） */
+export interface SubmissionBundleMeta {
+  sha256: string
+  bytes: number
+  kid: string
+  play_subdomain: string
+}
+
 export interface SubmissionView {
   id: string
   kind: SubmissionKind
@@ -28,6 +36,7 @@ export interface SubmissionView {
   payload: WorkPayload
   bundle_upload_id?: string
   cover_upload_id?: string
+  bundle?: SubmissionBundleMeta
   review_note?: string
   created_at: string
   updated_at: string
@@ -38,6 +47,8 @@ export interface UploadResult {
   sha256: string
   bytes: number
   kid?: string
+  /** 预览用游玩子域（sha256(work_id) 派生，与审批后签发的一致）；仅 bundle 上传返回 */
+  play_subdomain?: string
 }
 
 export interface SubmissionDraft {

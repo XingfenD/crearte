@@ -3,12 +3,18 @@ import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { PhArrowsInSimple, PhArrowsOutSimple } from '@phosphor-icons/vue'
 import type { Game } from '../../app/data/types'
 import { runtimeConfig } from './config'
-import { resolveRuntimeTargets, type RuntimeTarget } from './adapters'
+import { resolvePreviewTarget, resolveRuntimeTargets, type PreviewKeySource, type RuntimeTarget } from './adapters'
 import { useGameFrame } from './useGameFrame'
 import { useFullscreen } from './useFullscreen'
 import { DEFAULT_FEATURES } from '../bridge/protocol'
 
-const props = defineProps<{ game: Game }>()
+const props = withDefaults(defineProps<{
+  game: Game
+  /** 待审提交的预览密钥来源（提交表单 / 审核页）：传入即走预览目标，密文/密钥端点带鉴权 */
+  preview?: PreviewKeySource
+  /** 目录详情页之外的场景（表单/审核页内联试玩）隐藏「退出」按钮 */
+  showExit?: boolean
+}>(), { showExit: true })
 const config = runtimeConfig()
 const frame = useGameFrame({
   targets: () => targets.value,
@@ -23,11 +29,11 @@ const frame = useGameFrame({
 const emit = defineEmits<{ exit: [] }>()
 // 全屏目标 = 整个游玩区（展柜 + 控制按钮）；状态由 fullscreenchange 同步，Esc/他方抢占都能正确回落
 const fullscreen = useFullscreen()
-const targets = computed<RuntimeTarget[]>(() => resolveRuntimeTargets(props.game, {
-  baseDomain: config.baseDomain,
-  protocol: location.protocol,
-  config
-}))
+// 预览态：单一 virtual 目标（上传端点密文 + 该上传的密钥 + 会话 token），复用同一套 bootstrap/SW 链路；
+// 已发布作品：既有 resolveRuntimeTargets（virtual/hosted/external 降级链）
+const targets = computed<RuntimeTarget[]>(() => props.preview
+  ? [resolvePreviewTarget(props.game, props.preview, { baseDomain: config.baseDomain, protocol: location.protocol, config })]
+  : resolveRuntimeTargets(props.game, { baseDomain: config.baseDomain, protocol: location.protocol, config }))
 const degradedToExternal = ref<string | null>(null)
 const lastError = ref<string | null>(null)
 const aspect = computed(() => props.game.display?.aspect ?? '16:9')
@@ -141,7 +147,7 @@ function onMessage(event: MessageEvent): void { frame.onMessage(event) }
       <button v-else class="btn-surface lift px-3 py-1.5" @click="fullscreen.toggle()">
         <PhArrowsInSimple :size="14" weight="bold" aria-hidden="true" />退出全屏
       </button>
-      <button class="btn-surface lift px-3 py-1.5" @click="emit('exit')">退出</button>
+      <button v-if="showExit" class="btn-surface lift px-3 py-1.5" @click="emit('exit')">退出</button>
       <span v-if="frame.state.value.score !== null" class="font-mono text-xs text-ink-soft">得分：{{ frame.state.value.score }}</span>
       <span v-if="frame.state.value.storageKeys !== null" class="font-mono text-xs text-ink-soft">存档：{{ frame.state.value.storageKeys }} 项</span>
       <span v-if="lastError" class="font-mono text-xs text-accent-ink">{{ lastError }}</span>

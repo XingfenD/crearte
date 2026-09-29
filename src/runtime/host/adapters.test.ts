@@ -1,6 +1,6 @@
 import { expect, test, vi } from 'vitest'
 import type { Game } from '../../app/data/types'
-import { resolveRuntimeTargets } from './adapters'
+import { resolvePreviewTarget, resolveRuntimeTargets } from './adapters'
 
 const subdomain = '0123456789abcdef'
 const base = {
@@ -137,4 +137,60 @@ test('apiBase 为相对基址（/，同源反代）时 keyUrl 落 location.origi
   const params = new URLSearchParams(new URL(primary.url).hash.replace(/^#/, ''))
   expect(params.get('key')).toBe('http://site.local/api/games/fendy/2048/bundle-key?version=v1')
   vi.unstubAllGlobals()
+})
+
+// —— 待审提交预览：与已发布 virtual 目标同一 fragment 契约，差异只有端点与 token ——
+const previewGame: Game = {
+  ...base, runtime: 'virtual', version: 'v1', entry: 'index.html', playSubdomain: subdomain,
+  bundle: {
+    url: 'https://api.example.com/api/uploads/up-1/bundle', bytes: 10, sha256: 'a'.repeat(64),
+    enc: { v: 1, alg: 'AES-256-GCM', kid: 'k'.repeat(22) }
+  },
+  features: { eval: true }
+}
+const previewKey = {
+  keyUrl: 'https://api.example.com/api/uploads/up-1/bundle-key',
+  token: 'session-token'
+}
+
+test('预览目标：单一 virtual、无降级外链，fragment 带上传端点与 token', () => {
+  const target = resolvePreviewTarget(previewGame, previewKey, opts)
+  expect(target.mode).toBe('virtual')
+  expect(target.origin).toBe(`https://${subdomain}.games.example.com`)
+  const params = new URLSearchParams(new URL(target.url).hash.replace(/^#/, ''))
+  expect(params.get('bundle')).toBe('https://api.example.com/api/uploads/up-1/bundle')
+  expect(params.get('key')).toBe('https://api.example.com/api/uploads/up-1/bundle-key')
+  expect(params.get('kid')).toBe('k'.repeat(22))
+  expect(params.get('t')).toBe('session-token')
+  expect(params.get('sha')).toBe('a'.repeat(64))
+  expect(params.get('features')).toBe('{"eval":true}')
+})
+
+test('预览目标：即使作品带 url/fallback 也不产生 external 目标（待审无可降级形态）', () => {
+  const target = resolvePreviewTarget({ ...previewGame, fallback: 'external' }, previewKey, opts)
+  expect(target.mode).toBe('virtual')
+  expect(target.url).not.toContain('upstream.example')
+})
+
+test('预览目标：无 token 不注入 t 参数', () => {
+  const target = resolvePreviewTarget(previewGame, { keyUrl: previewKey.keyUrl }, opts)
+  const params = new URLSearchParams(new URL(target.url).hash.replace(/^#/, ''))
+  expect(params.get('t')).toBeNull()
+  expect(params.get('key')).toBe(previewKey.keyUrl)
+})
+
+test('预览目标：playOrigin override 优先于 playSubdomain', () => {
+  const target = resolvePreviewTarget({ ...previewGame, playOrigin: 'https://override.example.com' }, previewKey, opts)
+  expect(target.origin).toBe('https://override.example.com')
+})
+
+test('预览目标：明文 bundle（无 enc）不注入 kid/key', () => {
+  const plain: Game = {
+    ...previewGame,
+    bundle: { url: 'https://api.example.com/api/uploads/up-1/bundle', bytes: 10, sha256: 'a'.repeat(64) }
+  }
+  const target = resolvePreviewTarget(plain, previewKey, opts)
+  const params = new URLSearchParams(new URL(target.url).hash.replace(/^#/, ''))
+  expect(params.get('kid')).toBeNull()
+  expect(params.get('key')).toBeNull()
 })

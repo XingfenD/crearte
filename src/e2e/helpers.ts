@@ -31,16 +31,17 @@ export async function frameDataset(page: Page, key: string): Promise<string | nu
   return page.frameLocator('iframe').locator('body').getAttribute(`data-${key}`)
 }
 
-/** 预置登录会话：localStorage 种子 + /api/auth/me mock（session.restore 复核用） */
-export async function seedSession(page: Page, role: 'user' | 'admin' = 'user'): Promise<void> {
+/** 预置登录会话：localStorage 种子 + /api/auth/me mock（session.restore 复核用）。
+ *  token 可覆写——预览 e2e 用它注入「错误 token」，验证 SW 拉取上传端点时的 401 失败态 */
+export async function seedSession(page: Page, role: 'user' | 'admin' = 'user', token = 'e2e-token'): Promise<void> {
   const user = { id: 'u-e2e', email: `${role}@e2e.local`, display_name: role, username: 'tester', role }
-  await page.addInitScript(([key, u]) => {
+  await page.addInitScript(([key, u, tok]) => {
     localStorage.setItem(key, JSON.stringify({
-      token: 'e2e-token',
+      token: tok,
       expiresAt: new Date(Date.now() + 3600_000).toISOString(),
       user: u
     }))
-  }, [SESSION_KEY, user] as const)
+  }, [SESSION_KEY, user, token] as const)
   await page.route(`${API}/api/auth/me`, (route) =>
     route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ user }) })
   )

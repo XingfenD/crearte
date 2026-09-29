@@ -2,7 +2,9 @@
 import { computed, ref } from 'vue'
 import { RouterLink, useRoute, useRouter } from 'vue-router'
 import BaseButton from '@/components/ui/BaseButton.vue'
+import SubmissionPreview from '@/components/SubmissionPreview.vue'
 import { contentClient, toContentMessage, type SubmissionView } from '@/content'
+import { previewUploadFromSubmission, type PreviewSource } from '@/content/preview'
 import { FEATURE_ITEMS, hasAnyFeature } from '@/content/features'
 import { GAME_TYPE_LABELS } from '@/lib/labels'
 
@@ -17,6 +19,14 @@ const actionError = ref<string | null>(null)
 const busy = ref<'load' | 'approve' | 'reject' | null>(null)
 const rejectMode = ref(false)
 const rejectNote = ref('')
+const showPreview = ref(false) // 试玩预览懒挂载：点开才下载/安装待审 bundle
+
+// 审核预览输入：payload 取自提交、密文/密钥元信息取自详情端点的 bundle 摘要
+const previewSource = computed<PreviewSource | null>(() => {
+  if (!sub.value) return null
+  const upload = previewUploadFromSubmission(sub.value)
+  return upload ? { payload: sub.value.payload, upload } : null
+})
 
 const KIND_LABELS: Record<string, string> = { new_work: '新作品', new_version: '新版本', metadata_change: '元数据更新' }
 const STATUS_LABELS: Record<string, string> = { draft: '草稿', pending: '审核中', approved: '已通过', rejected: '已拒绝' }
@@ -101,10 +111,20 @@ async function reject(): Promise<void> {
         <div class="grid grid-cols-[10rem_1fr] gap-2"><dt class="font-mono text-[0.6875rem] text-ink-soft">类型 / 标签</dt><dd>{{ GAME_TYPE_LABELS[sub.payload?.type ?? 'other'] ?? sub.payload?.type }} · {{ (sub.payload?.tags ?? []).join('、') || '—' }}</dd></div>
         <div class="grid grid-cols-[10rem_1fr] gap-2"><dt class="font-mono text-[0.6875rem] text-ink-soft">运行时 / 版本</dt><dd>{{ sub.payload?.runtime ?? 'external' }}<span v-if="sub.payload?.version"> · {{ sub.payload.version }}</span><span v-if="sub.payload?.entry"> · 入口 {{ sub.payload.entry }}</span></dd></div>
         <div class="grid grid-cols-[10rem_1fr] gap-2"><dt class="font-mono text-[0.6875rem] text-ink-soft">运行权限</dt><dd data-testid="payload-features" class="font-mono text-[0.6875rem]">{{ featuresText }}</dd></div>
-        <div class="grid grid-cols-[10rem_1fr] gap-2"><dt class="font-mono text-[0.6875rem] text-ink-soft">bundle</dt><dd data-testid="payload-bundle" class="font-mono text-[0.6875rem]">{{ sub.bundle_upload_id ? `已关联上传 ${sub.bundle_upload_id.slice(0, 8)}…（密文，审批通过后可见）` : '—' }}</dd></div>
+        <div class="grid grid-cols-[10rem_1fr] gap-2"><dt class="font-mono text-[0.6875rem] text-ink-soft">bundle</dt><dd data-testid="payload-bundle" class="font-mono text-[0.6875rem]">{{ sub.bundle_upload_id ? `已关联上传 ${sub.bundle_upload_id.slice(0, 8)}…（密文，可试玩预览）` : '—' }}</dd></div>
         <div class="grid grid-cols-[10rem_1fr] gap-2"><dt class="font-mono text-[0.6875rem] text-ink-soft">封面</dt><dd class="font-mono text-[0.6875rem]">{{ sub.cover_upload_id ? '已关联上传（审批通过后可见）' : '—' }}</dd></div>
         <div v-if="sub.payload?.intro" class="grid grid-cols-[10rem_1fr] gap-2"><dt class="font-mono text-[0.6875rem] text-ink-soft">简介</dt><dd class="whitespace-pre-wrap text-xs">{{ sub.payload.intro }}</dd></div>
       </dl>
+
+      <!-- 试玩预览：与已发布作品同一运行链路（子域 bootstrap + SW 解密安装 + agent 桥），
+           不另做播放器；密文/密钥走后端带鉴权的上传端点，仅审核者与提交者可见 -->
+      <div v-if="previewSource" class="mt-6 space-y-2">
+        <BaseButton size="sm" data-testid="toggle-preview" @click="showPreview = !showPreview">
+          {{ showPreview ? '收起试玩预览' : '试玩预览' }}
+        </BaseButton>
+        <p class="text-xs text-ink-soft">内联运行提交者上传的 bundle（过审前实际可玩性检查）。仅你与提交者可见。</p>
+        <SubmissionPreview v-if="showPreview" :source="previewSource" />
+      </div>
 
       <p v-if="actionError" role="alert" class="mt-4 border-2 border-ink bg-highlight px-3 py-2 text-xs font-bold">{{ actionError }}</p>
 
