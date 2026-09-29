@@ -8,6 +8,7 @@ import { renderMarkdown } from '@/lib/markdown'
 import { toInterstitialIfExternal } from '@/lib/externalLink'
 import { authorDisplayName, durationText } from '@/lib/labels'
 import GameCover from '@/components/GameCover.vue'
+import GameReactions from '@/components/GameReactions.vue'
 import StatePanel from '@/components/StatePanel.vue'
 import GameHost from '../../runtime/host/GameHost.vue'
 
@@ -93,6 +94,8 @@ function onExit(): void {
         开始体验
         <PhArrowSquareOut :size="16" weight="bold" aria-hidden="true" />
       </a>
+
+      <GameReactions v-if="game" :game="game" />
 
       <div v-if="introHtml" class="border-t-[3px] border-ink pt-6">
         <div class="markdown-body" v-html="introHtml" />

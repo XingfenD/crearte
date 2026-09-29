@@ -20,6 +20,16 @@ const authorUser = computed(() => resolveUserSlug(props.game).user)
 const MAX_TAGS = 2
 const visibleTags = computed(() => props.game.tags.slice(0, MAX_TAGS))
 const hiddenTags = computed(() => props.game.tags.slice(MAX_TAGS))
+
+// P5 反应徽标：只显示存在的聚合（静态 noauth 源字段缺省 → 整行不渲染，零变化）
+const badgeParts = computed(() => {
+  const parts: string[] = []
+  const ratingCount = props.game.ratingCount ?? 0
+  if (ratingCount > 0 && props.game.ratingAvg != null) parts.push(`★ ${props.game.ratingAvg} · ${ratingCount} 人`)
+  const favoriteCount = props.game.favoriteCount ?? 0
+  if (favoriteCount > 0) parts.push(`♥ ${favoriteCount}`)
+  return parts
+})
 </script>
 
 <template>
@@ -48,6 +58,11 @@ const hiddenTags = computed(() => props.game.tags.slice(MAX_TAGS))
         >{{ authorDisplayName(game) }}</RouterLink>
         <template v-else>{{ authorDisplayName(game) }}</template>
       </p>
+      <p
+        v-if="badgeParts.length"
+        data-testid="reaction-badge"
+        class="font-mono text-xs text-ink-soft"
+      >{{ badgeParts.join(' · ') }}</p>
       <div class="flex flex-wrap items-center gap-1.5">
         <span class="border-[1.5px] border-ink px-1 py-0.5 font-mono text-[0.625rem]">
           {{ durationText(game.durationMinutes) }}

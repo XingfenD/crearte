@@ -1,10 +1,13 @@
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { session } from '@/auth'
 import { AUTH_ERROR_MESSAGES, toUserMessage } from '@/auth/errors'
 import { validatePassword } from '@/auth/validation'
 import type { UserRole } from '@/auth/types'
+import { repo, resolveUserSlug } from '@/data'
+import type { GameSummary } from '@/data/types'
+import { reactionsEnabled, fetchMine, setFavorite, type MeReactions } from '@/lib/reactions'
 import BaseButton from '@/components/ui/BaseButton.vue'
 import BaseInput from '@/components/ui/BaseInput.vue'
 
@@ -83,6 +86,68 @@ function logout(): void {
   session.logout()
   void router.replace('/')
 }
+
+// —— P5 我的反应：未登录/reactionsEnabled 假时零请求零渲染 ——
+const mine = ref<MeReactions | null>(null)
+const games = ref<GameSummary[]>([])
+const reactionsError = ref<string | null>(null)
+const unfaving = ref<Set<string>>(new Set())
+
+onMounted(async () => {
+  if (!reactionsEnabled || session.state.status !== 'authenticated') return
+  try {
+    const [m, g] = await Promise.all([fetchMine(), repo.listGames()])
+    mine.value = m
+    games.value = g
+  } catch (e) {
+    reactionsError.value = e instanceof Error ? e.message : String(e)
+  }
+})
+
+const byId = computed(() => new Map(games.value.map((g) => [g.id, g])))
+
+// favorites 命中目录才成行；查不到的 id（作品已删/下架）跳过
+const favoriteGames = computed(() => {
+  if (!mine.value) return []
+  return mine.value.favorites
+    .map((id) => byId.value.get(id))
+    .filter((g): g is GameSummary => Boolean(g))
+})
+
+const ratedGames = computed(() => {
+  if (!mine.value) return []
+  return Object.entries(mine.value.ratings)
+    .map(([id, score]) => ({ game: byId.value.get(id) ?? null, score }))
+    .filter((row): row is { game: GameSummary; score: number } => Boolean(row.game))
+})
+
+const hasReactions = computed(
+  () => favoriteGames.value.length > 0 || ratedGames.value.length > 0
+)
+
+async function unfavorite(id: string): Promise<void> {
+  if (unfaving.value.has(id)) return
+  const { user, slug } = resolveUserSlug({ id })
+  unfaving.value = new Set(unfaving.value).add(id)
+  reactionsError.value = null
+  try {
+    await setFavorite(user, slug, false)
+    if (mine.value) {
+      mine.value = { ...mine.value, favorites: mine.value.favorites.filter((f) => f !== id) }
+    }
+  } catch (e) {
+    reactionsError.value = e instanceof Error ? e.message : String(e)
+  } finally {
+    const next = new Set(unfaving.value)
+    next.delete(id)
+    unfaving.value = next
+  }
+}
+
+function pathOf(game: GameSummary): string {
+  const { user, slug } = resolveUserSlug(game)
+  return user ? `/games/${user}/${slug}` : `/games/${slug}`
+}
 </script>
 
 <template>
@@ -122,6 +187,48 @@ function logout(): void {
       <p v-if="notice" role="status" aria-live="polite" class="border-2 border-ink bg-surface px-3 py-2 text-xs">{{ notice }}</p>
       <BaseButton type="submit" variant="ink" lift :disabled="busy">更新密码</BaseButton>
     </form>
+
+    <section
+      v-if="reactionsEnabled && session.state.status === 'authenticated'"
+      class="mt-10 space-y-3 border-t-[3px] border-ink pt-6"
+      data-testid="my-reactions"
+    >
+      <h2 class="font-display text-lg font-black">我的收藏</h2>
+      <p
+        v-if="reactionsError"
+        data-testid="my-reactions-error"
+        role="alert"
+        aria-live="polite"
+        class="border-2 border-ink bg-highlight px-3 py-2 text-xs font-bold"
+      >{{ reactionsError }}</p>
+      <p v-else-if="!hasReactions" class="text-xs text-ink-soft">还没有收藏或评分。</p>
+      <ul v-if="favoriteGames.length" data-testid="my-favorites" class="space-y-1.5">
+        <li
+          v-for="game in favoriteGames"
+          :key="game.id"
+          class="flex flex-wrap items-center gap-2 border-2 border-ink bg-surface px-3 py-2 text-sm"
+        >
+          <RouterLink :to="pathOf(game)" class="font-bold underline decoration-2 underline-offset-2">{{ game.name }}</RouterLink>
+          <BaseButton
+            size="sm"
+            lift
+            :disabled="unfaving.has(game.id)"
+            :data-testid="`unfav-${game.id}`"
+            @click="unfavorite(game.id)"
+          >取消收藏</BaseButton>
+        </li>
+      </ul>
+      <ul v-if="ratedGames.length" data-testid="my-ratings" class="space-y-1">
+        <li
+          v-for="row in ratedGames"
+          :key="row.game.id"
+          class="flex flex-wrap items-center gap-2 text-sm"
+        >
+          <RouterLink :to="pathOf(row.game)" class="underline decoration-2 underline-offset-2">{{ row.game.name }}</RouterLink>
+          <span class="font-mono text-xs">★{{ row.score }}</span>
+        </li>
+      </ul>
+    </section>
 
     <section class="mt-10 space-y-3 border-t-[3px] border-ink pt-6">
       <h2 class="font-display text-lg font-black">会话</h2>

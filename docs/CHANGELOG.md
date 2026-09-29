@@ -6,6 +6,13 @@ All notable changes to this template should be documented in this file.
 The format loosely follows Keep a Changelog and can be adapted to the team's habits.
 本文档参考了 Keep a Changelog 的思路，也可以根据团队习惯调整。
 
+## [0.16.0] - 2026-09-30
+
+### Added / 新增
+
+- Favorites & 5-star ratings reach the web UI (P5). New `GameReactions` component on the work detail page (mounted after the play action link, before the intro divider): a ♥ favorite toggle and a five-star bar — lit stars show the personal score when rated, otherwise floor(average); clicking the current star unrates; every successful mutation replaces local state wholesale from the server's `ReactionView` (never optimistic ±1 arithmetic), failures surface as a single `aria-live` line, in-flight requests lock all buttons, anonymous clicks go to `/login?next=<current path>`, and the whole component renders nothing without `VITE_API_BASE_URL` (noauth builds issue zero requests). New `lib/reactions.ts` wraps the favorite/rating/me-reactions endpoints with the session bearer token, using the same base-URL semantics as `data/index.ts` (the trimmed value decides enablement — `'/'` is a same-origin proxy, not "no backend"; trailing slashes are stripped only when joining); a missing token or a server 401 raises `AuthRequiredError`. Catalog cards gained a reaction badge line (`★ 4.5 · 2 人 · ♥ 3`) rendered only from aggregates actually present, so static noauth data stays pixel-identical, and the catalog gained the `热门` sort (Bayesian prior mean + log favorite weight, pure `hotScore` in `lib/filter.ts`). The account page shows a `我的收藏` section — favorites joined against the catalog list with a per-row 取消收藏 button (a successful unfavoriting removes the row locally; ids missing from the catalog, e.g. delisted works, skip their row), a compact `作品名 ★n` rating list, and the empty state 「还没有收藏或评分。」 — fetched only when authenticated and enabled.
+- 收藏与 5 星评分进入 web UI（P5）。作品详情页新增 `GameReactions` 组件（挂在游玩入口之后、简介分隔线之前）：♥ 收藏开关 + 五星条——已评点亮个人分，未评点亮 floor(均分)，点当前星即撤评；每次变更成功后用服务端 `ReactionView` 全量替换本地态（绝不自作 ±1 加减），失败显示一行 `aria-live` 错误，在途请求锁住全部按钮，匿名点击跳 `/login?next=<当前路径>`，未配 `VITE_API_BASE_URL` 时整组件零渲染零请求（noauth 构建）。新增 `lib/reactions.ts` 封装收藏/评分/我的反应端点，Bearer 取自 session 单例，base URL 语义与 `data/index.ts` 一致（trim 后的值决定启用——`'/'` 是同源反代而非「无后端」；仅在拼接时去尾斜杠）；无 token 或服务端 401 抛 `AuthRequiredError`。目录卡片新增反应徽标行（`★ 4.5 · 2 人 · ♥ 3`），仅当聚合字段真实存在才渲染，静态 noauth 数据逐像素不变；目录同时新增 `热门` 排序（贝叶斯先验均分 + 收藏对数权重，`lib/filter.ts` 纯函数 `hotScore`）。账号页新增「我的收藏」节——收藏与目录列表 join、逐行取消收藏钮（取消成功后本地移除该行；目录查不到的 id（已下架作品）跳过该行），加紧凑评分行 `作品名 ★n`，空态「还没有收藏或评分。」；仅登录且启用时发请求。
+
 ## [0.15.0] - 2026-09-29
 
 ### Changed / 变更
