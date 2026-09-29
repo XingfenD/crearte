@@ -24,9 +24,26 @@ test('/users/fixture 列出该作者作品并可跳转详情', async ({ page }) 
   await expect(page.getByRole('heading', { name: '2048', exact: true })).toBeVisible()
 })
 
+test('点击卡片封面区（两个锚点之外的卡身）直达作品详情', async ({ page }) => {
+  await page.goto('/users/fixture')
+  const cards = page.locator('[data-testid=game-card]')
+  await expect(cards.first()).toBeVisible()
+
+  // 整卡点击是拉伸链接存在的唯一理由：卡身点击点（封面区）不含任何锚点文本，
+  // 仍须由标题锚点的伪元素承载点击并跳到该卡作品的详情页
+  const href = await cards.first().locator('h2 a').getAttribute('href')
+  expect(href).toMatch(/^\/games\/fixture\//)
+  await cards.first().click({ position: { x: 8, y: 8 } })
+  await expect(page).toHaveURL(`http://localhost:4174${href}`)
+})
+
 test('/users/ghost 显示空态', async ({ page }) => {
   await page.goto('/users/ghost')
   await expect(page.getByRole('heading', { name: '@ghost' })).toBeVisible()
   await expect(page.getByText('该作者暂无已上架作品')).toBeVisible()
   await expect(page.locator('[data-testid=game-card]')).toHaveCount(0)
+
+  // 空态的「返回目录」按钮可回目录
+  await page.getByRole('button', { name: '返回目录' }).click()
+  await expect(page).toHaveURL('http://localhost:4174/games')
 })
