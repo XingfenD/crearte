@@ -2,7 +2,7 @@
 import { computed } from 'vue'
 import { RouterLink, useRouter } from 'vue-router'
 import { PhArrowLeft, PhArrowSquareOut } from '@phosphor-icons/vue'
-import { NotFoundError, repo, type Game } from '@/data'
+import { NotFoundError, repo, resolveUserSlug, type Game } from '@/data'
 import { useAsync } from '@/composables/useAsync'
 import { renderMarkdown } from '@/lib/markdown'
 import { toInterstitialIfExternal } from '@/lib/externalLink'
@@ -21,6 +21,8 @@ const { data: game, error, loading, reload } = useAsync<Game>(
 )
 
 const notFound = computed(() => error.value instanceof NotFoundError)
+// 链接目标与显示文本分离：目标永远取命名空间 user，与 author.name 无涉
+const authorUser = computed(() => (game.value ? resolveUserSlug(game.value).user : ''))
 const introHtml = computed(() =>
   game.value?.intro ? renderMarkdown(game.value.intro, location.origin) : ''
 )
@@ -54,8 +56,13 @@ function onExit(): void {
         <h1 class="font-display text-[2.125rem] font-black leading-[1.1]">{{ game.name }}</h1>
         <p class="font-mono text-[0.6875rem] tracking-[0.05em] text-ink-soft">
           作者：
+          <RouterLink
+            v-if="authorUser"
+            :to="'/users/' + authorUser"
+            class="text-accent-ink underline decoration-2 underline-offset-2"
+          >{{ authorDisplayName(game) }}</RouterLink>
           <a
-            v-if="game.author?.url"
+            v-else-if="game.author?.url"
             :href="toInterstitialIfExternal(game.author.url, origin)"
             target="_blank"
             rel="noopener"

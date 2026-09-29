@@ -3,8 +3,15 @@ import { expect, test } from '@playwright/test'
 test('非外链作者主页不被套中间页', async ({ page }) => {
   await page.goto('http://localhost:4173/games/fixture/abs-paths')
 
+  // P4 契约：user 非空时作者名直链站内作者页 /users/:user（author.url 外链兜底仅在无 user 时可达，见单测）
   const authorLink = page.getByRole('link', { name: 'test', exact: true })
-  await expect(authorLink).toHaveAttribute('href', 'mailto:test@example.com')
+  await expect(authorLink).toHaveAttribute('href', '/users/fixture')
+  await expect(authorLink).not.toHaveAttribute('href', /\/out\?/)
+
+  // 意图保留：作者主页非外链——点击直达作者页，不经 /out 中间页
+  await authorLink.click()
+  await expect(page).toHaveURL('http://localhost:4173/users/fixture')
+  await expect(page.getByRole('heading', { name: '@fixture' })).toBeVisible()
 })
 
 test('详情页开始游戏先经中间页，确认后才离开本站', async ({ page, context }) => {
