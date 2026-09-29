@@ -45,3 +45,20 @@ describe('GameCard 链接（/games/:user/:slug 复合寻址）', () => {
     expect(withDesc.find('p.line-clamp-2').exists()).toBe(true)
   })
 })
+
+describe('GameCard 作者行（/users/:user 入口）', () => {
+  it('卡片渲染作者行并链接到作者页', () => {
+    const w = mountCard({ ...base, id: 'alice/2048', user: 'alice', slug: '2048' })
+    expect(w.text()).toContain('Gabriel')
+    const link = w.find('a[href="/users/alice"]')
+    expect(link.exists()).toBe(true)
+    expect(link.text()).toBe('Gabriel')
+  })
+
+  it('无 user 的卡片作者行为纯文本', () => {
+    const w = mountCard({ ...base, id: '2048' })
+    expect(w.find('a[href^="/users/"]').exists()).toBe(false)
+    expect(w.text()).toContain('Gabriel')
+    expect(w.findAll('a')).toHaveLength(1)
+  })
+})

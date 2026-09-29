@@ -2,13 +2,16 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { flushPromises, mount } from '@vue/test-utils'
 import { createMemoryHistory, createRouter } from 'vue-router'
+import { toInterstitialIfExternal } from '@/lib/externalLink'
 import GameView from './GameView.vue'
 
 const h = vi.hoisted(() => ({ getGame: vi.fn() }))
 
-vi.mock('@/data', () => ({
+vi.mock('@/data', async () => ({
   repo: { getGame: h.getGame },
-  NotFoundError: class NotFoundError extends Error {}
+  NotFoundError: class NotFoundError extends Error {},
+  // 复用真实实现：用例要钉住 resolveUserSlug 对旧式 id 的回退行为
+  resolveUserSlug: (await import('@/data/types')).resolveUserSlug
 }))
 
 let router: ReturnType<typeof createRouter>
@@ -50,5 +53,67 @@ describe('GameView 可选字段兜底', () => {
     expect(w.text()).toContain('作者：')
     expect(w.text()).toContain('fixture')
     expect(w.text()).not.toContain('开始体验')
+  })
+})
+
+describe('GameView 作者入口（内部链接 > 外链 > 纯文本）', () => {
+  async function mountView(game: object) {
+    h.getGame.mockResolvedValue(game)
+    const w = mount(GameView, {
+      props: { user: 'alice', slug: 'work' },
+      global: {
+        plugins: [router],
+        stubs: { RouterLink: { props: ['to'], template: '<a :href="to"><slot /></a>' } }
+      }
+    })
+    await flushPromises()
+    return w
+  }
+
+  function authorLine(w: Awaited<ReturnType<typeof mountView>>) {
+    return w.findAll('p').find((p) => p.text().includes('作者：'))!
+  }
+
+  it('有命名空间时作者名链接到 /users/:user', async () => {
+    const w = await mountView({
+      ...minimalGame,
+      id: 'alice/work',
+      user: 'alice',
+      slug: 'work',
+      author: { name: '爱丽丝' }
+    })
+    const link = authorLine(w).find('a[href="/users/alice"]')
+    expect(link.exists()).toBe(true)
+    expect(link.text()).toBe('爱丽丝')
+  })
+
+  it('无 user 但有 author.url 时保持外链', async () => {
+    const w = await mountView({
+      id: 'legacy',
+      name: '遗留作品',
+      durationMinutes: { min: 1, max: 2 },
+      type: 'other',
+      tags: [],
+      addedAt: '2026-09-29',
+      author: { name: 'X', url: 'https://e.com' }
+    })
+    const link = authorLine(w).find('a')
+    expect(link.exists()).toBe(true)
+    expect(link.attributes('href')).toBe(toInterstitialIfExternal('https://e.com', location.origin))
+    expect(link.text()).toBe('X')
+  })
+
+  it('无 user 无 url 时纯文本', async () => {
+    const w = await mountView({
+      id: 'legacy',
+      name: '遗留作品',
+      durationMinutes: { min: 1, max: 2 },
+      type: 'other',
+      tags: [],
+      addedAt: '2026-09-29',
+      author: { name: '纯文本作者' }
+    })
+    expect(authorLine(w).find('a').exists()).toBe(false)
+    expect(authorLine(w).text()).toContain('纯文本作者')
   })
 })

@@ -2,7 +2,7 @@
 import { computed } from 'vue'
 import { RouterLink } from 'vue-router'
 import { resolveUserSlug, type GameSummary } from '@/data/types'
-import { GAME_TYPE_LABELS, durationText } from '@/lib/labels'
+import { GAME_TYPE_LABELS, authorDisplayName, durationText } from '@/lib/labels'
 import GameCover from './GameCover.vue'
 
 const props = withDefaults(defineProps<{ game: GameSummary; headingLevel?: number }>(), { headingLevel: 2 })
@@ -13,6 +13,9 @@ const gamePath = computed(() => {
   const { user, slug } = resolveUserSlug(props.game)
   return user ? `/games/${user}/${slug}` : `/games/${slug}`
 })
+
+// 链接目标与显示文本分离：目标永远取命名空间 user，与 author.name 无涉
+const authorUser = computed(() => resolveUserSlug(props.game).user)
 
 const MAX_TAGS = 2
 const visibleTags = computed(() => props.game.tags.slice(0, MAX_TAGS))
@@ -33,6 +36,15 @@ const hiddenTags = computed(() => props.game.tags.slice(MAX_TAGS))
     <div class="space-y-2 p-3">
       <component :is="headingTag" class="truncate font-display text-[0.875rem] font-black">{{ game.name }}</component>
       <p v-if="game.description" class="line-clamp-2 text-xs leading-relaxed text-ink-soft">{{ game.description }}</p>
+      <p class="text-xs text-ink-soft">
+        作者：
+        <RouterLink
+          v-if="authorUser"
+          :to="'/users/' + authorUser"
+          class="underline decoration-2 underline-offset-2"
+        >{{ authorDisplayName(game) }}</RouterLink>
+        <template v-else>{{ authorDisplayName(game) }}</template>
+      </p>
       <div class="flex flex-wrap items-center gap-1.5">
         <span class="border-[1.5px] border-ink px-1 py-0.5 font-mono text-[0.625rem]">
           {{ durationText(game.durationMinutes) }}
