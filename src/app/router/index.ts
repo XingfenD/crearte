@@ -17,6 +17,7 @@ export const routes: RouteRecordRaw[] = [
   { path: '/submit/:id', name: 'submit-edit', component: () => import('@/views/SubmitFormView.vue'), props: true, meta: { requiresAuth: true } },
   { path: '/admin', name: 'admin', component: () => import('@/views/AdminView.vue'), meta: { requiresAuth: true, requiresAdmin: true } },
   { path: '/admin/submissions/:id', name: 'admin-submission', component: () => import('@/views/AdminSubmissionView.vue'), props: true, meta: { requiresAuth: true, requiresAdmin: true } },
+  { path: '/users/:user', name: 'author', component: () => import('@/views/AuthorView.vue'), props: true },
   { path: '/:pathMatch(.*)*', name: 'not-found', component: () => import('@/views/NotFoundView.vue') }
 ]
 
