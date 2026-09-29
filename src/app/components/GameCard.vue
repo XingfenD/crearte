@@ -23,9 +23,9 @@ const hiddenTags = computed(() => props.game.tags.slice(MAX_TAGS))
 </script>
 
 <template>
-  <RouterLink
-    :to="gamePath"
-    class="lift block border-2 border-ink bg-surface shadow-hard hover:shadow-hard-lg active:shadow-none"
+  <div
+    data-testid="game-card"
+    class="lift relative block border-2 border-ink bg-surface shadow-hard hover:shadow-hard-lg active:shadow-none"
   >
     <div class="relative border-b-2 border-ink">
       <GameCover :game="game" />
@@ -34,14 +34,17 @@ const hiddenTags = computed(() => props.game.tags.slice(MAX_TAGS))
       >{{ GAME_TYPE_LABELS[game.type] }}</span>
     </div>
     <div class="space-y-2 p-3">
-      <component :is="headingTag" class="truncate font-display text-[0.875rem] font-black">{{ game.name }}</component>
+      <component :is="headingTag" class="truncate font-display text-[0.875rem] font-black">
+        <!-- 拉伸链接：伪元素铺满整卡承载点击，锚点本身只含标题文本 -->
+        <RouterLink :to="gamePath" class="after:absolute after:inset-0">{{ game.name }}</RouterLink>
+      </component>
       <p v-if="game.description" class="line-clamp-2 text-xs leading-relaxed text-ink-soft">{{ game.description }}</p>
       <p class="text-xs text-ink-soft">
         作者：
         <RouterLink
           v-if="authorUser"
           :to="'/users/' + authorUser"
-          class="underline decoration-2 underline-offset-2"
+          class="relative z-10 underline decoration-2 underline-offset-2"
         >{{ authorDisplayName(game) }}</RouterLink>
         <template v-else>{{ authorDisplayName(game) }}</template>
       </p>
@@ -64,5 +67,5 @@ const hiddenTags = computed(() => props.game.tags.slice(MAX_TAGS))
         >社区投稿</span>
       </div>
     </div>
-  </RouterLink>
+  </div>
 </template>

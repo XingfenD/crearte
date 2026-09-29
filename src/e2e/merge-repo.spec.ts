@@ -22,9 +22,10 @@ test('并集合并：同 id API 胜出、source 徽标只给静态源', async ({
   await expect(page.getByRole('heading', { name: '2048', exact: true })).toHaveCount(0)
   await expect(page.getByRole('heading', { name: 'API Only' })).toBeVisible()
   // 静态夹具（如 rel-paths）带社区投稿徽标；API 作品不带
-  const staticCard = page.locator('a[href="/games/fixture/rel-paths"]')
+  // 卡片已改为 div + 标题锚点（拉伸链接模式），徽标不在锚点内：按卡片根定位
+  const staticCard = page.locator('[data-testid=game-card]').filter({ has: page.locator('a[href="/games/fixture/rel-paths"]') })
   await expect(staticCard).toContainText('社区投稿')
-  const apiCard = page.locator('a[href="/games/api-only"]')
+  const apiCard = page.locator('[data-testid=game-card]').filter({ has: page.locator('a[href="/games/api-only"]') })
   await expect(apiCard).not.toContainText('社区投稿')
 })
 
