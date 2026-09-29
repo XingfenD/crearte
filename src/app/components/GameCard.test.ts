@@ -90,6 +90,41 @@ describe('GameCard 卡片结构（拉伸链接，禁嵌套交互元素）', () =
   })
 })
 
+describe('GameCard 反应徽标（P5 聚合，静态源缺省零变化）', () => {
+  it('ratingCount>0 显 ★ 段（均分 · 人数）', () => {
+    const w = mountCard({ ...base, id: 'alice/2048', ratingAvg: 4.5, ratingCount: 2 })
+    const badge = w.get('[data-testid="reaction-badge"]')
+    expect(badge.text()).toContain('★ 4.5 · 2 人')
+    expect(badge.text()).not.toContain('♥')
+  })
+
+  it('favoriteCount>0 显 ♥ 段', () => {
+    const w = mountCard({ ...base, id: 'alice/2048', favoriteCount: 3 })
+    const badge = w.get('[data-testid="reaction-badge"]')
+    expect(badge.text()).toContain('♥ 3')
+    expect(badge.text()).not.toContain('★')
+  })
+
+  it('两段同时存在时拼接 ★…·♥…', () => {
+    const w = mountCard({ ...base, id: 'alice/2048', ratingAvg: 4.5, ratingCount: 2, favoriteCount: 3 })
+    expect(w.get('[data-testid="reaction-badge"]').text()).toContain('★ 4.5 · 2 人 · ♥ 3')
+  })
+
+  it('计数为 0 或字段缺省（静态 noauth 模式）不渲染徽标行', () => {
+    expect(mountCard({ ...base, id: 'alice/2048' }).find('[data-testid="reaction-badge"]').exists()).toBe(false)
+    expect(
+      mountCard({ ...base, id: 'alice/2048', ratingCount: 0, favoriteCount: 0 }).find('[data-testid="reaction-badge"]').exists()
+    ).toBe(false)
+  })
+
+  it('徽标非交互：不新增锚点、不改既有一行结构', () => {
+    const plain = mountCard({ ...base, id: '2048' })
+    expect(plain.findAll('a')).toHaveLength(1)
+    const withBadge = mountCard({ ...base, id: 'alice/2048', user: 'alice', slug: '2048', ratingAvg: 4.5, ratingCount: 2, favoriteCount: 3 })
+    expect(withBadge.findAll('a')).toHaveLength(2)
+  })
+})
+
 describe('GameCard 点击路由（真实 RouterLink）', () => {
   it('点标题锚点进作品页、点作者锚点进作者页', async () => {
     const router = createRouter({
