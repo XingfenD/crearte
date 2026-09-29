@@ -52,6 +52,12 @@ export interface GameSummary {
   tags: string[]
   cover?: string
   addedAt: string
+  /** P5 反应聚合（服务端输出，静态源可缺省）：均分，ratingCount==0 时服务端不下发 */
+  ratingAvg?: number
+  /** 评分人数 */
+  ratingCount?: number
+  /** 收藏数 */
+  favoriteCount?: number
   runtime?: GameRuntimeMode
   /** 前端合并标注（非服务端契约）：目录数据来自 API 源还是静态源；纯静态模式下为 undefined */
   source?: 'api' | 'static'

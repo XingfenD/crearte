@@ -27,6 +27,7 @@ const activeCount = computed(
         @change="update({ sort: ($event.target as HTMLSelectElement).value as SortKey })"
       >
         <option value="new">最新收录</option>
+        <option value="hot">热门</option>
         <option value="name">名称</option>
         <option value="duration">时长（短到长）</option>
       </select>
