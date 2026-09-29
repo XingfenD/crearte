@@ -3,7 +3,7 @@ title: 提交作品指南
 order: 20
 ---
 
-## 站内提交（主途径）
+## 站内提交
 
 ### 1. 注册并登录
 
@@ -33,7 +33,7 @@ order: 20
 ### 4. 选择运行方式
 
 - **外链作品**：玩家点击后经过中间页跳转到你的链接。
-- **站内运行（上传 bundle）**：上传 zip 包，玩家在站内直接游玩。zip 要求、版本号、运行权限开关等见[站内运行作品指南](/docs/virtual-works)。
+- **站内运行**：上传 zip 包，玩家在站内直接游玩。zip 要求、版本号、运行权限开关等见[站内运行作品指南](/docs/virtual-works)。
 
 ### 5. 草稿与审核
 
@@ -44,9 +44,9 @@ order: 20
 
 上传文件有频率限制，触发限流时页面会提示等待时间，稍后重试即可。
 
-## GitHub PR 静态收录（次途径）
+## GitHub PR 静态收录
 
-维护者也接受直接在仓库提交静态数据：
+如果不想将您的作品交给我们托管，可以向我们的开源项目 [crearte](https://github.com/XingfenD/crearte.git) 提交PR，或者发送邮件到 [xingfend@outlook.com](xingfend@outlook.com) 介绍您的作品。我们将在审核后将您的作品页面合入开源crearte的主分支中。
 
 1. 在仓库 `src/games/` 目录新增 `<id>.json`，`id` 只能包含小写字母、数字与连字符，且与文件名一致
 2. 本地运行校验：`cd src && npm install && npm run validate:data`
