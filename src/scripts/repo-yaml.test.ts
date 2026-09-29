@@ -65,13 +65,13 @@ describe('k8s manifests', () => {
   })
 })
 
-describe('deploy/nginx.conf', () => {
-  async function loadNginx(): Promise<string> {
-    return readFile(path.join(REPO_ROOT, 'deploy', 'nginx.conf'), 'utf8')
+describe('deploy/nginx.conf.template', () => {
+  async function loadTemplate(): Promise<string> {
+    return readFile(path.join(REPO_ROOT, 'deploy', 'nginx.conf.template'), 'utf8')
   }
 
-  it('通配游戏域 server block 只暴露运行时三件套与 404 兜底', async () => {
-    const wildcard = serverBlock(await loadNginx(), '*.games.example.com')
+  it('通配游戏域 server block 暴露运行时三件套、/api/ 同源反代与 404 兜底', async () => {
+    const wildcard = serverBlock(await loadTemplate(), '${GAMES_SERVER_NAME}')
     expect(wildcard).toMatch(/listen\s+80;/)
     expect(wildcard).toMatch(/root\s+\/usr\/share\/nginx\/html;/)
 
@@ -81,13 +81,18 @@ describe('deploy/nginx.conf', () => {
       expect(body, `${location} 需要 no-store`).toContain('"no-store"')
     }
 
+    const api = wildcard.match(/location\s+\/api\/\s*\{([^}]*)\}/)
+    expect(api, '通配块缺少 /api/ 反代（子域运行时取钥依赖同源代理）').toBeTruthy()
+    expect(api?.[1]).toMatch(/proxy_pass\s+http:\/\/\$api_upstream;/)
+    expect(api?.[1]).toMatch(/set\s+\$api_upstream\s+api:8080;/)
+
     expect(wildcard).toMatch(/location\s*\/\s*\{[\s\S]*?return 404;\s*\}/)
     expect(wildcard).not.toMatch(/location\s+\/data\//)
     expect(wildcard).not.toMatch(/location\s+\/assets\//)
   })
 
   it('主站为 /data/bundles/ 提供 CORS 且保留 /data/ 行为', async () => {
-    const main = serverBlock(await loadNginx(), '_')
+    const main = serverBlock(await loadTemplate(), '_')
     const bundles = main.match(/location\s+\/data\/bundles\/\s*\{([^}]*)\}/)
     expect(bundles, '主站缺少 /data/bundles/ location').toBeTruthy()
     expect(bundles?.[1]).toContain('Access-Control-Allow-Origin')

@@ -6,6 +6,13 @@ All notable changes to this template should be documented in this file.
 The format loosely follows Keep a Changelog and can be adapted to the team's habits.
 本文档参考了 Keep a Changelog 的思路，也可以根据团队习惯调整。
 
+## [0.15.0] - 2026-09-29
+
+### Changed / 变更
+
+- `deploy/nginx.conf` became `deploy/nginx.conf.template`, rendered at container start by the official nginx entrypoint's envsubst pass (`/etc/nginx/templates/`). The wildcard game server's `server_name` is now the `GAMES_SERVER_NAME` variable instead of the hardcoded `*.games.example.com`, and the block gained `location /api/` same-origin reverse proxy to `api:8080` — without it, prod play runtime on `<sub>.<domain>` couldn't reach bundle-key (dev only worked because vite proxies `/api` on every host). The three-piece runtime (`/__bootstrap`, `/sw.js`, `/agent.js`) and the 404 fallback are unchanged; the shape is pinned by `repo-yaml.test.ts` against the template.
+- `deploy/nginx.conf` 改为 `deploy/nginx.conf.template`，由 nginx 官方镜像 entrypoint 的 envsubst 机制在容器启动时渲染到 `/etc/nginx/templates/`。通配游戏域 server 的 `server_name` 从硬编码 `*.games.example.com` 改为 `GAMES_SERVER_NAME` 变量，并新增 `location /api/` 同源反代到 `api:8080`——此前 prod 子域运行时根本够不着 bundle-key（dev 能跑全靠 vite 在每个 Host 上顺带代理 `/api`）。运行时三件套（`/__bootstrap`、`/sw.js`、`/agent.js`）与 404 兜底骨架不变，形状由 `repo-yaml.test.ts` 对模板钉死。
+
 ## [0.14.0] - 2026-09-29
 
 ### Added / 新增

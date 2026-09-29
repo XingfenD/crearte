@@ -1,5 +1,5 @@
 // dev-only：让 vite dev server 在游戏子域 Host（<id>.localhost:<port>，vite 默认放行）
-// 上提供运行时三件套，语义对齐生产 nginx 通配 server block（deploy/nginx.conf）与
+// 上提供运行时三件套，语义对齐生产 nginx 通配 server block（deploy/nginx.conf.template）与
 // mock 服务器（serve-runtime.mjs）。仅 configureServer 生效，build/preview/vitest 不触及。
 import { existsSync, readFileSync } from 'node:fs'
 import path from 'node:path'

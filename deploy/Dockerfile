@@ -12,5 +12,5 @@ ENV VITE_HOST_ORIGIN=$VITE_HOST_ORIGIN
 RUN npm run build
 
 FROM nginx:1.27-alpine
-COPY deploy/nginx.conf /etc/nginx/conf.d/default.conf
+COPY deploy/nginx.conf.template /etc/nginx/templates/default.conf.template
 COPY --from=build /app/dist /usr/share/nginx/html
