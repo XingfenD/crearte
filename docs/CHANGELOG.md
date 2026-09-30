@@ -6,6 +6,13 @@ All notable changes to this template should be documented in this file.
 The format loosely follows Keep a Changelog and can be adapted to the team's habits.
 本文档参考了 Keep a Changelog 的思路，也可以根据团队习惯调整。
 
+## [0.10.9] - 2026-09-30
+
+### Changed / 变更
+
+- Docs sidebar numbers entries by their actual sorted position (01–04) instead of echoing the frontmatter `order` values (10/20/30/40), which exist only as insertion-gap sort keys and shouldn't leak into the UI. Added a docs e2e locking the numbering and titles.
+- 文档侧栏序号改为按实际排序位次显示（01–04），不再直接展示 frontmatter 的 `order` 值（10/20/30/40）——那只是留了插入间隔的排序键，不应暴露到界面上。新增文档 e2e 锁定编号与标题。
+
 ## [0.10.8] - 2026-09-30
 
 ### Changed / 变更

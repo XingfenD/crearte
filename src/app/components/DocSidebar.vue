@@ -10,14 +10,15 @@ withDefaults(defineProps<{ docs: DocMeta[]; activeSlug: string; variant?: 'list'
 <template>
   <nav v-if="variant === 'list'" aria-label="文档列表" class="flex flex-col gap-1">
     <RouterLink
-      v-for="doc in docs"
+      v-for="(doc, index) in docs"
       :key="doc.slug"
       :to="`/docs/${doc.slug}`"
       class="flex items-baseline gap-2 border-2 border-transparent px-2 py-1.5"
       :class="doc.slug === activeSlug ? 'border-ink bg-highlight font-bold' : 'hover:bg-surface'"
       :aria-current="doc.slug === activeSlug ? 'page' : undefined"
     >
-      <span class="font-mono text-[0.625rem]">{{ String(doc.order).padStart(2, '0') }}</span>
+      <!-- 序号取排序后的实际位次：frontmatter 的 order（10/20/30…）只是留了插入间隔的排序键，直接展示会把间隔暴露给读者 -->
+      <span class="font-mono text-[0.625rem]">{{ String(index + 1).padStart(2, '0') }}</span>
       <span class="text-sm">{{ doc.title }}</span>
     </RouterLink>
   </nav>
