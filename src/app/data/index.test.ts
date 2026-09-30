@@ -1,3 +1,6 @@
+// @vitest-environment happy-dom
+// P7 起 data/index.ts 引 @/auth（管理面 Bearer）：auth/index.ts 顶层读 window.localStorage，
+// node 环境会 ReferenceError；浏览器环境才是本模块的真实运行前提
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
 afterEach(() => {
