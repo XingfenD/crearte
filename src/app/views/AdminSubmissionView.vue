@@ -20,6 +20,12 @@ const rejectNote = ref('')
 
 const KIND_LABELS: Record<string, string> = { new_work: '新作品', new_version: '新版本', metadata_change: '元数据更新' }
 const STATUS_LABELS: Record<string, string> = { draft: '草稿', pending: '审核中', approved: '已通过', rejected: '已拒绝' }
+// P6 D-D：hosted 提交的降级方式展示（审核人据此判断嵌播失败后的行为）；文案对齐表单选项去掉建议后缀
+const FALLBACK_LABELS: Record<string, string> = { external: '降级为外链', hosted: '降级为站内播放', none: '不降级' }
+const hostedFallbackText = computed(() => {
+  const fb = sub.value?.payload?.fallback
+  return fb ? FALLBACK_LABELS[fb] ?? fb : '—'
+})
 const isPending = computed(() => sub.value?.status === 'pending')
 const canReject = computed(() => rejectNote.value.trim().length > 0)
 // 提交者申请的运行权限（只读）：admin 需要据此判断是否放行；调整走作品管理或驳回
@@ -100,6 +106,9 @@ async function reject(): Promise<void> {
         <div class="grid grid-cols-[10rem_1fr] gap-2"><dt class="font-mono text-[0.6875rem] text-ink-soft">时长</dt><dd>{{ sub.payload?.durationMinutes?.min }}–{{ sub.payload?.durationMinutes?.max }} 分钟</dd></div>
         <div class="grid grid-cols-[10rem_1fr] gap-2"><dt class="font-mono text-[0.6875rem] text-ink-soft">类型 / 标签</dt><dd>{{ GAME_TYPE_LABELS[sub.payload?.type ?? 'other'] ?? sub.payload?.type }} · {{ (sub.payload?.tags ?? []).join('、') || '—' }}</dd></div>
         <div class="grid grid-cols-[10rem_1fr] gap-2"><dt class="font-mono text-[0.6875rem] text-ink-soft">运行时 / 版本</dt><dd>{{ sub.payload?.runtime ?? 'external' }}<span v-if="sub.payload?.version"> · {{ sub.payload.version }}</span><span v-if="sub.payload?.entry"> · 入口 {{ sub.payload.entry }}</span></dd></div>
+        <!-- D-D（P6 spec）：hosted 提交展示托管链接——纯文本不渲染锚点/预览，审核者不被引导点击任意第三方 URL -->
+        <div v-if="sub.payload?.hostedUrl" class="grid grid-cols-[10rem_1fr] gap-2"><dt class="font-mono text-[0.6875rem] text-ink-soft">托管链接</dt><dd data-testid="payload-hosted-url" class="font-mono text-[0.6875rem]">{{ sub.payload.hostedUrl }}</dd></div>
+        <div v-if="sub.payload?.runtime === 'hosted'" class="grid grid-cols-[10rem_1fr] gap-2"><dt class="font-mono text-[0.6875rem] text-ink-soft">降级方式</dt><dd data-testid="payload-hosted-fallback" class="font-mono text-[0.6875rem]">{{ hostedFallbackText }}</dd></div>
         <div class="grid grid-cols-[10rem_1fr] gap-2"><dt class="font-mono text-[0.6875rem] text-ink-soft">运行权限</dt><dd data-testid="payload-features" class="font-mono text-[0.6875rem]">{{ featuresText }}</dd></div>
         <div class="grid grid-cols-[10rem_1fr] gap-2"><dt class="font-mono text-[0.6875rem] text-ink-soft">bundle</dt><dd data-testid="payload-bundle" class="font-mono text-[0.6875rem]">{{ sub.bundle_upload_id ? `已关联上传 ${sub.bundle_upload_id.slice(0, 8)}…（密文，审批通过后可见）` : '—' }}</dd></div>
         <div class="grid grid-cols-[10rem_1fr] gap-2"><dt class="font-mono text-[0.6875rem] text-ink-soft">封面</dt><dd class="font-mono text-[0.6875rem]">{{ sub.cover_upload_id ? '已关联上传（审批通过后可见）' : '—' }}</dd></div>

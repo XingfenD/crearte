@@ -6,6 +6,13 @@ All notable changes to this template should be documented in this file.
 The format loosely follows Keep a Changelog and can be adapted to the team's habits.
 本文档参考了 Keep a Changelog 的思路，也可以根据团队习惯调整。
 
+## [0.19.1] - 2026-09-30
+
+### Added / 新增
+
+- Admin review detail now surfaces hosted submissions (P6 decision D-D follow-up): a 托管链接 row renders `payload.hostedUrl` as **plain text** — deliberately no anchor, no embed preview, reviewers are not steered into clicking arbitrary third-party URLs — plus a 降级方式 row with localized fallback labels（降级为外链 / 降级为站内播放 / 不降级；unknown values fall back to raw）shown for `runtime === 'hosted'`. e2e admin-flow gained a seventh flow (HOSTED queue fixture) pinning both rows and the no-anchor property.
+- 审核详情页现展示 hosted 提交（P6 决策 D-D 补遗）：新增「托管链接」行，把 `payload.hostedUrl` 以**纯文本**呈现——有意不做锚点、不做内嵌预览，审核者不被引导点击任意第三方 URL；`runtime === 'hosted'` 时另显「降级方式」行（中文标签：降级为外链 / 降级为站内播放 / 不降级；未知值回退原文）。e2e admin-flow 新增第七条流（HOSTED 队列夹具）钉死两行形状与无锚点性质。
+
 ## [0.19.0] - 2026-09-30
 
 ### Added / 新增
