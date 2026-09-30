@@ -95,6 +95,41 @@ export interface Doc extends DocMeta {
   content: string
 }
 
+/** P7 管理面角色值（与 auth types 的 UserRole 同域；此处独立声明避免 data→auth 依赖） */
+export type AdminUserRole = 'user' | 'admin'
+
+/** GET /api/admin/users 行（spec §3.4：email 对 admin 完整暴露，不脱敏） */
+export interface AdminUser {
+  id: string
+  email: string
+  username: string
+  display_name: string
+  role: AdminUserRole
+  created_at: string
+}
+
+export interface AdminUserPage {
+  users: AdminUser[]
+  total: number
+}
+
+/** GET /api/admin/audit 行：动作名 = method + route 模板，对象从 path 读（spec §3.1 语义要点） */
+export interface AuditEntry {
+  id: string
+  actor_id: string
+  actor_email: string
+  method: string
+  route: string
+  path: string
+  status: number
+  created_at: string
+}
+
+export interface AuditPage {
+  entries: AuditEntry[]
+  total: number
+}
+
 export interface GamesIndex {
   schemaVersion: number
   generatedAt: string
