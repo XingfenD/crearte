@@ -4,13 +4,16 @@ import { RouterLink } from 'vue-router'
 import { repo, type GameSummary } from '@/data'
 import { useAsync } from '@/composables/useAsync'
 import { pickFeatured } from '@/lib/featured'
+import { toInterstitial } from '@/lib/externalLink'
 import { setupWordmarkAssembly } from '@/lib/wordmark'
 import GameCard from '@/components/GameCard.vue'
 import StatePanel from '@/components/StatePanel.vue'
 
 const SLOGAN = 'HOST YOUR CREATIONS'
 const TAGLINE = '托管你的创意'
-const CONTACT_EMAIL = 'xingfen.fendy@outlook.com'
+const CONTACT_EMAIL = 'xingfend@outlook.com'
+const REPO_URL = 'https://github.com/XingfenD/crearte'
+const repoHref = toInterstitial(REPO_URL)
 const FEATURED_LIMIT = 6
 
 const { data: games, error, loading, reload } = useAsync<GameSummary[]>(() => repo.listGames())
@@ -73,9 +76,11 @@ const stats = computed(() => {
     <section class="flex-1 border-2 border-ink bg-surface p-4 shadow-hard-sm">
       <h3 class="text-sm font-black">欢迎投稿</h3>
       <p class="mt-2 text-xs leading-relaxed text-ink-soft">
-        把你的作品分享给大家——提 issue 或 PR，或者直接发邮件到
+        把您的作品分享给大家：给开源项目
+        <a :href="repoHref" target="_blank" rel="noopener" class="underline">crearte</a>
+        提交 Issue 或 PR、向
         <a :href="`mailto:${CONTACT_EMAIL}`" class="underline">{{ CONTACT_EMAIL }}</a>
-        ，都欢迎。
+        发送邮件，或者<RouterLink to="/register" class="underline">注册账号</RouterLink>直接<RouterLink to="/submit" class="underline">上传您的作品</RouterLink>。
       </p>
     </section>
     <section class="flex-1 border-2 border-ink bg-surface p-4 shadow-hard-sm">
