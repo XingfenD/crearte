@@ -32,5 +32,9 @@ const user = computed(() => session.state.user)
         <template v-else>数据面板正在建设中。</template>
       </p>
     </section>
+    <section class="flex-1 border-2 border-ink bg-surface p-4 shadow-hard-sm">
+      <h3 class="text-sm font-black">创作教程</h3>
+      <p class="mt-2 text-xs leading-relaxed text-ink-soft">教程整理中，敬请期待。投稿流程、打包规范与过审要点正在重新整理，完成后在本页发布；可先阅读<RouterLink to="/docs/contribute" class="underline">《提交作品指南》</RouterLink>。</p>
+    </section>
   </section>
 </template>
