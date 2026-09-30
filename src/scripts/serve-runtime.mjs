@@ -168,9 +168,8 @@ const server = createServer(async (req, res) => {
     }
 
     if (isGameHost) {
-      const game = gamesBySubdomain.get(host.split('.')[0])
-      if (!game) { notFound(res); return }
-      const slug = game.slug
+      // 运行时三件套（/__bootstrap、/sw.js、/agent.js）对任意游戏子域可服务：与 prod nginx 通配块及 dev 插件（dev-game-runtime.ts）语义对齐——
+      // 真栈作品经活体 API 现场注册，子域不在夹具表内，三件套置于表门槛之后会导致 SW 装不上（full-loop e2e 卡死）。
       if (url.pathname === '/__bootstrap') {
         const file = await fileOrNull(path.join(dist, 'bootstrap', 'index.html'))
         if (!file) { notFound(res); return }
@@ -185,7 +184,10 @@ const server = createServer(async (req, res) => {
         res.writeHead(200, { 'Content-Type': MIME['.js'], 'Cache-Control': 'no-store' })
         res.end(body); return
       }
-      // C 模式 mock：直接服务夹具源文件并注入 agent
+      const game = gamesBySubdomain.get(host.split('.')[0])
+      if (!game) { notFound(res); return }
+      const slug = game.slug
+      // C 模式 mock：直接服务夹具表内子域的源文件并注入 agent
       const candidate = await fileOrNull(path.join(fixtures, 'games', slug, url.pathname.replace(/^\//, '') || 'index.html'))
       if (candidate) {
         const ext = path.extname(candidate)
