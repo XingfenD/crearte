@@ -45,6 +45,16 @@ describe('resolveNavigation', () => {
     expect(resolveNavigation(to('admin', { requiresAuth: true, requiresAdmin: true }), ctx({ isAdmin: true }))).toBe(true)
   })
 
+  // P7 两新路由与 /admin 守卫完全一致：requiresAdmin 同语义（非 admin 回首页/未登录带 next）
+  test('admin-users / admin-audit：requiresAdmin 行为与 admin 一致', () => {
+    for (const name of ['admin-users', 'admin-audit']) {
+      expect(resolveNavigation(to(name, { requiresAuth: true, requiresAdmin: true }), ctx({ isAdmin: true }))).toBe(true)
+      expect(resolveNavigation(to(name, { requiresAuth: true, requiresAdmin: true }), ctx())).toEqual({ name: 'home' })
+      expect(resolveNavigation(to(name, { requiresAuth: true, requiresAdmin: true }), ctx({ authenticated: false })))
+        .toEqual({ name: 'login', query: { next: `/${name}` } })
+    }
+  })
+
   // 锁死「requiresAuth 先于 requiresAdmin」的分支顺序：若有人调换 guards.ts 两个 if，
   // 未登录访问 /admin 会静默变成回首页（丢 next 回跳），此用例即红（Task 5 审查补）
   test('未登录访问 /admin → login 带 next（而非直接回首页）', () => {
@@ -58,7 +68,7 @@ describe('resolveNavigation', () => {
   })
 
   test('auth 未启用：submit/admin 全家重定向首页', () => {
-    for (const name of ['submit', 'submit-new', 'submit-edit', 'admin', 'admin-submission']) {
+    for (const name of ['submit', 'submit-new', 'submit-edit', 'admin', 'admin-submission', 'admin-users', 'admin-audit']) {
       expect(resolveNavigation(to(name, { requiresAuth: true }), ctx({ authEnabled: false }))).toEqual({ name: 'home' })
     }
   })

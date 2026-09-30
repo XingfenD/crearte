@@ -6,6 +6,21 @@ All notable changes to this template should be documented in this file.
 The format loosely follows Keep a Changelog and can be adapted to the team's habits.
 本文档参考了 Keep a Changelog 的思路，也可以根据团队习惯调整。
 
+## [0.18.0] - 2026-09-30
+
+### Added / 新增
+
+- Added the admin console pages (P7): `/admin/users` (AdminUsersView — username/email/display-name/role/registered-at table, debounced search, 50-per-page pagination; promote-to-admin is a one-click PATCH, demote requires a two-step confirmation overlay spelling out that the target's sessions are revoked immediately and that demoting the last admin is rejected with 409, and the backend 409 text is echoed verbatim) and `/admin/audit` (AdminAuditView — reverse-chronological audit trail with localized timestamps, actor email, route-template→Chinese action labels falling back to the raw template for unknown routes, object extracted from the request path, 2xx-green / 4xx-amber / other-red status chips, and a route filter dropdown). AdminView's header gains 用户管理 / 操作日志 links; both new routes reuse the exact AdminView guard (`requiresAuth` + `requiresAdmin`, also registered in the auth-disabled redirect set).
+- 新增管理后台两页（P7）：`/admin/users`（AdminUsersView——用户名/邮箱/显示名/角色/注册时间表格、防抖搜索、每页 50 分页；升 admin 一键直发 PATCH，降级走两步确认弹层，文案写明「对方所有登录态立即失效」与「若其为最后一个管理员将被 409 拒绝」两点，409 后端原文回显）与 `/admin/audit`（AdminAuditView——倒序审计流水：本地化时间、操作者邮箱、route 模板→中文动作标签（未知模板回退原文）、对象从请求 path 逐段提取、2xx 绿 4xx 黄其余红、route 过滤下拉）。AdminView 顶部新增「用户管理 / 操作日志」入口；两条新路由守卫与 AdminView 完全一致（requiresAuth + requiresAdmin，auth 关闭重定向集合同步登记）。
+
+- Extended `apiRepo` with the admin surface: `listAdminUsers` / `setUserRole` / `listAudit` against the spec §3.4 endpoints (Bearer token from the session; neither admin GET participates in ETag caching; response bodies pass through without static schema validation). Errors surface as a new `AdminApiError` carrying the HTTP status and the backend `code` (`last_admin` / `validation` / `not_found` …) with the server message preserved verbatim so the UI can echo 409 text; the read-side `NotFoundError` contract is unchanged.
+- `apiRepo` 扩充管理面：`listAdminUsers` / `setUserRole` / `listAudit` 三方法对接 spec §3.4 端点（携带 session Bearer token；两个 GET 不参与 ETag 缓存；响应体透传不做静态断言）。错误经新增 `AdminApiError` 暴露 status 与后端 `code`（`last_admin`/`validation`/`not_found`…）并原样保留后端 message，供 UI 直接回显 409 原文；读侧 `NotFoundError` 契约不变。
+
+### Tests / 测试
+
+- New vitest coverage for the admin repo request shapes and error mapping, both views (table render, debounced search, demote confirmation copy, 409 echo, action-label fallback, route filter) and guard parity for the new routes; `e2e/admin-flow.spec.ts` gains two fixture-driven flows — a role up/down round-trip with the confirmation overlay (plus the last-admin 409 echo), and "a management action lands as the first audit row". The fixtures implement the spec §3.4 shapes in-memory pending real-stack integration.
+- 新增 vitest 覆盖：管理面 repo 请求形状与错误映射、两个新 view（表格渲染、防抖搜索、降级确认弹层文案、409 回显、标签映射回退、route 过滤）、新路由与 AdminView 守卫一致性；`e2e/admin-flow.spec.ts` 扩两条夹具流——角色升降往返 + 确认弹层文案出现（含唯一 admin 409 原文回显），以及「执行管理动作后审计页首行即该动作」。夹具按 spec §3.4 形状内存实现，待真栈联调。
+
 ## [0.17.0] - 2026-09-30
 
 ### Added / 新增
