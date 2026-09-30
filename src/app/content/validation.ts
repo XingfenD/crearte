@@ -11,6 +11,7 @@ export const TAG_MAX = 8
 export type FieldKey =
   | 'workId' | 'name' | 'url' | 'authorName' | 'description'
   | 'duration' | 'type' | 'tags' | 'version' | 'entry'
+  | 'hostedUrl' | 'fallback'
 
 export function slugify(name: string): string {
   return name
@@ -35,10 +36,18 @@ export function validateWorkPayload(payload: WorkPayload, kind: SubmissionKind):
   const errors: Partial<Record<FieldKey, string>> = {}
   if (!WORK_ID_PATTERN.test(payload.id)) errors.workId = '名称需为小写字母、数字或连字符（1–63 字符，首尾非连字符，你的命名空间内唯一）'
   if (!payload.name.trim()) errors.name = '展示名称必填'
+  const runtime = payload.runtime ?? 'external'
+  const fallback = payload.fallback ?? 'external'
+  // url 何时必填：external 作品（播放目标即 url）；hosted 且降级方式为 external（D-E：需 url 兜底）
+  const urlRequired = runtime === 'external' || (runtime === 'hosted' && fallback === 'external')
   if (payload.url) {
     if (!/^https?:\/\/\S+$/.test(payload.url)) errors.url = '需为有效的 http(s) 链接'
-  } else if ((payload.runtime ?? 'external') === 'external') {
-    errors.url = '外链作品必须填写作品原始链接'
+  } else if (urlRequired) {
+    errors.url = runtime === 'hosted' ? '降级方式为 external 时必须填写作品原始链接' : '外链作品必须填写作品原始链接'
+  }
+  // hosted 必填 https hostedUrl（镜像 server validate.go 的 payloadHTTPSPattern），任意域名（D-A）
+  if (runtime === 'hosted' && !/^https:\/\/\S+$/.test(payload.hostedUrl ?? '')) {
+    errors.hostedUrl = '自托管作品必须填写 https 播放链接'
   }
   if (payload.author?.name && payload.author.name.length > 60) errors.authorName = '作者名不得超过 60 字符'
   if (payload.description && payload.description.length > 140) errors.description = '描述不得超过 140 字符'
@@ -48,7 +57,6 @@ export function validateWorkPayload(payload: WorkPayload, kind: SubmissionKind):
   }
   if (!(GAME_TYPES as readonly string[]).includes(payload.type)) errors.type = '未知类型'
   if (payload.tags.length > TAG_MAX) errors.tags = `标签最多 ${TAG_MAX} 个`
-  const runtime = payload.runtime ?? 'external'
   if (kind !== 'metadata_change' && runtime === 'virtual') {
     if (!VERSION_PATTERN.test(payload.version ?? '')) errors.version = '版本号需匹配 ^[a-z0-9][a-z0-9._-]{0,63}$'
     if (!(payload.entry ?? '').trim()) errors.entry = '入口文件必填（如 index.html）'

@@ -30,8 +30,9 @@ const myUsername = computed(() => session.state.user?.username ?? '')
 const form = reactive({
   workId: '', name: '', url: '', authorName: '', authorUrl: '',
   description: '', durationMin: '5', durationMax: '20', type: 'puzzle',
-  tagsText: '', intro: '', runtime: 'external' as 'external' | 'virtual',
+  tagsText: '', intro: '', runtime: 'external' as 'external' | 'virtual' | 'hosted',
   version: '', entry: 'index.html',
+  hostedUrl: '', fallback: 'external' as 'external' | 'hosted' | 'none',
   features: { ...EMPTY_FEATURES }
 })
 
@@ -68,6 +69,11 @@ const KIND_OPTIONS = [
   { value: 'metadata_change', label: `${KIND_LABELS.metadata_change}（已收录作品）` }
 ]
 const TYPE_OPTIONS = GAME_TYPES.map((t) => ({ value: t, label: GAME_TYPE_LABELS[t] }))
+const FALLBACK_OPTIONS = [
+  { value: 'external', label: '降级为外链（推荐）' },
+  { value: 'hosted', label: '降级为站内播放' },
+  { value: 'none', label: '不降级' }
+]
 
 function buildPayload(): WorkPayload {
   return {
@@ -84,7 +90,12 @@ function buildPayload(): WorkPayload {
     ...(form.intro.trim() ? { intro: form.intro.trim() } : {}),
     // features 仅对 virtual 有意义（SW 按作品 features 注入 CSP）；两个键总是输出，
     // 显式空对象 = 不放宽——后端据此把「缺键（旧提交）」与「显式清空」区分开
-    ...(form.runtime === 'virtual' ? { runtime: 'virtual' as const, version: form.version.trim(), entry: form.entry.trim() || 'index.html', features: collectFeatures(form.features) } : {})
+    ...(form.runtime === 'virtual'
+      ? { runtime: 'virtual' as const, version: form.version.trim(), entry: form.entry.trim() || 'index.html', features: collectFeatures(form.features) }
+      // hosted 语义纯度（D-C）：只带 runtime/hostedUrl/fallback，**不带** bundle/version/entry/features
+      : form.runtime === 'hosted'
+        ? { runtime: 'hosted' as const, hostedUrl: form.hostedUrl.trim(), fallback: form.fallback }
+        : {})
   }
 }
 
@@ -141,12 +152,6 @@ async function prefill(slug: string): Promise<void> {
     // 此守卫只为满足 TS 的 `ApiContentRepository | null` 类型，实际不可达
     if (!apiRepo) throw new Error('内容 API 未启用')
     const game = await apiRepo.getGame(`${myUsername.value}/${slug}`)
-    // hosted 在本表单无法表达（form.runtime 与 content 层 WorkPayload.runtime 均只有 external|virtual）：
-    // 若归一成 external 提交，后端 UpdateMetadata 全列覆盖会把 hosted 作品静默降级 → 直接拒绝预填
-    if (game.runtime === 'hosted') {
-      error.value = '该作品为 hosted 运行时，暂不支持在此提交（仅外链与站内作品可）'
-      return
-    }
     form.name = game.name
     form.url = game.url ?? ''
     form.authorName = game.author?.name ?? ''
@@ -157,7 +162,9 @@ async function prefill(slug: string): Promise<void> {
     form.type = game.type
     form.tagsText = game.tags.join(', ')
     form.intro = game.intro ?? ''
-    form.runtime = game.runtime === 'virtual' ? 'virtual' : 'external'
+    form.runtime = game.runtime === 'virtual' ? 'virtual' : game.runtime === 'hosted' ? 'hosted' : 'external'
+    form.hostedUrl = game.hostedUrl ?? ''
+    form.fallback = game.fallback ?? 'external'
     form.entry = game.entry ?? 'index.html'
     form.features = featuresToForm(game.features)
     // new_version 必须提供新版本号：预填后清空强制用户输入
@@ -194,7 +201,9 @@ async function loadExisting(id: string): Promise<void> {
     form.type = p.type ?? 'puzzle'
     form.tagsText = (p.tags ?? []).join(', ')
     form.intro = p.intro ?? ''
-    form.runtime = p.runtime === 'virtual' ? 'virtual' : 'external'
+    form.runtime = p.runtime === 'virtual' ? 'virtual' : p.runtime === 'hosted' ? 'hosted' : 'external'
+    form.hostedUrl = p.hostedUrl ?? ''
+    form.fallback = p.fallback ?? 'external'
     form.version = p.version ?? ''
     form.entry = p.entry ?? 'index.html'
     form.features = featuresToForm(p.features)
@@ -411,6 +420,10 @@ const labelClass = 'font-mono text-[0.6875rem] tracking-[0.05em]'
             <input v-model="form.runtime" data-testid="runtime-virtual" type="radio" value="virtual"
               :disabled="kind !== 'new_work'"> 站内运行（上传 bundle）
           </label>
+          <label class="inline-flex items-center gap-1.5">
+            <input v-model="form.runtime" data-testid="runtime-hosted" type="radio" value="hosted"
+              :disabled="kind !== 'new_work'"> 自托管内嵌
+          </label>
         </div>
         <template v-if="form.runtime === 'virtual'">
           <div class="grid gap-4 sm:grid-cols-2">
@@ -445,6 +458,20 @@ const labelClass = 'font-mono text-[0.6875rem] tracking-[0.05em]'
               v-model="form.features[item.key]" :data-testid="`feature-${item.key}`">
               <span class="font-bold">{{ item.label }}</span><span class="ml-1 text-xs text-ink-soft">{{ item.hint }}</span>
             </BaseCheckbox>
+          </div>
+        </template>
+        <template v-else-if="form.runtime === 'hosted'">
+          <div class="space-y-1.5">
+            <label class="font-mono text-[0.6875rem]" for="sf-hosted-url">自托管播放链接（https，平台将以沙箱 iframe 内嵌播放）</label>
+            <BaseInput id="sf-hosted-url" v-model="form.hostedUrl" data-testid="hosted-url" type="url"
+              placeholder="https://games.example.com/play" :invalid="Boolean(err('hostedUrl'))" />
+            <p v-if="err('hostedUrl')" class="text-xs font-bold text-accent-ink">{{ err('hostedUrl') }}</p>
+          </div>
+          <div class="space-y-1.5">
+            <label class="font-mono text-[0.6875rem]" for="sf-fallback">播放失败降级方式</label>
+            <BaseSelect id="sf-fallback" data-testid="fallback" :model-value="form.fallback" :options="FALLBACK_OPTIONS"
+              :disabled="readOnly" @update:model-value="form.fallback = $event as typeof form.fallback" />
+            <p class="font-mono text-[0.6875rem] text-ink-soft">降级为外链时需填写上方「作品原始链接」</p>
           </div>
         </template>
       </fieldset>

@@ -6,6 +6,18 @@ All notable changes to this template should be documented in this file.
 The format loosely follows Keep a Changelog and can be adapted to the team's habits.
 本文档参考了 Keep a Changelog 的思路，也可以根据团队习惯调整。
 
+## [0.19.0] - 2026-09-30
+
+### Added / 新增
+
+- Authors can now submit self-hosted (hosted) works: the submission form's runtime radios gained a third option 「自托管内嵌」 and the content-layer payload type widens to `external | virtual | hosted` with `hostedUrl` and `fallback` fields (JSON names aligned with the server `WorkPayload`). A hosted submission fills an https play URL (required, https-only, any domain — mirroring the server's `payloadHTTPSPattern`) plus a fallback choice (`external | hosted | none`, default `external`); choosing `external` requires the work's original link, and the payload carries only `runtime` + `hostedUrl` + `fallback` — no `bundle` / `version` / `entry` / `features` (hosted never eats a platform file). `new_version` stays virtual-only, and the form can no longer refuse to prefill a hosted work: picking a hosted work in 元数据更新 now backfills `hostedUrl` / `fallback` instead of erroring out. The play side (GameHost / useGameFrame / sw / agent / bootstrap) is untouched by design.
+- 作者现可投稿自托管（hosted）作品：提交表单的运行时单选新增第三档「自托管内嵌」，内容层提交载荷类型扩为 `external | virtual | hosted` 并补 `hostedUrl`、`fallback` 字段（json 名与服务端 `WorkPayload` 对齐）。hosted 档填 https 播放链接（必填、仅 https、任意域名——镜像服务端 `payloadHTTPSPattern`）与降级方式（`external | hosted | none`，默认 `external`）；选 `external` 时作品原始链接必填，且载荷只带 `runtime` + `hostedUrl` + `fallback`——不带 `bundle` / `version` / `entry` / `features`（hosted 不吃平台文件）。`new_version` 保持 virtual-only；表单不再拒绝预填 hosted 作品：元数据更新档选到 hosted 作品会回填 `hostedUrl` / `fallback` 而非报错。播放端（GameHost / useGameFrame / sw / agent / bootstrap）按 spec 决策零改动。
+
+### Tests / 测试
+
+- New vitest coverage for the hosted branch of SubmitFormView (submission shape drops bundle/version/entry/features, required-field failure surface for `hostedUrl` and `fallback=external`+missing `url`, hosted prefill backfill, and `new_version` refusing a hosted work), plus an `e2e/submit-flow.spec.ts` flow asserting the hosted draft payload shape through the real form.
+- 新增 vitest 覆盖 SubmitFormView 的 hosted 分支（提交形状不带 bundle/version/entry/features、`hostedUrl` 与 `fallback=external` 缺 `url` 的必填失败面、hosted 预填回填、`new_version` 拒 hosted），并在 `e2e/submit-flow.spec.ts` 加一条真表单走查、断言 hosted 草稿载荷形状。
+
 ## [0.18.0] - 2026-09-30
 
 ### Added / 新增
