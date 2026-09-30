@@ -4,6 +4,7 @@ import { RouterLink, useRoute, useRouter } from 'vue-router'
 import { PhArrowSquareOut, PhWarningCircle } from '@phosphor-icons/vue'
 import BaseButton from '@/components/ui/BaseButton.vue'
 import { normalizeKind, parseTarget } from '@/lib/externalLink'
+import { CONTACT_EMAIL } from '@/lib/site'
 
 const route = useRoute()
 const router = useRouter()
@@ -58,9 +59,9 @@ function goBack(): void {
       <p class="mt-3 font-mono text-xs text-ink-soft">
         反馈：
         <a
-          href="mailto:xingfen.fendy@outlook.com"
+          :href="`mailto:${CONTACT_EMAIL}`"
           class="text-accent-ink underline decoration-2 underline-offset-2"
-        >xingfen.fendy@outlook.com</a>
+        >{{ CONTACT_EMAIL }}</a>
         <span class="mx-2">·</span>
         <RouterLink
           to="/docs/about"
@@ -105,9 +106,9 @@ function goBack(): void {
       <p v-if="kind === 'game'" class="mt-3 font-mono text-xs text-ink-soft">
         反馈：
         <a
-          href="mailto:xingfen.fendy@outlook.com"
+          :href="`mailto:${CONTACT_EMAIL}`"
           class="text-accent-ink underline decoration-2 underline-offset-2"
-        >xingfen.fendy@outlook.com</a>
+        >{{ CONTACT_EMAIL }}</a>
         <span class="mx-2">·</span>
         <RouterLink
           to="/docs/about"

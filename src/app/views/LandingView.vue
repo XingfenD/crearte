@@ -5,14 +5,13 @@ import { repo, type GameSummary } from '@/data'
 import { useAsync } from '@/composables/useAsync'
 import { pickFeatured } from '@/lib/featured'
 import { toInterstitial } from '@/lib/externalLink'
+import { CONTACT_EMAIL, REPO_URL } from '@/lib/site'
 import { setupWordmarkAssembly } from '@/lib/wordmark'
 import GameCard from '@/components/GameCard.vue'
 import StatePanel from '@/components/StatePanel.vue'
 
 const SLOGAN = 'HOST YOUR CREATIONS'
 const TAGLINE = '托管你的创意'
-const CONTACT_EMAIL = 'xingfend@outlook.com'
-const REPO_URL = 'https://github.com/XingfenD/crearte'
 const repoHref = toInterstitial(REPO_URL)
 const FEATURED_LIMIT = 6
 

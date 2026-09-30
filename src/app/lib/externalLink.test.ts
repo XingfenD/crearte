@@ -31,7 +31,7 @@ describe('isExternalHref', () => {
   })
 
   it('mailto/tel 不算外链', () => {
-    expect(isExternalHref('mailto:xingfen.fendy@outlook.com', ORIGIN)).toBe(false)
+    expect(isExternalHref('mailto:test@example.com', ORIGIN)).toBe(false)
     expect(isExternalHref('tel:+8613800000000', ORIGIN)).toBe(false)
   })
 

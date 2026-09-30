@@ -59,8 +59,8 @@ describe('renderMarkdown 外链改写', () => {
   })
 
   it('mailto 不改写', () => {
-    expect(renderMarkdown('[写信](mailto:xingfen.fendy@outlook.com)', ORIGIN)).toContain(
-      'href="mailto:xingfen.fendy@outlook.com"'
+    expect(renderMarkdown('[写信](mailto:test@example.com)', ORIGIN)).toContain(
+      'href="mailto:test@example.com"'
     )
   })
 

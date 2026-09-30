@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test'
+import { CONTACT_EMAIL } from '../app/lib/site'
 
 test('首页是落地页：hero 文案与统计条', async ({ page }) => {
   await page.goto('http://localhost:4173/')
@@ -104,9 +105,9 @@ test('空数据时统计条隐藏、精选区显示空态', async ({ page }) => 
 test('投稿卡邮箱走 mailto、不套中间页', async ({ page }) => {
   await page.goto('http://localhost:4173/')
 
-  await expect(page.getByRole('link', { name: 'xingfend@outlook.com' })).toHaveAttribute(
+  await expect(page.getByRole('link', { name: CONTACT_EMAIL })).toHaveAttribute(
     'href',
-    'mailto:xingfend@outlook.com'
+    `mailto:${CONTACT_EMAIL}`
   )
 })
 
@@ -122,7 +123,7 @@ test('投稿卡三条途径：仓库走中间页、注册/上传指向站内路�
   await expect(card.getByRole('link', { name: '注册账号' })).toHaveAttribute('href', '/register')
   await expect(card.getByRole('link', { name: '上传您的作品' })).toHaveAttribute('href', '/submit')
   await expect(card.locator('p')).toContainText(
-    '把您的作品分享给大家：给开源项目 crearte 提交 Issue 或 PR、向 xingfend@outlook.com 发送邮件，或者注册账号直接上传您的作品。'
+    `把您的作品分享给大家：给开源项目 crearte 提交 Issue 或 PR、向 ${CONTACT_EMAIL} 发送邮件，或者注册账号直接上传您的作品。`
   )
 })
 

@@ -6,6 +6,13 @@ All notable changes to this template should be documented in this file.
 The format loosely follows Keep a Changelog and can be adapted to the team's habits.
 本文档参考了 Keep a Changelog 的思路，也可以根据团队习惯调整。
 
+## [0.10.8] - 2026-09-30
+
+### Changed / 变更
+
+- Extracted the site's identity constants into `src/app/lib/site.ts` (`CONTACT_EMAIL`, `REPO_URL`); LandingView and OutboundView import them instead of local literals, which also fixes the outbound interstitial pages still showing the stale `xingfen.fendy@outlook.com` address. Unit-test mailto fixtures switched to a neutral `test@example.com`, and the landing e2e imports the constant so no test hardcodes the address. `src/docs/` markdown stays hand-maintained by design (noted in the module's doc comment).
+- 抽出站点身份常量到 `src/app/lib/site.ts`（`CONTACT_EMAIL`、`REPO_URL`）：LandingView 与 OutboundView 改为导入，不再各写一份字面量，同时修掉外链中间页仍在展示旧地址 `xingfen.fendy@outlook.com` 的问题。单测的 mailto 夹具改用中性的 `test@example.com`，落地页 e2e 改为导入常量，不再有测试硬编码邮箱。`src/docs/` 文档按设计保持手工维护（已在模块注释中说明）。
+
 ## [0.10.7] - 2026-09-30
 
 ### Changed / 变更
