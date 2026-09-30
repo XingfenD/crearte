@@ -26,5 +26,10 @@ test('未注入 API 地址：无账号入口、auth 路由回首页、不发起 
   await page.goto('/account')
   await expect(page).toHaveURL('http://localhost:4174/')
 
+  await page.goto('/creator')
+  await expect(page.getByRole('heading', { level: 1, name: '创作者中心' })).toBeVisible()
+  await expect(page.getByText('数据面板正在建设中。', { exact: true })).toBeVisible()
+  await expect(page.getByRole('link', { name: '登录' })).toHaveCount(0)
+
   expect(authRequests).toEqual([])
 })

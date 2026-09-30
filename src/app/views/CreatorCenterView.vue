@@ -1,8 +1,12 @@
 <script setup lang="ts">
+import { computed } from 'vue'
 import { RouterLink } from 'vue-router'
+import { authEnabled, session } from '@/auth'
 
 const SLOGAN = 'SHARE YOUR CREATIONS'
 const TAGLINE = '把你的作品分享给所有人'
+
+const user = computed(() => session.state.user)
 </script>
 
 <template>
@@ -16,5 +20,17 @@ const TAGLINE = '把你的作品分享给所有人'
       <RouterLink to="/submit/new" class="btn-ink lift hover:shadow-hard active:shadow-none">提交作品</RouterLink>
       <RouterLink to="/docs/contribute" class="btn-surface lift hover:shadow-hard active:shadow-none">投稿指南</RouterLink>
     </div>
+  </section>
+
+  <section class="mt-8 flex flex-col gap-4 sm:flex-row">
+    <h2 class="sr-only">创作者中心</h2>
+    <section class="flex-1 border-2 border-ink bg-surface p-4 shadow-hard-sm">
+      <h3 class="text-sm font-black">作品数据</h3>
+      <p class="mt-2 text-xs leading-relaxed text-ink-soft">
+        <template v-if="authEnabled && !user">登录后即可查看您作品的数据。<RouterLink :to="{ path: '/login', query: { next: '/creator' } }" class="underline">登录</RouterLink></template>
+        <template v-else-if="authEnabled">数据面板正在建设中。上线后将展示您作品的浏览、下载与评分。</template>
+        <template v-else>数据面板正在建设中。</template>
+      </p>
+    </section>
   </section>
 </template>
