@@ -10,9 +10,9 @@ export const AUDIT_ACTION_LABELS: Record<string, string> = {
   '/api/admin/works/:user/:slug/republish': '恢复上架',
   '/api/admin/works/:user/:slug/features': '修改运行权限',
   '/api/admin/works/:user/:slug/versions/:version/revoke': '版本密钥吊销/恢复',
-  '/api/admin/users': '查看用户列表',
+  '/api/admin/users': '用户列表',
   '/api/admin/users/:id/role': '变更用户角色',
-  '/api/admin/audit': '查看操作日志'
+  '/api/admin/audit': '操作日志'
 }
 
 /** 动作列文本：已知模板给中文标签，未知模板回退「METHOD route」原文（spec §4.3） */

@@ -7,12 +7,18 @@ describe('auditActionLabel（spec §4.3：映射外模板回退原文）', () =>
     expect(auditActionLabel('PATCH', '/api/admin/users/:id/role')).toBe('变更用户角色（PATCH）')
   })
 
+  it('审计页自身数据里会出现的两读动作有中文标签（spec §3.4 admin 组全请求入审计）', () => {
+    expect(auditActionLabel('GET', '/api/admin/users')).toBe('用户列表（GET）')
+    expect(auditActionLabel('GET', '/api/admin/audit')).toBe('操作日志（GET）')
+  })
+
   it('未知 route 回退 METHOD + 原文', () => {
     expect(auditActionLabel('DELETE', '/api/admin/whatever')).toBe('DELETE /api/admin/whatever')
   })
 
   it('下拉选项 = 已知标签集（value 为模板原文，供服务侧 route 过滤）', () => {
     expect(AUDIT_ROUTE_OPTIONS.map((o) => o.value)).toContain('/api/admin/audit')
+    expect(AUDIT_ROUTE_OPTIONS.map((o) => o.value)).toContain('/api/admin/users')
     expect(AUDIT_ROUTE_OPTIONS.every((o) => o.label.length > 0)).toBe(true)
   })
 })
