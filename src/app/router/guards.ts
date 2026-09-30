@@ -2,7 +2,8 @@ import type { RouteLocationNormalized } from 'vue-router'
 
 const AUTH_ROUTE_NAMES = new Set([
   'login', 'register', 'account',
-  'submit', 'submit-new', 'submit-edit', 'admin', 'admin-submission'
+  'submit', 'submit-new', 'submit-edit',
+  'admin', 'admin-submission', 'admin-users', 'admin-audit'
 ])
 
 export interface NavigationContext {

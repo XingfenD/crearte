@@ -119,7 +119,13 @@ function switchStatus(next: 'pending' | 'approved' | 'rejected'): void {
 
 <template>
   <section class="mx-auto w-full max-w-5xl px-4 py-10">
-    <h1 class="font-display text-[1.75rem] font-black leading-tight">审核管理</h1>
+    <div class="flex flex-wrap items-center justify-between gap-3">
+      <h1 class="font-display text-[1.75rem] font-black leading-tight">审核管理</h1>
+      <nav class="flex gap-2 text-xs font-bold">
+        <RouterLink to="/admin/users" class="border-2 border-ink bg-surface px-2 py-1 hover:bg-paper">用户管理</RouterLink>
+        <RouterLink to="/admin/audit" class="border-2 border-ink bg-surface px-2 py-1 hover:bg-paper">操作日志</RouterLink>
+      </nav>
+    </div>
 
     <BaseTabs
       class="mt-4"
