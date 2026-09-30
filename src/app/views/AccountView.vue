@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
-import { session } from '@/auth'
+import { session, authClient } from '@/auth'
 import { AUTH_ERROR_MESSAGES, toUserMessage } from '@/auth/errors'
 import { validatePassword } from '@/auth/validation'
 import type { UserRole } from '@/auth/types'
@@ -24,8 +24,15 @@ const errorField = ref<'current' | 'new' | null>(null)
 const notice = ref<string | null>(null)
 const busy = ref(false)
 const confirmingLogoutAll = ref(false)
-// 主动登出/登出全部时置位：让 watch 不把这次离开当成"被踢出"去抢导航
+// 主动登出/登出全部/注销时置位：让 watch 不把这次离开当成"被踢出"去抢导航
 const leaving = ref(false)
+
+// —— P8 ③ 危险区：注销账号（双闸：勾选 + 密码齐备才可点）——
+const deletePassword = ref('')
+const deleteCheck = ref(false)
+const deleteError = ref<string | null>(null)
+const deleteBusy = ref(false)
+const canDelete = computed(() => !deleteBusy.value && deleteCheck.value && deletePassword.value !== '')
 
 watch(
   () => session.state.status,
@@ -85,6 +92,29 @@ function logout(): void {
   leaving.value = true
   session.logout()
   void router.replace('/')
+}
+
+async function deleteAccount(): Promise<void> {
+  if (!canDelete.value || !user.value) return
+  const token = session.getToken()
+  if (!token) {
+    deleteError.value = AUTH_ERROR_MESSAGES.unauthorized
+    return
+  }
+  deleteBusy.value = true
+  deleteError.value = null
+  // 成功后 session.invalidate() 会把 status 置 anonymous，先置位避免 watch 抢去登录页
+  leaving.value = true
+  try {
+    await authClient.deleteAccount(token, deletePassword.value)
+    session.invalidate()
+    await router.push('/')
+  } catch (e) {
+    leaving.value = false
+    deleteError.value = toUserMessage(e)
+  } finally {
+    deleteBusy.value = false
+  }
 }
 
 // —— P5 我的反应：未登录/reactionsEnabled 假时零请求零渲染 ——
@@ -239,6 +269,33 @@ function pathOf(game: GameSummary): string {
       </div>
       <BaseButton v-else lift @click="confirmingLogoutAll = true">登出全部设备</BaseButton>
       <BaseButton lift class="ml-0 sm:ml-2" @click="logout">登出</BaseButton>
+    </section>
+
+    <section class="mt-10 space-y-3 border-t-[3px] border-ink pt-6" data-testid="danger-zone">
+      <h2 class="font-display text-lg font-black">危险区：注销账号</h2>
+      <p class="text-xs text-ink-soft">注销后你名下的作品将全部下架，账号不可恢复；该操作不可撤销。</p>
+      <div class="space-y-1.5">
+        <label class="font-mono text-[0.6875rem] tracking-[0.05em]" for="delete-password">注销确认密码</label>
+        <BaseInput
+          id="delete-password"
+          v-model="deletePassword"
+          data-testid="delete-confirm-password"
+          type="password"
+          autocomplete="current-password"
+        />
+      </div>
+      <label class="flex items-start gap-2 text-xs">
+        <input v-model="deleteCheck" data-testid="delete-confirm-check" type="checkbox" class="mt-0.5">
+        <span>我已知晓作品将下架且不可恢复，确认注销账号。</span>
+      </label>
+      <p
+        v-if="deleteError"
+        data-testid="delete-account-error"
+        role="alert"
+        aria-live="polite"
+        class="border-2 border-ink bg-highlight px-3 py-2 text-xs font-bold"
+      >{{ deleteError }}</p>
+      <BaseButton variant="ink" lift data-testid="delete-account-button" :disabled="!canDelete" @click="deleteAccount">注销账号</BaseButton>
     </section>
   </section>
 </template>

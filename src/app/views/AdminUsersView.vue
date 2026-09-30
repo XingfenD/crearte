@@ -1,3 +1,24 @@
+<script lang="ts">
+import { AdminApiError } from '@/data/repository'
+import { toContentMessage } from '@/content'
+
+// 管理面操作错误中文化（P7 遗留尾）：validation/not_found/internal 三码走映射表，
+// last_admin 与未知 code 透传后端原文——降级双要点文案已覆盖 last_admin 场景。
+// 独立导出便于单测直打（不依赖组件挂载）。
+export const ADMIN_ACTION_MESSAGES: Record<string, string> = {
+  validation: '角色参数非法',
+  not_found: '用户不存在',
+  internal: '服务器内部错误，请稍后重试'
+}
+
+export function adminActionMessage(error: unknown): string {
+  if (error instanceof AdminApiError) {
+    return ADMIN_ACTION_MESSAGES[error.code] ?? error.message
+  }
+  return toContentMessage(error)
+}
+</script>
+
 <script setup lang="ts">
 import { computed, onBeforeUnmount, ref, watch } from 'vue'
 import { RouterLink } from 'vue-router'
@@ -6,10 +27,9 @@ import BaseButton from '@/components/ui/BaseButton.vue'
 import BasePagination from '@/components/ui/BasePagination.vue'
 import { useAsync } from '@/composables/useAsync'
 import { apiRepo } from '@/data'
-// AdminApiError 从 repository 拿（测试只 mock '@/data' 聚合层，此类保持真身，instanceof 可判）
-import { AdminApiError } from '@/data/repository'
+// AdminApiError 从 repository 拿（测试只 mock '@/data' 聚合层，此类保持真身，instanceof 可判）；
+// toContentMessage/AdminApiError 已在普通 <script> 块导入（同模块作用域），此处不重复导入
 import type { AdminUser, AdminUserRole } from '@/data/types'
-import { toContentMessage } from '@/content'
 
 const LIMIT = 50
 const DEBOUNCE_MS = 300
@@ -60,9 +80,8 @@ async function setUserRole(user: AdminUser, role: AdminUserRole): Promise<void> 
     demoteTarget.value = null
     reload()
   } catch (e) {
-    // 409 last_admin：后端原文（cannot demote the last admin）必须直接回显，
-    // AdminApiError 的 message 即后端 error.message，走 Error 分支透出，不套中文映射
-    actionError.value = e instanceof AdminApiError ? e.message : toContentMessage(e)
+    // last_admin 透传后端原文（cannot demote the last admin）；validation/not_found/internal 走中文化映射
+    actionError.value = adminActionMessage(e)
     demoteTarget.value = null
   } finally {
     busyId.value = null

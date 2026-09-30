@@ -68,6 +68,14 @@ async function installAuthApi(page: Page): Promise<FixtureState> {
       for (const [key, value] of state.tokens) if (value === email) state.tokens.delete(key)
       return route.fulfill({ status: 204, body: '' })
     }
+    if (path.endsWith('/account') && request.method() === 'DELETE') {
+      if (!email) return fail(401, 'unauthorized')
+      const user = state.users.get(email)
+      if (!user || user.password !== body.password) return fail(401, 'invalid_credentials')
+      state.users.delete(email)
+      for (const [key, value] of state.tokens) if (value === email) state.tokens.delete(key)
+      return route.fulfill({ status: 204, body: '' })
+    }
     return fail(404, 'not_found')
   })
 
@@ -154,4 +162,36 @@ test('登录 429 显示倒计时提示', async ({ page }) => {
   await page.getByLabel('密码').fill(PASSWORD)
   await page.getByRole('button', { name: '登录' }).click()
   await expect(page.getByText('操作太频繁，请 30 秒后重试')).toBeVisible()
+})
+
+test('注销账号：双闸齐备才可点，错误密码出文案，成功清会话回首页', async ({ page }) => {
+  const state = await installAuthApi(page)
+  state.users.set(EMAIL, { password: PASSWORD, display_name: 'Demo', username: 'demo' })
+
+  await page.goto('/login')
+  await page.getByLabel('邮箱').fill(EMAIL)
+  await page.getByLabel('密码').fill(PASSWORD)
+  await page.getByRole('button', { name: '登录' }).click()
+  await expect(page).toHaveURL('/')
+
+  await page.goto('/account')
+  const button = page.getByTestId('delete-account-button')
+  // 双闸：初始禁用；单填密码仍禁用；勾选后启用
+  await expect(button).toBeDisabled()
+  await page.getByTestId('delete-confirm-password').fill('wrong-password')
+  await expect(button).toBeDisabled()
+  await page.getByTestId('delete-confirm-check').check()
+  await expect(button).toBeEnabled()
+
+  // 错误密码：401 文案，会话保留
+  await button.click()
+  await expect(page.getByTestId('delete-account-error')).toHaveText('邮箱或密码不正确')
+  await expect(page).toHaveURL(/\/account/)
+
+  // 正确密码：注销成功 → 清会话 → 回首页
+  await page.getByTestId('delete-confirm-password').fill(PASSWORD)
+  await button.click()
+  await expect(page).toHaveURL('/')
+  expect(state.users.has(EMAIL)).toBe(false)
+  expect(await page.evaluate(() => localStorage.getItem('crearte.auth.session.v1'))).toBeNull()
 })
