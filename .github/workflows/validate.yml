@@ -5,6 +5,8 @@ on:
     paths:
       - 'src/**'
       - '.github/workflows/validate.yml'
+  push:
+    branches: [master]
 
 jobs:
   check:
