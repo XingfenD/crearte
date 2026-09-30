@@ -120,7 +120,7 @@ test('数据失败时两个入口卡仍在', async ({ page }) => {
   await page.route('**/data/index.json', (route) => route.fulfill({ status: 500, body: 'boom' }))
   await page.goto('http://localhost:4173/')
 
-  await expect(page.getByRole('heading', { name: '想被收录？' })).toBeVisible()
+  await expect(page.getByRole('heading', { name: '欢迎投稿' })).toBeVisible()
   await expect(page.getByRole('heading', { name: '文档', exact: true })).toBeVisible()
 })
 
@@ -131,7 +131,7 @@ test('落地页标题大纲层级正确', async ({ page }) => {
   await expect(page.getByRole('heading', { level: 2, name: '精选 · SELECTED' })).toBeVisible()
   await expect(page.getByRole('heading', { level: 3, name: '2048' })).toBeVisible()
   await expect(page.getByRole('heading', { level: 2, name: '投稿与文档' })).toBeVisible()
-  await expect(page.getByRole('heading', { level: 3, name: '想被收录？' })).toBeVisible()
+  await expect(page.getByRole('heading', { level: 3, name: '欢迎投稿' })).toBeVisible()
   await expect(page.getByRole('heading', { level: 3, name: '文档' })).toBeVisible()
 })
 

@@ -6,6 +6,13 @@ All notable changes to this template should be documented in this file.
 The format loosely follows Keep a Changelog and can be adapted to the team's habits.
 本文档参考了 Keep a Changelog 的思路，也可以根据团队习惯调整。
 
+## [0.10.7] - 2026-09-30
+
+### Changed / 变更
+
+- Softened the landing page's submission card: the blunt 「想被收录？提交 issue 或 PR，也可以发邮件到……」 now reads as an invitation — heading 「欢迎投稿」, body 「把你的作品分享给大家——提 issue 或 PR，或者直接发邮件到 …，都欢迎。」 — with the GitHub and email routes presented as equally welcome options. Landing e2e heading assertions updated accordingly.
+- 软化落地页投稿卡措辞：生硬的「想被收录？提交 issue 或 PR，也可以发邮件到……」改为邀请语气——标题「欢迎投稿」，正文「把你的作品分享给大家——提 issue 或 PR，或者直接发邮件到 …，都欢迎。」，GitHub 与邮件两条途径并列为皆受欢迎的方式。落地页 e2e 的标题断言同步更新。
+
 ## [0.10.6] - 2026-09-28
 
 ### Changed / 变更

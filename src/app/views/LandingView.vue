@@ -71,10 +71,11 @@ const stats = computed(() => {
   <section class="mt-8 flex flex-col gap-4 sm:flex-row">
     <h2 class="sr-only">投稿与文档</h2>
     <section class="flex-1 border-2 border-ink bg-surface p-4 shadow-hard-sm">
-      <h3 class="text-sm font-black">想被收录？</h3>
+      <h3 class="text-sm font-black">欢迎投稿</h3>
       <p class="mt-2 text-xs leading-relaxed text-ink-soft">
-        提交 issue 或 PR，也可以发邮件到
+        把你的作品分享给大家——提 issue 或 PR，或者直接发邮件到
         <a :href="`mailto:${CONTACT_EMAIL}`" class="underline">{{ CONTACT_EMAIL }}</a>
+        ，都欢迎。
       </p>
     </section>
     <section class="flex-1 border-2 border-ink bg-surface p-4 shadow-hard-sm">
