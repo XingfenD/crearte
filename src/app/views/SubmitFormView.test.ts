@@ -208,3 +208,42 @@ describe('SubmitFormView hosted 第三档', () => {
     expect((w.find('[data-testid="runtime-virtual"]').element as HTMLInputElement).disabled).toBe(true)
   })
 })
+
+describe('SubmitFormView 运行权限五键（P8 ①）', () => {
+  const NEW_KEYS = ['inlineStyle', 'wasm', 'coop', 'fullscreen', 'gamepad'] as const
+
+  it('virtual 档渲染七键勾选框（含五个新开关，label/hint 非空）', async () => {
+    h.state.user = alice
+    const w = mountForm()
+    await w.find('[data-testid="runtime-virtual"]').setValue(true)
+    await flushPromises()
+    for (const key of NEW_KEYS) {
+      const box = w.find(`[data-testid="feature-${key}"]`)
+      expect(box.exists()).toBe(true)
+      const boxText = box.element.closest('label')?.textContent ?? ''
+      expect(boxText.length).toBeGreaterThan(0)
+    }
+  })
+
+  it('勾选新开关进入载荷：features 七键齐全且对应键为 true', async () => {
+    h.state.user = alice
+    h.createSubmission.mockResolvedValue({ id: 's1', kind: 'new_work', status: 'draft', work_id: 'alice/my-game', payload: {}, created_at: '', updated_at: '' })
+    const w = mountForm()
+    await w.find('[data-testid="runtime-virtual"]').setValue(true)
+    await w.find('#sf-name').setValue('My Game')
+    await w.find('[data-testid="version"]').setValue('v1')
+    await w.find('[data-testid="feature-wasm"]').setValue(true)
+    await w.find('[data-testid="feature-fullscreen"]').setValue(true)
+    await flushPromises()
+    await w.get('[data-testid="save-draft"]').trigger('click')
+    await flushPromises()
+    expect(h.createSubmission).toHaveBeenCalledTimes(1)
+    const features = h.createSubmission.mock.calls[0][0].payload.features
+    expect(Object.keys(features).sort()).toEqual(['coop', 'eval', 'fullscreen', 'gamepad', 'inlineScript', 'inlineStyle', 'wasm'])
+    expect(features.wasm).toBe(true)
+    expect(features.fullscreen).toBe(true)
+    expect(features.coop).toBe(false)
+    expect(features.gamepad).toBe(false)
+    expect(features.inlineStyle).toBe(false)
+  })
+})
