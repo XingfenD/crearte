@@ -4,6 +4,7 @@ import { resolveNavigation } from './guards'
 
 export const routes: RouteRecordRaw[] = [
   { path: '/', name: 'home', component: () => import('@/views/LandingView.vue') },
+  { path: '/creator', name: 'creator', component: () => import('@/views/CreatorCenterView.vue') },
   { path: '/games', name: 'catalog', component: () => import('@/views/CatalogView.vue') },
   { path: '/games/:user/:slug', name: 'game', component: () => import('@/views/GameView.vue'), props: true },
   { path: '/docs', name: 'docs', component: () => import('@/views/DocsView.vue') },

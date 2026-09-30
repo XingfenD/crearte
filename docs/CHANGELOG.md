@@ -6,6 +6,13 @@ All notable changes to this template should be documented in this file.
 The format loosely follows Keep a Changelog and can be adapted to the team's habits.
 本文档参考了 Keep a Changelog 的思路，也可以根据团队习惯调整。
 
+## [0.17.0] - 2026-09-30
+
+### Added / 新增
+
+- Added the Creator Center (`/creator`): a homepage-style page with a hero (提交作品 / 投稿指南 CTAs) and two cards — 「作品数据」 (placeholder adapting to auth state: anonymous visitors get a login prompt with `next` return, signed-in users see build-in-progress copy, noauth deploys show no login link) and 「创作教程」 (placeholder linking to the existing submission guide until the tutorial content lands). The header main nav gains a third tab with the same active styling as 作品/文档. No backend or deploy changes.
+- 新增创作者中心（`/creator`）：首页样式页面，hero（提交作品 / 投稿指南两个按钮）+ 两张卡——「作品数据」占位卡按登录态分流（未登录给登录引导并带 `next` 回跳、已登录显示建设中文案、noauth 部署不出现登录链接）与「创作教程」占位卡（教程内容定稿前链向现有《提交作品指南》）。页头主导航新增第三个 tab，激活样式与「作品 / 文档」一致。零后端、零部署改动。
+
 ## [0.16.1] - 2026-09-30
 
 ### Fixed / 修复

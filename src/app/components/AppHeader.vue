@@ -14,6 +14,7 @@ watch(() => route.fullPath, () => {
 const onCatalog = computed(() => route.name === 'catalog')
 const showGameCount = computed(() => route.name === 'catalog' || route.name === 'home')
 const onDocs = computed(() => route.name === 'docs' || route.name === 'doc')
+const onCreator = computed(() => route.name === 'creator')
 
 const { data: games } = useAsync<GameSummary[] | null>(
   () => (showGameCount.value ? repo.listGames() : Promise.resolve(null)),
@@ -57,6 +58,12 @@ function logout(): void {
           :class="onDocs ? 'border-b-accent-ink text-accent-ink' : 'border-b-transparent text-ink-soft'"
           :aria-current="onDocs ? 'page' : undefined"
         >文档</RouterLink>
+        <RouterLink
+          to="/creator"
+          class="border-b-[3px] pb-0.5 text-sm font-bold"
+          :class="onCreator ? 'border-b-accent-ink text-accent-ink' : 'border-b-transparent text-ink-soft'"
+          :aria-current="onCreator ? 'page' : undefined"
+        >创作者中心</RouterLink>
       </nav>
       <span
         class="ml-auto hidden border-2 border-ink bg-highlight px-2 py-0.5 font-mono text-[0.6875rem] tracking-[0.05em] sm:inline-block"
