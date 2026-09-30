@@ -6,6 +6,18 @@ All notable changes to this template should be documented in this file.
 The format loosely follows Keep a Changelog and can be adapted to the team's habits.
 本文档参考了 Keep a Changelog 的思路，也可以根据团队习惯调整。
 
+## [0.16.1] - 2026-09-30
+
+### Fixed / 修复
+
+- `scripts/serve-runtime.mjs` now serves the runtime triple (`/__bootstrap`, `/sw.js`, `/agent.js`) on any `*.localhost` game subdomain, ahead of the fixture-table gate — matching the prod nginx wildcard block and the dev plugin (`dev-game-runtime.ts`) — so works registered live through the API in the real-stack full-loop e2e can install their service worker instead of timing out on 404s.
+- `scripts/serve-runtime.mjs` 的运行时三件套（`/__bootstrap`、`/sw.js`、`/agent.js`）改为对任意 `*.localhost` 游戏子域可服务，不再卡在夹具表门槛之后——与 prod nginx 通配块及 dev 插件（`dev-game-runtime.ts`）对齐；真栈 full-loop e2e 中经活体 API 现场注册的作品由此能装上 SW，不再因 404 超时。
+
+### CI / 持续集成
+
+- `scripts/e2e-stack.sh` gains `CREARTE_STACK_GO` (explicit go binary for the backend build — a CI runner whose `/usr/local/go` predates the backend's go.mod floor used to trip the version gate into silent SKIP mode, a false green) and `CREARTE_STACK_REQUIRED=1` (fail fast when the stack cannot start instead of skipping full-loop silently); `validate.yml` now also runs on pushes to `master`.
+- `scripts/e2e-stack.sh` 新增 `CREARTE_STACK_GO`（显式指定编译后端的 go 二进制——runner 上 `/usr/local/go` 低于后端 go.mod 地板时曾掉进静默 SKIP 假绿）与 `CREARTE_STACK_REQUIRED=1`（栈起不来直接失败，不再静默跳过 full-loop）；`validate.yml` 追加对 `master` 推送的触发。
+
 ## [0.16.0] - 2026-09-30
 
 ### Added / 新增

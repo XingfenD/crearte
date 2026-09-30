@@ -26,7 +26,9 @@ SERVER_BIN="/tmp/crearte-stack-server"
 # ⚠️ 裸 `go` 在本机是 1.18.1，无法解析后端 go.mod（要求 go 1.24.1）→ build 静默失败 →
 # stack_ok=0 → skip 模式 → full-loop.spec 自动跳过 = **假绿**（什么都没测却报通过）。
 # 优先用 /usr/local/go/bin/go（实测 1.26.8），回退到 PATH 里的 go。
-GO_BIN="/usr/local/go/bin/go"
+# ⚠️ CI runner 的 /usr/local/go 不随 setup-go 变（可能低于 go.mod 地板 → skip 模式假绿）。
+# CREARTE_STACK_GO 显式指定 go 二进制；不设即旧行为（本地零变化）。
+GO_BIN="${CREARTE_STACK_GO:-/usr/local/go/bin/go}"
 command -v "$GO_BIN" >/dev/null 2>&1 || GO_BIN="$(command -v go 2>/dev/null || true)"
 
 cleanup() {
@@ -127,6 +129,11 @@ JSON
   echo "[stack] ready: api=$API_PORT web=$WEB_PORT admin=$ADMIN_EMAIL"
 else
   echo "[stack] dependencies missing — running in SKIP mode (frontend only, full-loop will skip)"
+  # ⚠️ CI 真栈 job 必须设 CREARTE_STACK_REQUIRED=1：skip 模式在 CI 里等于假绿（full-loop 全 skip 仍 exit 0）。
+  if [ "${CREARTE_STACK_REQUIRED:-0}" = "1" ]; then
+    echo "[stack] CREARTE_STACK_REQUIRED=1 — refusing silent skip, failing fast" >&2
+    exit 1
+  fi
   (cd "$FRONT_ROOT" && npm run build:e2e) || exit 1
 fi
 
