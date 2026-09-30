@@ -16,6 +16,13 @@ const APPROVED = {
   created_at: '2026-09-27T00:00:00Z', updated_at: '2026-09-27T00:00:00Z'
 }
 
+// P6 D-D：hosted 待审提交 fixture（审核详情展示托管链接/降级方式的验证对象）
+const HOSTED = {
+  id: 'sub-h1', kind: 'new_work', status: 'pending', work_id: 'mock/hosted-game',
+  payload: { id: 'mock/hosted-game', name: 'Hosted Game', url: '', author: { name: 'h' }, description: 'd', durationMinutes: { min: 1, max: 2 }, type: 'puzzle', tags: [], runtime: 'hosted', hostedUrl: 'https://hosted.example.dev/game/', fallback: 'hosted' },
+  created_at: '2026-09-27T00:00:00Z', updated_at: '2026-09-27T00:00:00Z'
+}
+
 function installAdminApi(page: Page, calls: string[]): void {
   const json = (route: Route, body: unknown, status = 200) =>
     route.fulfill({ status, contentType: 'application/json', body: JSON.stringify(body) })
@@ -23,11 +30,12 @@ function installAdminApi(page: Page, calls: string[]): void {
   page.route(`${API}/api/admin/submissions**`, (route) => {
     const url = new URL(route.request().url())
     hit(route, 200)
-    if (url.searchParams.get('status') === 'pending') return json(route, { submissions: [PENDING], total: 1 })
+    if (url.searchParams.get('status') === 'pending') return json(route, { submissions: [PENDING, HOSTED], total: 2 })
     if (url.searchParams.get('status') === 'approved') return json(route, { submissions: [APPROVED], total: 1 })
     return json(route, { submissions: [], total: 0 })
   })
   page.route(`${API}/api/submissions/sub-p1`, (route) => json(route, PENDING))
+  page.route(`${API}/api/submissions/sub-h1`, (route) => json(route, HOSTED))
   page.route(`${API}/api/admin/submissions/sub-p1/approve`, (route) => { calls.push('approve'); hit(route, 200); json(route, { ok: true }) })
   page.route(`${API}/api/admin/submissions/sub-p1/reject`, (route) => {
     calls.push(`reject:${route.request().postDataJSON()?.note ?? ''}`)
@@ -289,4 +297,21 @@ test('操作日志：管理动作入流水 / route 过滤 / audit GET 自记录'
   // 两个新选项随用户列表/操作日志读取出现在过滤下拉里
   await expect(page.locator('#audit-route-filter option[value="/api/admin/users"]')).toHaveCount(1)
   await expect(page.locator('#audit-route-filter option[value="/api/admin/audit"]')).toHaveCount(1)
+})
+
+// P6 D-D（spec §2）：hosted 提交的审核详情展示托管链接行（纯文本，故意不做锚点——
+// 审核者不被引导点击任意第三方 URL）与降级方式（runtime=hosted 且有值才显示）。
+test('审核详情：hosted 提交展示托管链接（纯文本）与降级方式', async ({ page }) => {
+  await seedSession(page, 'admin')
+  installAdminApi(page, [])
+
+  await page.goto('http://localhost:4173/admin')
+  await expect(page.locator('[data-testid=queue-sub-h1]')).toContainText('Hosted Game')
+  await page.locator('[data-testid=queue-sub-h1]').getByRole('link', { name: '审核' }).click()
+  await expect(page).toHaveURL('http://localhost:4173/admin/submissions/sub-h1')
+
+  const hostedRow = page.locator('[data-testid=payload-hosted-url]')
+  await expect(hostedRow).toHaveText('https://hosted.example.dev/game/')
+  await expect(hostedRow.locator('a')).toHaveCount(0)
+  await expect(page.locator('[data-testid=payload-hosted-fallback]')).toHaveText('降级为站内播放')
 })
