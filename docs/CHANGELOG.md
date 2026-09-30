@@ -6,6 +6,23 @@ All notable changes to crearte are documented in this file.
 The format follows Keep a Changelog (https://keepachangelog.com/) and is used as this repository's release-note format.
 书写格式遵循 Keep a Changelog（https://keepachangelog.com/），作为本仓发布记录的格式约定。
 
+## [0.21.0] - 2026-10-01
+
+### Added / 新增
+
+- Account deletion reaches the front end: `/account` gains a fourth 「危险区：注销账号」 section with a current-password field and an 「我已知晓作品将下架且不可恢复」 checkbox — the button stays disabled until both are supplied — and the confirm call hits `DELETE /api/auth/account` through the auth client. On 204 the session is invalidated locally and the visitor lands back on the home page; failures surface through the shared auth message table, including the new 410 `account_deleted` → 「该账号已注销」.
+- 账号注销在前端落地：`/account` 新增第四段「危险区：注销账号」，含当前密码输入与「我已知晓作品将下架且不可恢复」勾选两项——两者齐备按钮才可点，确认后经 auth client 发 `DELETE /api/auth/account`。204 时本地清会话并回首页；失败走统一 auth 文案表，含新码 410 `account_deleted` → 「该账号已注销」。
+
+### Changed / 变更
+
+- The admin user panel no longer prints raw backend English for routine role-change failures: `validation` → 「角色参数非法」、`not_found` → 「用户不存在」、`internal` → 「服务器内部错误，请稍后重试」, driven by a standalone `adminActionMessage` mapping table. `last_admin` (the two-step demote guard's 409) and any unknown code still fall through to the backend message verbatim.
+- 管理面用户面板不再直出常规角色变更失败的后端英文：`validation` → 「角色参数非法」、`not_found` → 「用户不存在」、`internal` → 「服务器内部错误，请稍后重试」，由独立 `adminActionMessage` 映射表驱动。`last_admin`（降级两步确认的 409 护栏）与任何未知码仍原样透传后端 message。
+
+### Tests / 测试
+
+- New coverage: `client.test.ts` pins the delete request shape (DELETE path, Bearer, `{password}` body) plus 401 code parsing and the 410 → `account_deleted` mapping; `errors.test.ts` pins the new message; `AccountView.test.ts` covers the two-gate disable state, the success chain (`deleteAccount` → `invalidate` → home) and the 401 / 410 message surfaces; `AdminUsersView.test.ts` covers the three localized codes and the `last_admin` / unknown passthrough; `e2e/auth.spec.ts` walks the real-browser flow (disabled → enabled → wrong-password message → success clears session and returns home).
+- 新增覆盖：`client.test.ts` 钉死注销请求形状（DELETE 路径、Bearer、`{password}` 体）与 401 码解析、410 → `account_deleted` 映射；`errors.test.ts` 钉死新文案；`AccountView.test.ts` 覆盖双闸禁用态、成功链（`deleteAccount` → `invalidate` → 首页）与 401 / 410 文案面；`AdminUsersView.test.ts` 覆盖三码中文化与 `last_admin` / 未知透传；`e2e/auth.spec.ts` 走真浏览器流（禁用 → 启用 → 错误密码文案 → 成功清会话回首页）。
+
 ## [0.20.0] - 2026-10-01
 
 ### Added / 新增

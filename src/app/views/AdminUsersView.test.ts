@@ -2,6 +2,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { flushPromises, mount } from '@vue/test-utils'
 import AdminUsersView from './AdminUsersView.vue'
+import { adminActionMessage } from './AdminUsersView.vue'
 import { AdminApiError } from '@/data/repository'
 import type { AdminUser, AdminUserPage } from '@/data/types'
 
@@ -126,6 +127,22 @@ describe('AdminUsersView（/admin/users）', () => {
     expect(w.get('[data-testid="users-action-error"]').text()).toBe('网络错误')
   })
 
+  it('validation/not_found/internal 错误中文化经视图展示', async () => {
+    const cases: Array<[AdminApiError, string]> = [
+      [new AdminApiError(400, 'validation', 'invalid role'), '角色参数非法'],
+      [new AdminApiError(404, 'not_found', 'user not found'), '用户不存在'],
+      [new AdminApiError(500, 'internal', 'boom'), '服务器内部错误，请稍后重试']
+    ]
+    for (const [err, expected] of cases) {
+      h.apiRepo.setUserRole.mockRejectedValueOnce(err)
+      const w = mountView()
+      await flushPromises()
+      await w.get('[data-testid="user-row-u-bob"]').get('button').trigger('click')
+      await flushPromises()
+      expect(w.get('[data-testid="users-action-error"]').text()).toBe(expected)
+    }
+  })
+
   it('下一页 → offset 50 重查', async () => {
     const w = mountView()
     await flushPromises()
@@ -141,5 +158,22 @@ describe('AdminUsersView（/admin/users）', () => {
     const w = mountView()
     await flushPromises()
     expect(w.text()).toContain('没有匹配的用户')
+  })
+})
+
+describe('adminActionMessage 文案映射（P7 遗留尾）', () => {
+  it('validation / not_found / internal 三码中文化', () => {
+    expect(adminActionMessage(new AdminApiError(400, 'validation', 'invalid role'))).toBe('角色参数非法')
+    expect(adminActionMessage(new AdminApiError(404, 'not_found', 'user not found'))).toBe('用户不存在')
+    expect(adminActionMessage(new AdminApiError(500, 'internal', 'boom'))).toBe('服务器内部错误，请稍后重试')
+  })
+
+  it('last_admin 与未知 code 透传后端原文', () => {
+    expect(adminActionMessage(new AdminApiError(409, 'last_admin', 'cannot demote the last admin'))).toBe('cannot demote the last admin')
+    expect(adminActionMessage(new AdminApiError(418, 'mystery', 'teapot'))).toBe('teapot')
+  })
+
+  it('非 AdminApiError 回退到 toContentMessage（普通 Error 原样）', () => {
+    expect(adminActionMessage(new Error('网络错误'))).toBe('网络错误')
   })
 })

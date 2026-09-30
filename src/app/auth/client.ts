@@ -13,6 +13,7 @@ export interface AuthClient {
   me(token: string): Promise<AuthUser>
   changePassword(token: string, input: { currentPassword: string; newPassword: string }): Promise<AuthResponse>
   logoutAll(token: string): Promise<void>
+  deleteAccount(token: string, password: string): Promise<void>
 }
 
 function parseRetryAfter(headers: Headers | undefined): number | null {
@@ -79,6 +80,12 @@ export function createAuthClient(options: AuthClientOptions): AuthClient {
     },
     logoutAll(token) {
       return send<void>('/api/auth/logout-all', { method: 'POST' }, token)
+    },
+    deleteAccount(token, password) {
+      return send<void>('/api/auth/account', {
+        method: 'DELETE',
+        body: JSON.stringify({ password })
+      }, token)
     }
   }
 }

@@ -1,4 +1,4 @@
-import { createAuthClient } from './client'
+import { createAuthClient, type AuthClient } from './client'
 import { createAuthSession, type AuthSession } from './session'
 import { createSessionStore, type SessionStore } from './storage'
 
@@ -20,5 +20,7 @@ sessionRef = createAuthSession({
 })
 
 export const session: AuthSession = sessionRef
+// 注销走裸 client（非会话封装）：成功链由调用方显式 session.invalidate() 收尾
+export const authClient: AuthClient = client
 export * from './errors'
 export * from './types'

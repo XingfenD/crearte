@@ -4,13 +4,16 @@ import { flushPromises, mount } from '@vue/test-utils'
 import { createMemoryHistory, createRouter } from 'vue-router'
 import type { GameSummary } from '@/data/types'
 import AccountView from './AccountView.vue'
+import { AuthApiError } from '@/auth/errors'
 
 const h = vi.hoisted(() => ({
   enabled: true,
   status: 'authenticated' as 'anonymous' | 'authenticated',
   listGames: vi.fn(),
   fetchMine: vi.fn(),
-  setFavorite: vi.fn()
+  setFavorite: vi.fn(),
+  invalidate: vi.fn(),
+  deleteAccount: vi.fn()
 }))
 
 vi.mock('@/auth', () => ({
@@ -22,11 +25,12 @@ vi.mock('@/auth', () => ({
       user: { id: 'u1', email: 'a@b.c', display_name: 'A', username: 'alice', role: 'user' }
     },
     getToken: () => (h.status === 'authenticated' ? 'tok' : null),
-    invalidate: vi.fn(),
+    invalidate: h.invalidate,
     logout: vi.fn(),
     logoutAll: vi.fn(),
     changePassword: vi.fn()
   },
+  authClient: { deleteAccount: h.deleteAccount },
   authEnabled: true
 }))
 
@@ -73,6 +77,7 @@ beforeEach(async () => {
   h.listGames.mockResolvedValue([workA, workB])
   h.fetchMine.mockResolvedValue({ favorites: [], ratings: {} })
   h.setFavorite.mockResolvedValue({ favoriteCount: 0, ratingCount: 0, favorited: false, rated: false })
+  h.deleteAccount.mockResolvedValue(undefined)
   router = createRouter({
     history: createMemoryHistory(),
     routes: [
@@ -154,5 +159,78 @@ describe('AccountView 我的反应（P5）', () => {
     const w = mountAccount()
     await flushPromises()
     expect(w.get('[data-testid="my-reactions-error"]').text()).toContain('网络失败')
+  })
+})
+
+describe('AccountView 危险区：注销账号（P8 ③）', () => {
+  async function openDangerZone() {
+    const w = mountAccount()
+    await flushPromises()
+    return w
+  }
+
+  it('双闸：勾选与密码齐备才 enabled，缺一即禁用', async () => {
+    const w = await openDangerZone()
+    const button = w.get('[data-testid="delete-account-button"]')
+    expect(button.attributes('disabled')).toBeDefined()
+
+    await w.get('[data-testid="delete-confirm-password"]').setValue('password1234')
+    expect(button.attributes('disabled')).toBeDefined()
+
+    await w.get('[data-testid="delete-confirm-check"]').setValue(true)
+    expect(button.attributes('disabled')).toBeUndefined()
+
+    await w.get('[data-testid="delete-confirm-password"]').setValue('')
+    expect(button.attributes('disabled')).toBeDefined()
+    await w.get('[data-testid="delete-confirm-check"]').setValue(false)
+    expect(button.attributes('disabled')).toBeDefined()
+  })
+
+  it('成功：authClient.deleteAccount → session.invalidate → 跳首页', async () => {
+    const w = await openDangerZone()
+    await w.get('[data-testid="delete-confirm-password"]').setValue('password1234')
+    await w.get('[data-testid="delete-confirm-check"]').setValue(true)
+    await w.get('[data-testid="delete-account-button"]').trigger('click')
+    await flushPromises()
+    expect(h.deleteAccount).toHaveBeenCalledWith('tok', 'password1234')
+    expect(h.invalidate).toHaveBeenCalledTimes(1)
+    expect(router.currentRoute.value.path).toBe('/')
+  })
+
+  it('401 错误密码：展示中文文案且不清会话', async () => {
+    h.deleteAccount.mockRejectedValueOnce(new AuthApiError(401, 'invalid_credentials', 'wrong password'))
+    const w = await openDangerZone()
+    await w.get('[data-testid="delete-confirm-password"]').setValue('wrong')
+    await w.get('[data-testid="delete-confirm-check"]').setValue(true)
+    await w.get('[data-testid="delete-account-button"]').trigger('click')
+    await flushPromises()
+    expect(w.get('[data-testid="delete-account-error"]').text()).toBe('邮箱或密码不正确')
+    expect(h.invalidate).not.toHaveBeenCalled()
+    expect(router.currentRoute.value.path).toBe('/account')
+  })
+
+  it('410 account_deleted：展示「该账号已注销」', async () => {
+    h.deleteAccount.mockRejectedValueOnce(new AuthApiError(410, 'account_deleted', 'gone'))
+    const w = await openDangerZone()
+    await w.get('[data-testid="delete-confirm-password"]').setValue('password1234')
+    await w.get('[data-testid="delete-confirm-check"]').setValue(true)
+    await w.get('[data-testid="delete-account-button"]').trigger('click')
+    await flushPromises()
+    expect(w.get('[data-testid="delete-account-error"]').text()).toBe('该账号已注销')
+  })
+
+  // 409 注销被拒（后端契约 last_admin）：auth client 的 readErrorCode → toErrorCode 把未知码
+  // 归一为 'internal'，且不保留后端 message，故视图经 toUserMessage 展示 AUTH_ERROR_MESSAGES.internal。
+  // 本用例钉住该链路的可观测语义：409 被拒 → 出 alert 行且会话不被清（invalidate 未调、仍停在 /account）。
+  it('409 注销被拒（last_admin 经 client 归一为 internal）：出文案且不清会话', async () => {
+    h.deleteAccount.mockRejectedValueOnce(new AuthApiError(409, 'internal', 'auth request failed: internal'))
+    const w = await openDangerZone()
+    await w.get('[data-testid="delete-confirm-password"]').setValue('password1234')
+    await w.get('[data-testid="delete-confirm-check"]').setValue(true)
+    await w.get('[data-testid="delete-account-button"]').trigger('click')
+    await flushPromises()
+    expect(w.get('[data-testid="delete-account-error"]').text()).toBe('服务暂时不可用，请稍后重试')
+    expect(h.invalidate).not.toHaveBeenCalled()
+    expect(router.currentRoute.value.path).toBe('/account')
   })
 })
