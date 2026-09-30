@@ -1,10 +1,22 @@
 # Changelog / 更新日志
 
-All notable changes to this template should be documented in this file.
-本模板的重要变更建议统一记录在此文件中。
+All notable changes to crearte are documented in this file.
+本仓的重要变更统一记录在此文件中。
 
-The format loosely follows Keep a Changelog and can be adapted to the team's habits.
-本文档参考了 Keep a Changelog 的思路，也可以根据团队习惯调整。
+The format follows Keep a Changelog (https://keepachangelog.com/) and is used as this repository's release-note format.
+书写格式遵循 Keep a Changelog（https://keepachangelog.com/），作为本仓发布记录的格式约定。
+
+## [0.20.0] - 2026-10-01
+
+### Added / 新增
+
+- The submission form and both admin surfaces now expose the full seven-key CSP feature set: alongside the existing `eval` / `inlineScript`, authors and admins can toggle `inlineStyle`, `wasm`, `coop`, `fullscreen` and `gamepad` (the server and runtime already accepted all seven — this release only opens the editing UI, the flag consumers are untouched). All three surfaces (the submission form checkbox group, AdminView's expanded work row, AdminSubmissionView's read-only display) stay driven by the single `FEATURE_ITEMS` list, so no surface carries its own hard-coded copy. `collectFeatures` now emits all seven keys (an explicit all-false object still means “grant nothing”, preserving the backend's “a missing key in an old submission → keep the stored value” distinction), `featuresToForm` reads the five new keys back defaulting to false, and `hasAnyFeature` covers them. Each new switch's label and hint spell out what kind of work needs it, what is loosened, and when to leave it off.
+- 提交表单与两处管理面现开放七键 CSP 权限全集：在既有 `eval` / `inlineScript` 之外，作者与管理员可勾选 `inlineStyle`、`wasm`、`coop`、`fullscreen`、`gamepad`（服务端与运行时本已支持七键，本次只补编辑 UI，flag 消费端零改动）。三处界面（投稿表单勾选区、AdminView 作品展开行、AdminSubmissionView 只读展示）仍由同一份 `FEATURE_ITEMS` 驱动，无任一界面自带硬编码。`collectFeatures` 改为输出七键齐全（显式全 false 仍表示「不放宽」，保住后端「旧提交缺键→保留原值」的区分），`featuresToForm` 回读五个新键并缺省 false，`hasAnyFeature` 自然覆盖。每条新开关的 label 与 hint 写清什么作品需要它、放宽了什么、何时不应开启。
+
+### Docs / 文档
+
+- Reworded this changelog's header into the project's own voice (crearte is a product, not a template): removed the “template” / “suggested” / “can be adjusted to taste” placeholder phrasing, keeping a single line that cites Keep a Changelog as the format source. Historical entries are untouched.
+- CHANGELOG 头部改为项目自己的口径（crearte 是产品，不是模板）：去掉「模板/重要变更建议统一记录/可以根据团队习惯调整」的占位话术，保留一句出处说明（书写格式遵循 Keep a Changelog）。历史条目未改动。
 
 ## [0.19.1] - 2026-09-30
 
