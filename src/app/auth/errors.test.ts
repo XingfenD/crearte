@@ -17,6 +17,11 @@ describe('auth 错误映射', () => {
     expect(toUserMessage(new AuthApiError(429, 'rate_limited', 'x'))).toBe('操作太频繁，请 60 秒后重试')
   })
 
+  it('account_deleted 映射为「该账号已注销」', () => {
+    expect(AUTH_ERROR_MESSAGES.account_deleted).toBe('该账号已注销')
+    expect(toUserMessage(new AuthApiError(410, 'account_deleted', 'x'))).toBe('该账号已注销')
+  })
+
   it('未知错误按网络失败兜底', () => {
     expect(toUserMessage(new Error('boom'))).toBe(AUTH_ERROR_MESSAGES.network)
     expect(toUserMessage('boom')).toBe(AUTH_ERROR_MESSAGES.network)

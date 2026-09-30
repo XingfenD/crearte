@@ -128,6 +128,28 @@ describe('auth 客户端', () => {
     await expect(client().logoutAll('token')).resolves.toBeUndefined()
   })
 
+  it('deleteAccount 打 DELETE /api/auth/account、Bearer 头、body 只有 password，204 空体 resolve', async () => {
+    fetchMock.mockResolvedValueOnce({ ok: true, status: 204, headers: new Headers() } as Response)
+    await expect(client().deleteAccount('token-9', 'password1234')).resolves.toBeUndefined()
+    expect(fetchMock.mock.calls[0][0]).toBe(`${BASE}/api/auth/account`)
+    const init = fetchMock.mock.calls[0][1] as RequestInit
+    expect(init.method).toBe('DELETE')
+    expect((init.headers as Record<string, string>).Authorization).toBe('Bearer token-9')
+    expect(JSON.parse(String(init.body))).toEqual({ password: 'password1234' })
+  })
+
+  it('deleteAccount 401 读 body code（错误密码 invalid_credentials）', async () => {
+    fetchMock.mockResolvedValueOnce(jsonResponse({ error: { code: 'invalid_credentials', message: 'wrong password' } }, 401))
+    await expect(client().deleteAccount('token-9', 'wrong-password'))
+      .rejects.toMatchObject({ status: 401, code: 'invalid_credentials' })
+  })
+
+  it('deleteAccount 410 映射为 account_deleted', async () => {
+    fetchMock.mockResolvedValueOnce(jsonResponse({ error: { code: 'account_deleted', message: 'already deleted' } }, 410))
+    await expect(client().deleteAccount('token-9', 'password1234'))
+      .rejects.toMatchObject({ status: 410, code: 'account_deleted' })
+  })
+
   it('网络异常归为 network', async () => {
     fetchMock.mockRejectedValueOnce(new TypeError('failed to fetch'))
     await expect(client().login({ email: 'a@example.com', password: 'password1234' }))
