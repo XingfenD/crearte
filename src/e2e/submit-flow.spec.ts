@@ -102,6 +102,31 @@ test('新建 virtual 提交：slug 联动 → 上传 → 存草稿 → 提交 �
   await expect(page.locator('[data-testid=submission-sub-1]')).toHaveCount(0)
 })
 
+test('新建 hosted 提交：草稿 payload 形状（runtime/hostedUrl/fallback，无 bundle/version/entry/features）', async ({ page }) => {
+  await seedSession(page)
+  const state = { subs: [] as Sub[] }
+  installSubmissionApi(page, state)
+
+  await page.goto('http://localhost:4173/submit/new')
+  await page.getByLabel('展示名称').fill('Hosted Game')
+  await expect(page.locator('[data-testid=work-id]')).toHaveValue('hosted-game')
+  await page.getByLabel('作品原始链接').fill('https://example.com/orig')
+  await page.locator('[data-testid=runtime-hosted]').check()
+  await page.locator('[data-testid=hosted-url]').fill('https://games.example.com/play')
+
+  await page.locator('[data-testid=save-draft]').click()
+  await expect(page).toHaveURL('http://localhost:4173/submit')
+  expect(state.subs).toHaveLength(1)
+  const payload = state.subs[0].payload as Record<string, unknown>
+  expect(payload.runtime).toBe('hosted')
+  expect(payload.hostedUrl).toBe('https://games.example.com/play')
+  expect(payload.fallback).toBe('external')
+  expect(payload.version).toBeUndefined()
+  expect(payload.entry).toBeUndefined()
+  expect(payload.features).toBeUndefined()
+  expect(state.subs[0].bundle_upload_id).toBeUndefined()
+})
+
 test('work_id/version 修改后已传 bundle 作废并提示重传', async ({ page }) => {
   await seedSession(page)
   const state: { subs: Sub[] } = { subs: [] }
