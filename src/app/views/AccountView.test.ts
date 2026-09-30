@@ -218,4 +218,19 @@ describe('AccountView 危险区：注销账号（P8 ③）', () => {
     await flushPromises()
     expect(w.get('[data-testid="delete-account-error"]').text()).toBe('该账号已注销')
   })
+
+  // 409 注销被拒（后端契约 last_admin）：auth client 的 readErrorCode → toErrorCode 把未知码
+  // 归一为 'internal'，且不保留后端 message，故视图经 toUserMessage 展示 AUTH_ERROR_MESSAGES.internal。
+  // 本用例钉住该链路的可观测语义：409 被拒 → 出 alert 行且会话不被清（invalidate 未调、仍停在 /account）。
+  it('409 注销被拒（last_admin 经 client 归一为 internal）：出文案且不清会话', async () => {
+    h.deleteAccount.mockRejectedValueOnce(new AuthApiError(409, 'internal', 'auth request failed: internal'))
+    const w = await openDangerZone()
+    await w.get('[data-testid="delete-confirm-password"]').setValue('password1234')
+    await w.get('[data-testid="delete-confirm-check"]').setValue(true)
+    await w.get('[data-testid="delete-account-button"]').trigger('click')
+    await flushPromises()
+    expect(w.get('[data-testid="delete-account-error"]').text()).toBe('服务暂时不可用，请稍后重试')
+    expect(h.invalidate).not.toHaveBeenCalled()
+    expect(router.currentRoute.value.path).toBe('/account')
+  })
 })

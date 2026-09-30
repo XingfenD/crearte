@@ -128,12 +128,19 @@ describe('AdminUsersView（/admin/users）', () => {
   })
 
   it('validation/not_found/internal 错误中文化经视图展示', async () => {
-    h.apiRepo.setUserRole.mockRejectedValueOnce(new AdminApiError(400, 'validation', 'invalid role'))
-    const w = mountView()
-    await flushPromises()
-    await w.get('[data-testid="user-row-u-bob"]').get('button').trigger('click')
-    await flushPromises()
-    expect(w.get('[data-testid="users-action-error"]').text()).toBe('角色参数非法')
+    const cases: Array<[AdminApiError, string]> = [
+      [new AdminApiError(400, 'validation', 'invalid role'), '角色参数非法'],
+      [new AdminApiError(404, 'not_found', 'user not found'), '用户不存在'],
+      [new AdminApiError(500, 'internal', 'boom'), '服务器内部错误，请稍后重试']
+    ]
+    for (const [err, expected] of cases) {
+      h.apiRepo.setUserRole.mockRejectedValueOnce(err)
+      const w = mountView()
+      await flushPromises()
+      await w.get('[data-testid="user-row-u-bob"]').get('button').trigger('click')
+      await flushPromises()
+      expect(w.get('[data-testid="users-action-error"]').text()).toBe(expected)
+    }
   })
 
   it('下一页 → offset 50 重查', async () => {
