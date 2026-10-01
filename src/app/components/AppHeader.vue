@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { RouterLink, useRoute } from 'vue-router'
 import { repo, type DocMeta, type GameSummary } from '@/data'
 import { useAsync } from '@/composables/useAsync'
@@ -7,9 +7,31 @@ import { authEnabled, session } from '@/auth'
 
 const route = useRoute()
 const detailsRef = ref<HTMLDetailsElement | null>(null)
+const menuOpen = ref(false)
+const summaryRef = ref<HTMLElement | null>(null)
 
 watch(() => route.fullPath, () => {
   if (detailsRef.value?.open) detailsRef.value.open = false
+})
+
+function onDocPointerDown(e: PointerEvent): void {
+  if (menuOpen.value && detailsRef.value && !detailsRef.value.contains(e.target as Node)) {
+    detailsRef.value.open = false
+  }
+}
+function onDocKeydown(e: KeyboardEvent): void {
+  if (e.key === 'Escape' && menuOpen.value && detailsRef.value) {
+    detailsRef.value.open = false
+    summaryRef.value?.focus()
+  }
+}
+onMounted(() => {
+  document.addEventListener('pointerdown', onDocPointerDown)
+  document.addEventListener('keydown', onDocKeydown)
+})
+onBeforeUnmount(() => {
+  document.removeEventListener('pointerdown', onDocPointerDown)
+  document.removeEventListener('keydown', onDocKeydown)
 })
 const onCatalog = computed(() => route.name === 'catalog')
 const showGameCount = computed(() => route.name === 'catalog' || route.name === 'home')
@@ -76,8 +98,8 @@ function logout(): void {
           class="ml-auto border-2 border-ink bg-surface px-2 py-1 text-xs font-bold sm:ml-0"
         >登录</RouterLink>
 
-        <details v-else ref="detailsRef" class="relative ml-auto sm:ml-0">
-          <summary class="list-none cursor-pointer select-none border-2 border-ink bg-surface px-2 py-1 text-xs font-bold [&::-webkit-details-marker]:hidden">{{ user.display_name }} ▾</summary>
+        <details v-else ref="detailsRef" class="relative ml-auto sm:ml-0" @toggle="menuOpen = ($event.target as HTMLDetailsElement).open">
+          <summary ref="summaryRef" class="list-none cursor-pointer select-none border-2 border-ink bg-surface px-2 py-1 text-xs font-bold [&::-webkit-details-marker]:hidden">{{ user.display_name }} ▾</summary>
           <div class="absolute right-0 z-50 mt-1 w-32 border-2 border-ink bg-surface shadow-hard">
             <RouterLink to="/submit" class="block px-3 py-2 text-xs font-bold hover:bg-paper">提交作品</RouterLink>
             <RouterLink
