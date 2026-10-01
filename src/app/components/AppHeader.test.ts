@@ -112,13 +112,21 @@ describe('AppHeader 用户下拉：Esc 关闭并回焦（D-K）', () => {
 })
 
 describe('AppHeader 用户下拉：监听清理', () => {
-  it('卸载后 document 上的外点/Esc 监听被移除（再次派发不抛错）', async () => {
+  it('卸载时以 pointerdown/keydown 成对调用 removeEventListener（审查补强：not.toThrow 证明不了移除）', async () => {
+    const removeSpy = vi.spyOn(document, 'removeEventListener')
     const { w } = await mountHeader()
     await openMenu(w)
 
     w.unmount()
 
+    // 钉住真实移除：两个具名事件都被解绑（handler 引用在组件作用域内，以事件名校验成对清理）
+    const removed = removeSpy.mock.calls.map(([type]) => type)
+    expect(removed).toContain('pointerdown')
+    expect(removed).toContain('keydown')
+
+    // 行为面兜底：卸载后再派发不抛错（detailsRef 已空，handler 短路）
     expect(() => document.body.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true }))).not.toThrow()
     expect(() => document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))).not.toThrow()
+    removeSpy.mockRestore()
   })
 })
