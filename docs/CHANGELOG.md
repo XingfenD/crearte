@@ -15,8 +15,8 @@ The format follows Keep a Changelog (https://keepachangelog.com/) and is used as
 
 ### Fixed / 修复
 
-- Loading skeletons no longer lie: `StatePanel`'s card skeleton grew from 3 to 6 cards (≥1.5 rows at each 2/3/4-column breakpoint) and the seven non-grid pages (game detail, docs, admin ×3, admin users, admin audit, submit list) now get a new `variant="lines"` — three border-line row blocks with no phantom cover aspect-ratio — instead of the game-card shape.
-- 加载骨架不再误导：`StatePanel` 卡片骨架由 3 张增至 6 张（2/3/4 列断点各≥1.5 行），七个非网格消费页（作品详情、文档、Admin×3、用户管理、审计日志、我的投稿）改用新增的 `variant="lines"`——三块横线占位、无幻影封面纵横比——不再是游戏卡形状。
+- Loading skeletons no longer lie: `StatePanel`'s card skeleton grew from 3 to 6 cards (≥1.5 rows at each 2/3/4-column breakpoint) and the six non-grid pages (game detail, docs, admin ×3 instances, admin users, admin audit, submit list) now get a new `variant="lines"` — three border-line row blocks with no phantom cover aspect-ratio — instead of the game-card shape.
+- 加载骨架不再误导：`StatePanel` 卡片骨架由 3 张增至 6 张（2/3/4 列断点各≥1.5 行），六个非网格页（作品详情、文档、Admin×3 实例、用户管理、审计日志、我的投稿）改用新增的 `variant="lines"`——三块横线占位、无幻影封面纵横比——不再是游戏卡形状。
 
 ### Tests / 测试
 

@@ -1,6 +1,6 @@
 import { createRouter, createWebHistory, type RouteRecordRaw, type Router } from 'vue-router'
 import { authEnabled, session } from '@/auth'
-import { joinTitle, sectionTitleOf, setPageTitle } from '@/lib/pageTitle'
+import { joinTitle, sectionTitleOf, setPageDescription, setPageTitle } from '@/lib/pageTitle'
 import { resolveNavigation } from './guards'
 
 export const routes: RouteRecordRaw[] = [
@@ -44,10 +44,12 @@ router.beforeEach((to) =>
 )
 
 // 两段式标题的静态基线：导航落地后按路由名设段标题。数据页再 watch 数据精化覆盖。
-// 抽成函数导出，测试用 makeRouter 新实例时才能挂上同一钩子。
+// description 同步复位：每次导航先回落默认文案，game 页由 GameView watch 再精化（spec D-C 离开恢复，
+// 且避免 game→game 切换时旧作品描述残留）。抽成函数导出，测试 makeRouter 新实例才能挂同一钩子。
 export function attachTitleHook(r: Router): void {
   r.afterEach((to) => {
     setPageTitle(joinTitle(sectionTitleOf(to.name)))
+    setPageDescription('')
   })
 }
 

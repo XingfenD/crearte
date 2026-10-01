@@ -2,6 +2,7 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 import { createMemoryHistory, createRouter } from 'vue-router'
 import { attachTitleHook, routes } from './index'
+import { DEFAULT_DESCRIPTION } from '@/lib/pageTitle'
 
 function makeRouter() {
   const router = createRouter({ history: createMemoryHistory(), routes })
@@ -57,5 +58,14 @@ describe('路由级标题基线（afterEach）', () => {
     const router = makeRouter()
     await router.push('/no-such-page')
     expect(document.title).toBe('页面不存在 · crearte 创艺')
+  })
+
+  it('每次导航后 meta description 回落默认文案（D-C 离开恢复，审查 ISSUE-1 钉桩）', async () => {
+    const meta = () => document.querySelector('meta[name="description"]')?.getAttribute('content')
+    const router = makeRouter()
+    await router.push('/games/fixture/2048')
+    expect(meta()).toBe(DEFAULT_DESCRIPTION)
+    await router.push('/games')
+    expect(meta()).toBe(DEFAULT_DESCRIPTION)
   })
 })
