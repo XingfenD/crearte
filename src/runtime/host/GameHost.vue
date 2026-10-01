@@ -6,6 +6,7 @@ import { runtimeConfig } from './config'
 import { resolveRuntimeTargets, type RuntimeTarget } from './adapters'
 import { useGameFrame } from './useGameFrame'
 import { useFullscreen } from './useFullscreen'
+import { recordPlay } from '../../app/lib/recent'
 import { DEFAULT_FEATURES } from '../bridge/protocol'
 
 const props = defineProps<{ game: Game }>()
@@ -50,6 +51,9 @@ const statusInfo = computed(() => {
 const frameKey = ref(0)
 watch(() => props.game.version, restart)
 watch(() => props.game.id, restart)
+// D-H：站内运行真就绪才记「玩过」；booting/degraded/error 不算，重开再次 ready 会重新冒泡到最前。
+// flush:'sync' 是机制必需：hosted 目标 restart() 内 booting→ready 同 tick 折叠，默认 pre-flush 看不到变化（审查 T6 发现的 spec 缝隙，控制者 re-pin D-H）
+watch(() => frame.state.value.phase, (p) => { if (p === 'ready') recordPlay(props.game.id) }, { flush: 'sync' })
 function restart(): void {
   degradedToExternal.value = null
   lastError.value = null

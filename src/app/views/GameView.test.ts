@@ -5,6 +5,7 @@ import { createMemoryHistory, createRouter } from 'vue-router'
 import { toInterstitialIfExternal } from '@/lib/externalLink'
 import { DEFAULT_DESCRIPTION } from '@/lib/pageTitle'
 import { NotFoundError } from '@/data'
+import { __resetToasts, useToast } from '@/composables/useToast'
 import GameView from './GameView.vue'
 
 const h = vi.hoisted(() => ({ getGame: vi.fn() }))
@@ -100,6 +101,41 @@ describe('GameView 路由级标题与描述精化', () => {
   })
 })
 
+describe('GameView 标签链接（/games?tag= 过滤入口，D-G）', () => {
+  async function mountTagged(tags: string[]) {
+    h.getGame.mockResolvedValue({ ...minimalGame, tags })
+    const r = createRouter({
+      history: createMemoryHistory(),
+      routes: [
+        { path: '/', name: 'home', component: { template: '<div />' } },
+        { path: '/games', name: 'games', component: { template: '<div />' } },
+        { path: '/users/:user', name: 'author', component: { template: '<div />' } }
+      ]
+    })
+    await r.push('/')
+    const w = mount(GameView, {
+      props: { user: 'fixture', slug: 'minimal' },
+      global: { plugins: [r] }
+    })
+    await flushPromises()
+    return w
+  }
+
+  it('每个标签渲染为 tag-link，指向 /games?tag=编码值', async () => {
+    const w = await mountTagged(['数字', '休闲'])
+    const links = w.findAll('[data-testid="tag-link"]')
+    expect(links).toHaveLength(2)
+    expect(links[0].attributes('href')).toBe('/games?tag=' + encodeURIComponent('数字'))
+    expect(links[0].text()).toBe('数字')
+    expect(links[1].text()).toBe('休闲')
+  })
+
+  it('无标签时不渲染 tag-link', async () => {
+    const w = await mountTagged([])
+    expect(w.findAll('[data-testid="tag-link"]')).toHaveLength(0)
+  })
+})
+
 describe('GameView 作者入口（内部链接 > 外链 > 纯文本）', () => {
   async function mountView(game: object) {
     h.getGame.mockResolvedValue(game)
@@ -159,5 +195,64 @@ describe('GameView 作者入口（内部链接 > 外链 > 纯文本）', () => {
     })
     expect(authorLine(w).find('a').exists()).toBe(false)
     expect(authorLine(w).text()).toContain('纯文本作者')
+  })
+})
+
+describe('GameView 复制链接（D-E/D-F）', () => {
+  const writeText = vi.fn()
+  const { toasts } = useToast()
+
+  beforeEach(() => {
+    __resetToasts()
+    writeText.mockReset()
+    Object.defineProperty(navigator, 'clipboard', {
+      value: { writeText },
+      configurable: true,
+      writable: true
+    })
+  })
+
+  async function mountWithGameRoute(game: object | Error) {
+    if (game instanceof Error) h.getGame.mockRejectedValue(game)
+    else h.getGame.mockResolvedValue(game)
+    const r = createRouter({
+      history: createMemoryHistory(),
+      routes: [
+        { path: '/', name: 'home', component: { template: '<div />' } },
+        { path: '/games', name: 'games', component: { template: '<div />' } },
+        { path: '/games/:user/:slug', name: 'game', component: { template: '<div />' } }
+      ]
+    })
+    await r.push('/')
+    const w = mount(GameView, {
+      props: { user: 'fixture', slug: 'minimal' },
+      global: { plugins: [r] }
+    })
+    await flushPromises()
+    return w
+  }
+
+  it('点击复制成功：writeText 收到规范 URL 并提示成功', async () => {
+    writeText.mockResolvedValue(undefined)
+    const w = await mountWithGameRoute(minimalGame)
+    await w.get('[data-testid="copy-link"]').trigger('click')
+    await flushPromises()
+    expect(writeText).toHaveBeenCalledWith(location.origin + '/games/fixture/minimal')
+    expect(toasts.value).toHaveLength(1)
+    expect(toasts.value[0]).toMatchObject({ kind: 'success', text: '链接已复制' })
+  })
+
+  it('writeText 失败：提示复制失败', async () => {
+    writeText.mockRejectedValue(new Error('denied'))
+    const w = await mountWithGameRoute(minimalGame)
+    await w.get('[data-testid="copy-link"]').trigger('click')
+    await flushPromises()
+    expect(toasts.value).toHaveLength(1)
+    expect(toasts.value[0]).toMatchObject({ kind: 'error', text: '复制失败，请手动复制地址栏链接' })
+  })
+
+  it('notFound 分支不渲染复制链接按钮', async () => {
+    const w = await mountWithGameRoute(new NotFoundError('not found'))
+    expect(w.find('[data-testid="copy-link"]').exists()).toBe(false)
   })
 })

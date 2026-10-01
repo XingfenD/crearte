@@ -60,7 +60,8 @@ describe('GameCard 作者行（/users/:user 入口）', () => {
     const w = mountCard({ ...base, id: '2048' })
     expect(w.find('a[href^="/users/"]').exists()).toBe(false)
     expect(w.text()).toContain('Gabriel')
-    expect(w.findAll('a')).toHaveLength(1)
+    // 标题锚点 + 标签锚点（base.tags 非空）
+    expect(w.findAll('a')).toHaveLength(2)
   })
 })
 
@@ -72,7 +73,8 @@ describe('GameCard 卡片结构（拉伸链接，禁嵌套交互元素）', () =
     expect(w.element.tagName).toBe('DIV')
     expect(w.classes()).toContain('relative')
     const anchors = w.findAll('a')
-    expect(anchors).toHaveLength(2)
+    // 标题锚点 + 作者锚点 + 标签锚点（base.tags 非空）
+    expect(anchors).toHaveLength(3)
     for (const a of anchors) {
       expect(a.find('a').exists()).toBe(false)
     }
@@ -119,9 +121,51 @@ describe('GameCard 反应徽标（P5 聚合，静态源缺省零变化）', () =
 
   it('徽标非交互：不新增锚点、不改既有一行结构', () => {
     const plain = mountCard({ ...base, id: '2048' })
-    expect(plain.findAll('a')).toHaveLength(1)
+    // 标题锚点 + 标签锚点（base.tags 非空）
+    expect(plain.findAll('a')).toHaveLength(2)
     const withBadge = mountCard({ ...base, id: 'alice/2048', user: 'alice', slug: '2048', ratingAvg: 4.5, ratingCount: 2, favoriteCount: 3 })
-    expect(withBadge.findAll('a')).toHaveLength(2)
+    // 标题锚点 + 作者锚点 + 标签锚点
+    expect(withBadge.findAll('a')).toHaveLength(3)
+  })
+})
+
+describe('GameCard 标签链接（/games?tag= 过滤入口，D-G）', () => {
+  function mountTagged(game: GameSummary) {
+    const router = createRouter({
+      history: createMemoryHistory(),
+      routes: [
+        { path: '/', name: 'home', component: { template: '<div />' } },
+        { path: '/games', name: 'games', component: { template: '<div />' } },
+        { path: '/games/:user/:slug', name: 'game', component: { template: '<div />' } },
+        { path: '/users/:user', name: 'author', component: { template: '<div />' } }
+      ]
+    })
+    return mount(GameCard, { props: { game }, global: { plugins: [router] } })
+  }
+
+  const tagged = (tags: string[]): GameSummary => ({ ...base, id: 'alice/2048', user: 'alice', slug: '2048', tags })
+
+  it('有标签时渲染 tag-link，带 relative z-10 且指向 /games?tag=', () => {
+    const w = mountTagged(tagged(['数字', '休闲']))
+    const links = w.findAll('a[data-testid="tag-link"]')
+    expect(links).toHaveLength(2)
+    expect(links[0].classes()).toContain('relative')
+    expect(links[0].classes()).toContain('z-10')
+    expect(links[0].attributes('href')).toBe('/games?tag=' + encodeURIComponent('数字'))
+    expect(links[0].text()).toBe('数字')
+  })
+
+  it('标签多于 2 个时第三个是 +N span 而非链接', () => {
+    const w = mountTagged(tagged(['数字', '休闲', '益智']))
+    expect(w.findAll('a[data-testid="tag-link"]')).toHaveLength(2)
+    const plus = w.findAll('span').find((s) => s.text().includes('+1'))
+    expect(plus).toBeTruthy()
+    expect(plus!.find('a').exists()).toBe(false)
+  })
+
+  it('无标签时不渲染 tag-link', () => {
+    const w = mountTagged(tagged([]))
+    expect(w.findAll('[data-testid="tag-link"]')).toHaveLength(0)
   })
 })
 

@@ -247,3 +247,14 @@
   padding: 0.4rem 0.75rem;
 }
 .markdown-body img { border: 2px solid var(--color-ink); }
+
+/* toast 进出场：位移 + 淡入淡出（reduced-motion 由上方全局归零分支覆盖） */
+.toast-enter-active,
+.toast-leave-active {
+  transition: transform 150ms ease, opacity 150ms ease;
+}
+.toast-enter-from,
+.toast-leave-to {
+  transform: translateX(0.75rem);
+  opacity: 0;
+}

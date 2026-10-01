@@ -1,9 +1,10 @@
 <script setup lang="ts">
 import { computed, watch } from 'vue'
 import { RouterLink, useRouter } from 'vue-router'
-import { PhArrowLeft, PhArrowSquareOut } from '@phosphor-icons/vue'
+import { PhArrowLeft, PhArrowSquareOut, PhLinkSimple } from '@phosphor-icons/vue'
 import { NotFoundError, repo, resolveUserSlug, type Game } from '@/data'
 import { useAsync } from '@/composables/useAsync'
+import { useToast } from '@/composables/useToast'
 import { renderMarkdown } from '@/lib/markdown'
 import { toInterstitialIfExternal } from '@/lib/externalLink'
 import { authorDisplayName, durationText } from '@/lib/labels'
@@ -15,6 +16,7 @@ import GameHost from '../../runtime/host/GameHost.vue'
 
 const props = defineProps<{ user: string; slug: string }>()
 const router = useRouter()
+const toast = useToast()
 const origin = location.origin
 const gameId = computed(() => `${props.user}/${props.slug}`)
 const { data: game, error, loading, reload } = useAsync<Game>(
@@ -42,6 +44,16 @@ const introHtml = computed(() =>
 const playable = computed(() => game.value?.runtime === 'virtual' || game.value?.runtime === 'hosted')
 function onExit(): void {
   router.push('/games')
+}
+
+async function copyLink(): Promise<void> {
+  const url = location.origin + router.resolve({ name: 'game', params: { user: props.user, slug: props.slug } }).href
+  try {
+    await navigator.clipboard.writeText(url)
+    toast.success('链接已复制')
+  } catch {
+    toast.error('复制失败，请手动复制地址栏链接')
+  }
 }
 </script>
 
@@ -85,13 +97,23 @@ function onExit(): void {
           <span class="mx-2">·</span>预计时长：{{ durationText(game.durationMinutes) }}
           <span class="mx-2">·</span>收录于 {{ game.addedAt }}
         </p>
+        <div>
+          <button
+            type="button"
+            data-testid="copy-link"
+            class="btn-surface lift inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold"
+            @click="copyLink"
+          ><PhLinkSimple :size="14" weight="bold" aria-hidden="true" />复制链接</button>
+        </div>
         <p v-if="game.description" class="text-sm leading-[1.8] text-ink-soft">{{ game.description }}</p>
         <div class="flex flex-wrap gap-1.5">
-          <span
+          <RouterLink
             v-for="tag in game.tags"
             :key="tag"
-            class="border-[1.5px] border-ink bg-surface px-2 py-0.5 font-mono text-[0.6875rem]"
-          >{{ tag }}</span>
+            data-testid="tag-link"
+            :to="{ path: '/games', query: { tag } }"
+            class="border-[1.5px] border-ink bg-surface px-2 py-0.5 font-mono text-[0.6875rem] hover:bg-highlight"
+          >{{ tag }}</RouterLink>
         </div>
       </div>
 
