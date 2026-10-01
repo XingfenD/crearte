@@ -46,7 +46,7 @@ function onExit(): void {
 </script>
 
 <template>
-  <StatePanel :loading="loading" :error="notFound ? null : error" @retry="reload">
+  <StatePanel variant="lines" :loading="loading" :error="notFound ? null : error" @retry="reload">
     <div v-if="notFound" class="border-2 border-dashed border-ink p-10 text-center">
       <p class="font-mono text-[0.6875rem] tracking-[0.05em] text-ink-soft">GAME NOT FOUND</p>
       <h1 class="mt-3 text-lg font-extrabold">该作品不存在或已移除。</h1>

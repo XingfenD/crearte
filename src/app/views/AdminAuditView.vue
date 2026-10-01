@@ -55,7 +55,7 @@ function onFilterChange(value: string): void {
       </select>
     </div>
 
-    <StatePanel class="mt-4" :loading="loading" :error="panelError(error)" @retry="reload">
+    <StatePanel variant="lines" class="mt-4" :loading="loading" :error="panelError(error)" @retry="reload">
       <p v-if="entries.length === 0" class="border-2 border-ink bg-surface p-6 text-sm text-ink-soft shadow-hard">该条件下没有审计记录。</p>
       <table v-else class="w-full border-2 border-ink bg-surface text-sm shadow-hard">
         <thead class="border-b-2 border-ink bg-paper font-mono text-[0.6875rem]">

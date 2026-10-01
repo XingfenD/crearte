@@ -30,7 +30,7 @@ const toc = computed(() => (doc.value ? extractToc(doc.value.content) : []))
 </script>
 
 <template>
-  <StatePanel :loading="listLoading || docLoading" :error="listError ?? docError" @retry="reload">
+  <StatePanel variant="lines" :loading="listLoading || docLoading" :error="listError ?? docError" @retry="reload">
     <DocSidebar :docs="docs ?? []" :active-slug="slug ?? ''" variant="tabs" class="mb-6 sm:hidden" />
 
     <div class="flex flex-1 items-start gap-8">

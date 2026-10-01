@@ -2,16 +2,28 @@
 import { PhWarningCircle } from '@phosphor-icons/vue'
 import BaseButton from '@/components/ui/BaseButton.vue'
 
-defineProps<{ loading: boolean; error: Error | null }>()
+defineProps<{ loading: boolean; error: Error | null; variant?: 'cards' | 'lines' }>()
 defineEmits<{ retry: [] }>()
 </script>
 
 <template>
   <div v-if="loading" aria-busy="true">
     <span class="sr-only">加载中</span>
-    <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+    <!-- lines：非网格消费页（表格/详情）的横线占位，无封面纵横比结构 -->
+    <div v-if="variant === 'lines'" class="space-y-4">
       <div
         v-for="n in 3"
+        :key="n"
+        class="animate-skeleton border-2 border-ink bg-surface p-4 shadow-hard"
+      >
+        <div class="h-4 w-2/3 bg-[#EFE9DA]" />
+        <div class="mt-3 h-3 w-full bg-[#EFE9DA]" />
+        <div class="mt-2 h-3 w-1/2 bg-[#EFE9DA]" />
+      </div>
+    </div>
+    <div v-else class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+      <div
+        v-for="n in 6"
         :key="n"
         class="animate-skeleton border-2 border-ink bg-surface shadow-hard"
       >
