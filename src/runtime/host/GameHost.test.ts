@@ -95,6 +95,19 @@ describe('GameHost 最近玩过记录（D-H）', () => {
     expect(h.recordPlay).not.toHaveBeenCalled()
   })
 
+  it('hosted 目标重开：同 tick booting→ready 折叠仍重新记录（flush sync 机制钉桩）', async () => {
+    const w = mount(GameHost, { props: { game: hostedGame } })
+    await nextTick()
+    expect(h.recordPlay).toHaveBeenCalledTimes(1)
+    const restartBtn = w.findAll('button').find((b) => b.text() === '重开')!
+    await restartBtn.trigger('click')
+    await nextTick()
+    // 默认 pre-flush 下此断言失败（ready→ready 折叠）；sync 下 booting→ready 每步可见
+    expect(h.recordPlay).toHaveBeenCalledTimes(2)
+    expect(h.recordPlay).toHaveBeenLastCalledWith('fixture/hosted')
+    w.unmount()
+  })
+
   it('重开后再次 ready 再次记录（冒泡到最前）', async () => {
     vi.useFakeTimers()
     try {
