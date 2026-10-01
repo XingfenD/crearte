@@ -46,10 +46,18 @@ router.beforeEach((to) =>
 // 两段式标题的静态基线：导航落地后按路由名设段标题。数据页再 watch 数据精化覆盖。
 // description 同步复位：每次导航先回落默认文案，game 页由 GameView watch 再精化（spec D-C 离开恢复，
 // 且避免 game→game 切换时旧作品描述残留）。抽成函数导出，测试 makeRouter 新实例才能挂同一钩子。
+// SPA 导航后把焦点交给主内容区：读屏用户据此获得新页面上下文（D-E）。
+// 仅路径变化时移动——同路径改 query（如目录 /games?tag=x 筛选）不打断用户焦点。
+// preventScroll：滚动由 router.scrollBehavior 负责，避免双重滚动抖动。
+export function focusMain(): void {
+  document.getElementById('main')?.focus({ preventScroll: true })
+}
+
 export function attachTitleHook(r: Router): void {
-  r.afterEach((to) => {
+  r.afterEach((to, from) => {
     setPageTitle(joinTitle(sectionTitleOf(to.name)))
     setPageDescription('')
+    if (to.path !== from.path) focusMain()
   })
 }
 
