@@ -90,7 +90,7 @@ function doConfirm(s: SubmissionView): void {
     <p v-if="actionError" role="alert" class="mt-4 border-2 border-ink bg-highlight px-3 py-2 text-xs font-bold">{{ actionError }}</p>
 
     <div class="mt-6">
-      <StatePanel :loading="loading" :error="panelError(error)" @retry="reload">
+      <StatePanel variant="lines" :loading="loading" :error="panelError(error)" @retry="reload">
         <p v-if="submissions.length === 0" class="border-2 border-ink bg-surface p-6 text-sm text-ink-soft shadow-hard">
           还没有提交。把你的作品分享给所有人——
           <RouterLink class="text-accent-ink underline decoration-2 underline-offset-2" to="/submit/new">提交第一个作品</RouterLink>

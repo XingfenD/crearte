@@ -1,9 +1,10 @@
 <script setup lang="ts">
-import { computed, watchEffect } from 'vue'
+import { computed, watch, watchEffect } from 'vue'
 import { useRouter } from 'vue-router'
 import { repo, type Doc, type DocMeta } from '@/data'
 import { useAsync } from '@/composables/useAsync'
 import { extractToc, renderMarkdown } from '@/lib/markdown'
+import { docsTitle, setPageTitle } from '@/lib/pageTitle'
 import DocSidebar from '@/components/DocSidebar.vue'
 import DocToc from '@/components/DocToc.vue'
 import StatePanel from '@/components/StatePanel.vue'
@@ -21,12 +22,15 @@ watchEffect(() => {
   if (!props.slug && docs.value?.length) void router.replace(`/docs/${docs.value[0].slug}`)
 })
 
+// 文档就绪后精化；无 slug / 未加载时保持路由基线「文档」
+watch(doc, (d) => setPageTitle(docsTitle(d?.title)))
+
 const html = computed(() => (doc.value ? renderMarkdown(doc.value.content, location.origin) : ''))
 const toc = computed(() => (doc.value ? extractToc(doc.value.content) : []))
 </script>
 
 <template>
-  <StatePanel :loading="listLoading || docLoading" :error="listError ?? docError" @retry="reload">
+  <StatePanel variant="lines" :loading="listLoading || docLoading" :error="listError ?? docError" @retry="reload">
     <DocSidebar :docs="docs ?? []" :active-slug="slug ?? ''" variant="tabs" class="mb-6 sm:hidden" />
 
     <div class="flex flex-1 items-start gap-8">

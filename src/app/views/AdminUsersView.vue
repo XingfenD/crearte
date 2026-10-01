@@ -110,7 +110,7 @@ async function setUserRole(user: AdminUser, role: AdminUserRole): Promise<void> 
 
     <p v-if="actionError" role="alert" data-testid="users-action-error" class="mt-4 border-2 border-ink bg-highlight px-3 py-2 text-xs font-bold">{{ actionError }}</p>
 
-    <StatePanel class="mt-4" :loading="loading" :error="panelError(error)" @retry="reload">
+    <StatePanel variant="lines" class="mt-4" :loading="loading" :error="panelError(error)" @retry="reload">
       <p v-if="users.length === 0" class="border-2 border-ink bg-surface p-6 text-sm text-ink-soft shadow-hard">没有匹配的用户。</p>
       <table v-else class="w-full border-2 border-ink bg-surface text-sm shadow-hard">
         <thead class="border-b-2 border-ink bg-paper font-mono text-[0.6875rem]">

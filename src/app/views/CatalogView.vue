@@ -1,10 +1,11 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { PhMagnifyingGlass, PhX } from '@phosphor-icons/vue'
 import { repo, type GameSummary } from '@/data'
 import { useAsync } from '@/composables/useAsync'
 import { DEFAULT_FILTER, filterGames } from '@/lib/filter'
 import { useFilterState } from '@/composables/useFilterState'
+import { catalogTitle, setPageTitle } from '@/lib/pageTitle'
 import GameCard from '@/components/GameCard.vue'
 import FilterSidebar from '@/components/FilterSidebar.vue'
 import FilterDrawer from '@/components/FilterDrawer.vue'
@@ -17,6 +18,9 @@ const { state, update } = useFilterState()
 const visible = computed(() => filterGames(games.value ?? [], state.value))
 const drawerOpen = ref(false)
 const searchInput = ref<HTMLInputElement | null>(null)
+
+// 搜索词随 route.query 天然响应：筛选变化即时反映到标签页
+watch(() => state.value.q, (q) => setPageTitle(catalogTitle(q)), { immediate: true })
 
 function clearSearch(): void {
   update({ q: '' })

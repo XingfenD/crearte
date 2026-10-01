@@ -145,7 +145,7 @@ function switchStatus(next: 'pending' | 'approved' | 'rejected'): void {
         :items="STATUS_ITEMS"
         @update:model-value="switchStatus($event as 'pending' | 'approved' | 'rejected')"
       />
-      <StatePanel class="mt-4" :loading="queueLoading" :error="panelError(queueError)" @retry="reloadQueue">
+      <StatePanel variant="lines" class="mt-4" :loading="queueLoading" :error="panelError(queueError)" @retry="reloadQueue">
         <p v-if="queueSubs.length === 0" class="border-2 border-ink bg-surface p-6 text-sm text-ink-soft shadow-hard">该状态下没有提交。</p>
         <table v-else class="w-full border-2 border-ink bg-surface text-sm shadow-hard">
           <thead class="border-b-2 border-ink bg-paper font-mono text-[0.6875rem]">
@@ -169,7 +169,7 @@ function switchStatus(next: 'pending' | 'approved' | 'rejected'): void {
 
     <!-- Tab 2：作品管理 -->
     <div v-else class="mt-6 space-y-8">
-      <StatePanel :loading="worksLoading" :error="panelError(worksError)" @retry="reloadWorks">
+      <StatePanel variant="lines" :loading="worksLoading" :error="panelError(worksError)" @retry="reloadWorks">
         <table class="w-full border-2 border-ink bg-surface text-sm shadow-hard">
           <thead class="border-b-2 border-ink bg-paper font-mono text-[0.6875rem]">
             <tr><th class="px-3 py-2 text-left">作品</th><th class="px-3 py-2 text-left">运行时</th><th class="px-3 py-2 text-left">当前版本</th><th class="px-3 py-2 text-left">操作</th></tr>
@@ -216,7 +216,7 @@ function switchStatus(next: 'pending' | 'approved' | 'rejected'): void {
 
       <section>
         <h2 class="font-display text-sm font-black">已通过提交（含已下架作品，可恢复上架 / 操作历史版本）</h2>
-        <StatePanel class="mt-3" :loading="historyLoading" :error="panelError(historyError)" @retry="reloadHistory">
+        <StatePanel variant="lines" class="mt-3" :loading="historyLoading" :error="panelError(historyError)" @retry="reloadHistory">
           <table class="w-full border-2 border-ink bg-surface text-sm shadow-hard">
             <thead class="border-b-2 border-ink bg-paper font-mono text-[0.6875rem]">
               <tr><th class="px-3 py-2 text-left">作品</th><th class="px-3 py-2 text-left">版本</th><th class="px-3 py-2 text-left">通过时间</th><th class="px-3 py-2 text-left">操作</th></tr>
