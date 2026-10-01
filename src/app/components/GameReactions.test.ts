@@ -101,6 +101,39 @@ describe('GameReactions 聚合文案与星标', () => {
   })
 })
 
+describe('GameReactions 星标可访问名（D-H）', () => {
+  it('star-1..5 的 aria-label 为「评 N 星」', async () => {
+    const w = mountReactions()
+    await flushPromises()
+    for (const i of [1, 2, 3, 4, 5]) {
+      expect(w.get(`[data-testid="star-${i}"]`).attributes('aria-label')).toBe(`评 ${i} 星`)
+    }
+  })
+
+  it('内层字形 span 有 aria-hidden="true"', async () => {
+    const w = mountReactions()
+    await flushPromises()
+    for (const i of [1, 2, 3, 4, 5]) {
+      expect(w.get(`[data-testid="star-${i}"]`).get('span').attributes('aria-hidden')).toBe('true')
+    }
+  })
+
+  it('分组 role=group，未评时 aria-label 为「评分」', async () => {
+    const w = mountReactions()
+    await flushPromises()
+    const group = w.get('[role="group"]')
+    expect(group.attributes('aria-label')).toBe('评分')
+  })
+
+  it('已评（fetchMine ratings 4 分）时分组 aria-label 为「评分：4 星」', async () => {
+    h.fetchMine.mockResolvedValue({ favorites: [], ratings: { 'alice/work': 4 } })
+    const w = mountReactions()
+    await flushPromises()
+    const group = w.get('[role="group"]')
+    expect(group.attributes('aria-label')).toBe('评分：4 星')
+  })
+})
+
 describe('GameReactions 个人态初始化', () => {
   it('登录态 onMounted fetchMine 后 ♥ aria-pressed 与收藏态一致', async () => {
     h.fetchMine.mockResolvedValue({ favorites: ['alice/work'], ratings: {} })

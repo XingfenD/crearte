@@ -60,11 +60,11 @@ function onFilterChange(value: string): void {
       <table v-else class="w-full border-2 border-ink bg-surface text-sm shadow-hard">
         <thead class="border-b-2 border-ink bg-paper font-mono text-[0.6875rem]">
           <tr>
-            <th class="px-3 py-2 text-left">时间</th>
-            <th class="px-3 py-2 text-left">操作者</th>
-            <th class="px-3 py-2 text-left">动作</th>
-            <th class="px-3 py-2 text-left">对象</th>
-            <th class="px-3 py-2 text-left">结果</th>
+            <th scope="col" class="px-3 py-2 text-left">时间</th>
+            <th scope="col" class="px-3 py-2 text-left">操作者</th>
+            <th scope="col" class="px-3 py-2 text-left">动作</th>
+            <th scope="col" class="px-3 py-2 text-left">对象</th>
+            <th scope="col" class="px-3 py-2 text-left">结果</th>
           </tr>
         </thead>
         <tbody>

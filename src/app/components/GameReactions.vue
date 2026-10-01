@@ -92,16 +92,21 @@ const summaryText = computed(() =>
     >
       <span aria-hidden="true">{{ favorited ? '♥' : '♡' }}</span>收藏
     </button>
-    <span class="inline-flex items-center">
+    <span
+      class="inline-flex items-center"
+      role="group"
+      :aria-label="rated ? `评分：${score} 星` : '评分'"
+    >
       <button
         v-for="i in 5"
         :key="i"
         type="button"
         :data-testid="`star-${i}`"
+        :aria-label="`评 ${i} 星`"
         :disabled="busy"
         class="px-0.5 font-mono text-base leading-none disabled:opacity-60"
         @click="pickStar(i)"
-      ><span :class="i <= litStars ? 'text-accent-ink' : 'text-ink-soft'">{{ i <= litStars ? '★' : '☆' }}</span></button>
+      ><span aria-hidden="true" :class="i <= litStars ? 'text-accent-ink' : 'text-ink-soft'">{{ i <= litStars ? '★' : '☆' }}</span></button>
     </span>
     <p class="font-mono text-xs text-ink-soft">{{ summaryText }}</p>
     <p

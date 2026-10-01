@@ -115,12 +115,12 @@ async function setUserRole(user: AdminUser, role: AdminUserRole): Promise<void> 
       <table v-else class="w-full border-2 border-ink bg-surface text-sm shadow-hard">
         <thead class="border-b-2 border-ink bg-paper font-mono text-[0.6875rem]">
           <tr>
-            <th class="px-3 py-2 text-left">用户名</th>
-            <th class="px-3 py-2 text-left">邮箱</th>
-            <th class="px-3 py-2 text-left">显示名</th>
-            <th class="px-3 py-2 text-left">角色</th>
-            <th class="px-3 py-2 text-left">注册时间</th>
-            <th class="px-3 py-2" />
+            <th scope="col" class="px-3 py-2 text-left">用户名</th>
+            <th scope="col" class="px-3 py-2 text-left">邮箱</th>
+            <th scope="col" class="px-3 py-2 text-left">显示名</th>
+            <th scope="col" class="px-3 py-2 text-left">角色</th>
+            <th scope="col" class="px-3 py-2 text-left">注册时间</th>
+            <th scope="col" class="px-3 py-2"><span class="sr-only">操作</span></th>
           </tr>
         </thead>
         <tbody>
