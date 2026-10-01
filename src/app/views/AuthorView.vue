@@ -1,9 +1,11 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, watch } from 'vue'
 import { RouterLink, useRouter } from 'vue-router'
 import { repo, resolveUserSlug, type GameSummary } from '@/data'
 import { useAsync } from '@/composables/useAsync'
 import { DEFAULT_FILTER, filterGames } from '@/lib/filter'
+import { authorDisplayName } from '@/lib/labels'
+import { authorTitle, setPageTitle } from '@/lib/pageTitle'
 import GameCard from '@/components/GameCard.vue'
 import StatePanel from '@/components/StatePanel.vue'
 import BaseButton from '@/components/ui/BaseButton.vue'
@@ -14,6 +16,12 @@ const { data: games, error, loading, reload } = useAsync<GameSummary[]>(() => re
 const visible = computed(() =>
   filterGames((games.value ?? []).filter((g) => resolveUserSlug(g).user === props.user), DEFAULT_FILTER)
 )
+
+// 取首个作品的作者显示名；列表空时回退到路由 user
+watch(games, (list) => {
+  const first = (list ?? [])[0]
+  setPageTitle(authorTitle(first ? authorDisplayName(first) : props.user))
+})
 </script>
 
 <template>

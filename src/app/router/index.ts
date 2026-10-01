@@ -1,5 +1,6 @@
-import { createRouter, createWebHistory, type RouteRecordRaw } from 'vue-router'
+import { createRouter, createWebHistory, type RouteRecordRaw, type Router } from 'vue-router'
 import { authEnabled, session } from '@/auth'
+import { joinTitle, sectionTitleOf, setPageTitle } from '@/lib/pageTitle'
 import { resolveNavigation } from './guards'
 
 export const routes: RouteRecordRaw[] = [
@@ -41,3 +42,13 @@ router.beforeEach((to) =>
     isAdmin: session.state.user?.role === 'admin'
   })
 )
+
+// 两段式标题的静态基线：导航落地后按路由名设段标题。数据页再 watch 数据精化覆盖。
+// 抽成函数导出，测试用 makeRouter 新实例时才能挂上同一钩子。
+export function attachTitleHook(r: Router): void {
+  r.afterEach((to) => {
+    setPageTitle(joinTitle(sectionTitleOf(to.name)))
+  })
+}
+
+attachTitleHook(router)

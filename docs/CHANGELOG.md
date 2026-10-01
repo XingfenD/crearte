@@ -6,6 +6,23 @@ All notable changes to crearte are documented in this file.
 The format follows Keep a Changelog (https://keepachangelog.com/) and is used as this repository's release-note format.
 书写格式遵循 Keep a Changelog（https://keepachangelog.com/），作为本仓发布记录的格式约定。
 
+## [0.22.0] - 2026-10-01
+
+### Added / 新增
+
+- Browser tabs now say what the page is (P9 UX batch 1, browser-feedback pack): a two-phase `document.title` — the router's `afterEach` sets a per-route static baseline from a 19-name table, then the four data pages (game / catalog / docs / author) refine it once their data arrives (game name, catalog search term, doc title, author display name). The game detail page also writes `meta description` from `game.description` (clipped to 120 code points, defaulting to the site copy); home stays exactly `crearte 创艺` so existing bookmarks and the landing regression pin keep working.
+- 浏览器标签页从此「说人话」（P9 UX 第一批·浏览器反馈包）：两段式 `document.title`——路由 `afterEach` 按 19 个 name 全表设静态基线，四个数据页（作品/目录/文档/作者）在数据到达后精化覆盖（作品名、搜索词、文档名、作者显示名）。作品详情页另按 `game.description` 写 `meta description`（码点截 120，缺省回落站点文案）；home 保持恰为 `crearte 创艺`，不破坏既有书签与落地页回归钉。
+
+### Fixed / 修复
+
+- Loading skeletons no longer lie: `StatePanel`'s card skeleton grew from 3 to 6 cards (≥1.5 rows at each 2/3/4-column breakpoint) and the seven non-grid pages (game detail, docs, admin ×3, admin users, admin audit, submit list) now get a new `variant="lines"` — three border-line row blocks with no phantom cover aspect-ratio — instead of the game-card shape.
+- 加载骨架不再误导：`StatePanel` 卡片骨架由 3 张增至 6 张（2/3/4 列断点各≥1.5 行），七个非网格消费页（作品详情、文档、Admin×3、用户管理、审计日志、我的投稿）改用新增的 `variant="lines"`——三块横线占位、无幻影封面纵横比——不再是游戏卡形状。
+
+### Tests / 测试
+
+- New `pageTitle.test.ts` (builders, code-point clip incl. emoji/CJK, setters, default fallback); router baseline assertions; game/catalog/docs/author title-refinement legs with per-test title/meta reset; new `StatePanel.test.ts` (6-card default vs 3-block lines); new `CatalogView.test.ts` / `DocsView.test.ts`; `e2e/landing.spec.ts` gains one route-title case (the existing home-title pin is untouched).
+- 新增 `pageTitle.test.ts`（builder、码点截断含 emoji/中文、setter、默认回落）；路由基线断言；作品/目录/文档/作者标题精化腿（每用例重置 title/meta 防互染）；新增 `StatePanel.test.ts`（默认 6 卡 vs lines 3 块）；新增 `CatalogView.test.ts` / `DocsView.test.ts`；`e2e/landing.spec.ts` 增一条路由标题用例（既有 home 标题钉一字未动）。
+
 ## [0.21.0] - 2026-10-01
 
 ### Added / 新增

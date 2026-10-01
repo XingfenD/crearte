@@ -164,6 +164,14 @@ test('字标拼装完成前页面不实际滚动', async ({ page }) => {
   expect(await page.evaluate(() => window.scrollY)).toBe(0)
 })
 
+test('路由级标题：作品页与目录搜索态', async ({ page }) => {
+  await page.goto('http://localhost:4173/games/fixture/2048')
+  await expect(page).toHaveTitle(/^2048 · crearte 创艺$/)
+
+  await page.goto('http://localhost:4173/games?q=2048')
+  await expect(page).toHaveTitle(/搜索「2048」 · 作品 · crearte 创艺$/)
+})
+
 test.describe('reduced motion', () => {
   test.use({ reducedMotion: 'reduce' })
 

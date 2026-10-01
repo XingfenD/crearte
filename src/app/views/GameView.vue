@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, watch } from 'vue'
 import { RouterLink, useRouter } from 'vue-router'
 import { PhArrowLeft, PhArrowSquareOut } from '@phosphor-icons/vue'
 import { NotFoundError, repo, resolveUserSlug, type Game } from '@/data'
@@ -7,6 +7,7 @@ import { useAsync } from '@/composables/useAsync'
 import { renderMarkdown } from '@/lib/markdown'
 import { toInterstitialIfExternal } from '@/lib/externalLink'
 import { authorDisplayName, durationText } from '@/lib/labels'
+import { gameNotFoundTitle, gameTitle, setPageDescription, setPageTitle } from '@/lib/pageTitle'
 import GameCover from '@/components/GameCover.vue'
 import GameReactions from '@/components/GameReactions.vue'
 import StatePanel from '@/components/StatePanel.vue'
@@ -22,6 +23,17 @@ const { data: game, error, loading, reload } = useAsync<Game>(
 )
 
 const notFound = computed(() => error.value instanceof NotFoundError)
+
+// 数据到达后精化标题。notFound 时 data 恒为 null，单 watch(game) 不会触发，故一并观察 error。
+watch([game, error], () => {
+  if (notFound.value) {
+    setPageTitle(gameNotFoundTitle())
+    setPageDescription('')
+  } else if (game.value) {
+    setPageTitle(gameTitle(game.value.name))
+    setPageDescription(game.value.description ?? '')
+  }
+})
 // 链接目标与显示文本分离：目标永远取命名空间 user，与 author.name 无涉
 const authorUser = computed(() => (game.value ? resolveUserSlug(game.value).user : ''))
 const introHtml = computed(() =>

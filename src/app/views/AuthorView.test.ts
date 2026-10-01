@@ -27,6 +27,7 @@ let router: ReturnType<typeof createRouter>
 
 beforeEach(async () => {
   vi.clearAllMocks()
+  document.title = ''
   router = createRouter({
     history: createMemoryHistory(),
     routes: [
@@ -117,5 +118,19 @@ describe('AuthorView 作者页（/users/:user）', () => {
     await w.get('[role="alert"] button').trigger('click')
     await flushPromises()
     expect(w.findAll('.game-card-stub')).toHaveLength(2)
+  })
+
+  it('标题精化为首个作品的作者显示名', async () => {
+    h.listGames.mockResolvedValue([{ ...matching[0], author: { name: '笔锋' } }])
+    mountAuthor('alice')
+    await flushPromises()
+    expect(document.title).toBe('笔锋 · 创作者 · crearte 创艺')
+  })
+
+  it('列表为空时回退到路由 user', async () => {
+    h.listGames.mockResolvedValue([])
+    mountAuthor('fixture')
+    await flushPromises()
+    expect(document.title).toBe('fixture · 创作者 · crearte 创艺')
   })
 })

@@ -3,6 +3,8 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { flushPromises, mount } from '@vue/test-utils'
 import { createMemoryHistory, createRouter } from 'vue-router'
 import { toInterstitialIfExternal } from '@/lib/externalLink'
+import { DEFAULT_DESCRIPTION } from '@/lib/pageTitle'
+import { NotFoundError } from '@/data'
 import GameView from './GameView.vue'
 
 const h = vi.hoisted(() => ({ getGame: vi.fn() }))
@@ -18,6 +20,8 @@ let router: ReturnType<typeof createRouter>
 
 beforeEach(async () => {
   vi.clearAllMocks()
+  document.title = ''
+  document.querySelector('meta[name="description"]')?.remove()
   router = createRouter({
     history: createMemoryHistory(),
     routes: [
@@ -53,6 +57,46 @@ describe('GameView 可选字段兜底', () => {
     expect(w.text()).toContain('作者：')
     expect(w.text()).toContain('fixture')
     expect(w.text()).not.toContain('开始体验')
+  })
+})
+
+describe('GameView 路由级标题与描述精化', () => {
+  function mountMinimal(game: object) {
+    h.getGame.mockResolvedValue(game)
+    return mount(GameView, {
+      props: { user: 'fixture', slug: 'minimal' },
+      global: {
+        plugins: [router],
+        stubs: { RouterLink: { props: ['to'], template: '<a :href="to"><slot /></a>' } }
+      }
+    })
+  }
+
+  it('数据到达后标题为作品名、meta 为作品描述', async () => {
+    const w = mountMinimal({ ...minimalGame, description: '一段作品描述' })
+    await flushPromises()
+    expect(document.title).toBe('最小作品 · crearte 创艺')
+    expect(document.querySelector('meta[name="description"]')?.getAttribute('content')).toBe('一段作品描述')
+    expect(w.text()).toContain('一段作品描述')
+  })
+
+  it('缺省描述回落默认文案', async () => {
+    mountMinimal(minimalGame)
+    await flushPromises()
+    expect(document.querySelector('meta[name="description"]')?.getAttribute('content')).toBe(DEFAULT_DESCRIPTION)
+  })
+
+  it('notFound 时标题为未找到的作品', async () => {
+    h.getGame.mockRejectedValue(new NotFoundError('not found'))
+    mount(GameView, {
+      props: { user: 'fixture', slug: 'ghost' },
+      global: {
+        plugins: [router],
+        stubs: { RouterLink: { props: ['to'], template: '<a :href="to"><slot /></a>' } }
+      }
+    })
+    await flushPromises()
+    expect(document.title).toBe('未找到的作品 · crearte 创艺')
   })
 })
 
