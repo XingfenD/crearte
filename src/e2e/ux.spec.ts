@@ -36,15 +36,19 @@ test('页头菜单：Esc 与外点关闭', async ({ page }) => {
 })
 
 test('最近玩过：站内运行就绪后落地页出现继续游玩条带', async ({ page }) => {
-  await openGame(page, '2048')
-  await openGame(page, 'a-dark-room')
+  // 夹具选择：必须是站内可播 runtime（virtual/hosted）才会进 GameHost ready 相位；
+  // 2048/a-dark-room 源夹具是 external（无 bundle，永远走外链），openGame 必超时
+  await openGame(page, 'abs-paths')
+  await page.waitForFunction(() => (localStorage.getItem('crearte.recent.v1') ?? '').includes('abs-paths'))
+  await openGame(page, 'storage')
+  await page.waitForFunction(() => (localStorage.getItem('crearte.recent.v1') ?? '').includes('storage'))
   await page.goto('http://localhost:4173/')
   const strip = page.locator('[data-testid=recent-strip]')
   await expect(strip).toBeVisible()
   await expect(strip.getByText('继续游玩 · RECENTLY PLAYED')).toBeVisible()
   const hrefs = await strip.locator('a[href^="/games/"]').evaluateAll((els) => els.map((el) => el.getAttribute('href')))
-  expect(hrefs[0]).toBe('/games/fixture/a-dark-room') // 最近玩的冒泡最前
-  expect(hrefs).toContain('/games/fixture/2048')
+  expect(hrefs[0]).toBe('/games/fixture/storage') // 最近玩的冒泡最前
+  expect(hrefs).toContain('/games/fixture/abs-paths')
   // 精选区计数不受影响（条带在 hero 与精选之间，用精选 section 自身定位）
   await expect(page.locator('section', { hasText: '精选 · SELECTED' }).locator('a[href^="/games/"]')).toHaveCount(6)
 })
