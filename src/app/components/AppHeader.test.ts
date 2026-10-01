@@ -111,6 +111,33 @@ describe('AppHeader 用户下拉：Esc 关闭并回焦（D-K）', () => {
   })
 })
 
+describe('AppHeader 用户下拉：路由变化收起（既有行为回归）', () => {
+  it('导航后菜单收起，且程序性 open=false 经 @toggle 同步 menuOpen（不留脏状态）', async () => {
+    const { w, router } = await mountHeader()
+    const details = await openMenu(w)
+    expect(details.open).toBe(true)
+
+    // 既有 watch(route.fullPath)：导航即收起——点击菜单项走的就是这条路
+    await router.push('/games')
+    await w.vm.$nextTick()
+
+    expect(details.open).toBe(false)
+
+    // menuOpen 已随 @toggle 归位的间接钉桩（script setup 不暴露内部，故走行为面）：
+    // keydown handler 以 menuOpen 为门控，若残留 true，Esc 会把焦点抢回 summary
+    const summary = w.get('summary').element
+    ;(document.activeElement as HTMLElement | null)?.blur?.()
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))
+    await w.vm.$nextTick()
+    expect(document.activeElement).not.toBe(summary)
+
+    // 外点同样幂等：已收起的菜单不再被触发
+    document.body.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true }))
+    await w.vm.$nextTick()
+    expect(details.open).toBe(false)
+  })
+})
+
 describe('AppHeader 用户下拉：监听清理', () => {
   it('卸载时以 pointerdown/keydown 成对调用 removeEventListener（审查补强：not.toThrow 证明不了移除）', async () => {
     const removeSpy = vi.spyOn(document, 'removeEventListener')
