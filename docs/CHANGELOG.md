@@ -6,6 +6,18 @@ All notable changes to crearte are documented in this file.
 The format follows Keep a Changelog (https://keepachangelog.com/) and is used as this repository's release-note format.
 书写格式遵循 Keep a Changelog（https://keepachangelog.com/），作为本仓发布记录的格式约定。
 
+## [0.24.1] - 2026-10-02
+
+### Changed / 变更
+
+- nginx reverse-proxy hardening (deploy asset only, no application code): both `location /api/` blocks now set `proxy_set_header X-Real-IP $remote_addr` — an overwrite-style single-hop truth (whatever the client sent is replaced) complementing the append-style `X-Forwarded-For`, for logs and as the tamper-proof IP source if the backend ever adopts gin's `TrustedPlatform`. Both `server` blocks plus all seven `location` blocks that already carry `add_header` now send `X-Content-Type-Options: nosniff` and `Referrer-Policy: strict-origin-when-cross-origin` with `always` (so 4xx/5xx responses carry them too) — nine insertion points in total, because nginx's `add_header` inheritance is all-or-nothing: any `add_header` inside a location masks every server-level one, so the seven self-headed locations each need their own copy or those paths would ship without the headers. Template counts verified element-wise (add_header 26, XCTO 9, Referrer-Policy 9, X-Real-IP 2, always 18), `nginx -t` passes on the envsubst-rendered config, and `$remote_addr`/`$uri`/`$host` survive rendering (bare `$`, not `${…}`). Deliberately NOT added: CSP (game subdomains load user works via iframe + Service Worker; needs its own design batch) and HSTS (deployment is plain HTTP `listen 80`; revisit with the TLS batch).
+- nginx 反代加固（纯部署资产，零应用代码）：两个 `location /api/` 块新增 `proxy_set_header X-Real-IP $remote_addr` —— 覆写式单跳真相（客户端发什么都会被替换），与追加式的 `X-Forwarded-For` 互补，供日志使用、也是后端将来若采用 gin `TrustedPlatform` 时不可篡改的 IP 来源。两个 `server` 块与全部七个已自带 `add_header` 的 `location` 块都发送 `X-Content-Type-Options: nosniff` 与 `Referrer-Policy: strict-origin-when-cross-origin`，均带 `always`（4xx/5xx 响应同样携带）——合计九个落点，因为 nginx 的 `add_header` 继承是全有或全无：location 内出现任何 `add_header` 就会屏蔽 server 级的全部，七个自带头的 location 必须各自补齐，否则这些路径将不带安全头。模板计数已元素级核验（add_header 26、XCTO 9、Referrer-Policy 9、X-Real-IP 2、always 18），envsubst 渲染产物通过 `nginx -t`，且 `$remote_addr`/`$uri`/`$host` 在渲染后原样保留（裸 `$` 而非 `${…}`）。有意未加：CSP（游玩子域经 iframe + Service Worker 加载用户作品，需独立设计批）与 HSTS（当前部署是纯 HTTP `listen 80`，随 TLS 批再议）。
+
+### Context / 背景
+
+- Part of the P11 server-hardening batch (spec `docs/specs/2026-10-02-p11-server-hardening-design.md` in the monorepo wrapper). The backend-side findings of that batch — most importantly that docker's SNAT of published ports makes the real client IP unreachable under compose, and that trusting the compose subnet would let any client pick its own rate-limit bucket — are fixed in crearte-server 0.17.0 and crearte-deploy 0.7.0. This repo's contribution (the nginx headers above) is unaffected by that re-pin and verified live: nosniff/Referrer-Policy present on a 404 API response through the running prod stack.
+- 属 P11 服务端硬化批（spec 见 monorepo wrapper 的 `docs/specs/2026-10-02-p11-server-hardening-design.md`）。该批后端侧的发现——最重要的是 docker 对发布端口的 SNAT 使真实客户端 IP 在 compose 下不可达、且信任 compose 网段会让任何客户端自选限流桶——已在 crearte-server 0.17.0 与 crearte-deploy 0.7.0 修正。本仓的贡献（上述 nginx 头）不受该 re-pin 影响，并已在真实栈验证：运行中的 prod 栈上 404 API 响应带 nosniff/Referrer-Policy。
+
 ## [0.24.0] - 2026-10-01
 
 ### Added / 新增
