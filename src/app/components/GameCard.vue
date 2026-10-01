@@ -67,11 +67,13 @@ const badgeParts = computed(() => {
         <span class="border-[1.5px] border-ink px-1 py-0.5 font-mono text-[0.625rem]">
           {{ durationText(game.durationMinutes) }}
         </span>
-        <span
+        <RouterLink
           v-for="tag in visibleTags"
           :key="tag"
-          class="border-[1.5px] border-ink px-1 py-0.5 font-mono text-[0.625rem]"
-        >{{ tag }}</span>
+          data-testid="tag-link"
+          :to="{ path: '/games', query: { tag } }"
+          class="relative z-10 border-[1.5px] border-ink px-1 py-0.5 font-mono text-[0.625rem]"
+        >{{ tag }}</RouterLink>
         <span
           v-if="hiddenTags.length"
           class="border-[1.5px] border-ink px-1 py-0.5 font-mono text-[0.625rem]"

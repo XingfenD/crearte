@@ -100,6 +100,41 @@ describe('GameView 路由级标题与描述精化', () => {
   })
 })
 
+describe('GameView 标签链接（/games?tag= 过滤入口，D-G）', () => {
+  async function mountTagged(tags: string[]) {
+    h.getGame.mockResolvedValue({ ...minimalGame, tags })
+    const r = createRouter({
+      history: createMemoryHistory(),
+      routes: [
+        { path: '/', name: 'home', component: { template: '<div />' } },
+        { path: '/games', name: 'games', component: { template: '<div />' } },
+        { path: '/users/:user', name: 'author', component: { template: '<div />' } }
+      ]
+    })
+    await r.push('/')
+    const w = mount(GameView, {
+      props: { user: 'fixture', slug: 'minimal' },
+      global: { plugins: [r] }
+    })
+    await flushPromises()
+    return w
+  }
+
+  it('每个标签渲染为 tag-link，指向 /games?tag=编码值', async () => {
+    const w = await mountTagged(['数字', '休闲'])
+    const links = w.findAll('[data-testid="tag-link"]')
+    expect(links).toHaveLength(2)
+    expect(links[0].attributes('href')).toBe('/games?tag=' + encodeURIComponent('数字'))
+    expect(links[0].text()).toBe('数字')
+    expect(links[1].text()).toBe('休闲')
+  })
+
+  it('无标签时不渲染 tag-link', async () => {
+    const w = await mountTagged([])
+    expect(w.findAll('[data-testid="tag-link"]')).toHaveLength(0)
+  })
+})
+
 describe('GameView 作者入口（内部链接 > 外链 > 纯文本）', () => {
   async function mountView(game: object) {
     h.getGame.mockResolvedValue(game)

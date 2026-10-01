@@ -87,11 +87,13 @@ function onExit(): void {
         </p>
         <p v-if="game.description" class="text-sm leading-[1.8] text-ink-soft">{{ game.description }}</p>
         <div class="flex flex-wrap gap-1.5">
-          <span
+          <RouterLink
             v-for="tag in game.tags"
             :key="tag"
-            class="border-[1.5px] border-ink bg-surface px-2 py-0.5 font-mono text-[0.6875rem]"
-          >{{ tag }}</span>
+            data-testid="tag-link"
+            :to="{ path: '/games', query: { tag } }"
+            class="border-[1.5px] border-ink bg-surface px-2 py-0.5 font-mono text-[0.6875rem] hover:bg-highlight"
+          >{{ tag }}</RouterLink>
         </div>
       </div>
 
