@@ -149,7 +149,7 @@ function switchStatus(next: 'pending' | 'approved' | 'rejected'): void {
         <p v-if="queueSubs.length === 0" class="border-2 border-ink bg-surface p-6 text-sm text-ink-soft shadow-hard">该状态下没有提交。</p>
         <table v-else class="w-full border-2 border-ink bg-surface text-sm shadow-hard">
           <thead class="border-b-2 border-ink bg-paper font-mono text-[0.6875rem]">
-            <tr><th class="px-3 py-2 text-left">作品</th><th class="px-3 py-2 text-left">类型</th><th class="px-3 py-2 text-left">提交</th><th class="px-3 py-2 text-left">更新</th><th class="px-3 py-2" /></tr>
+            <tr><th scope="col" class="px-3 py-2 text-left">作品</th><th scope="col" class="px-3 py-2 text-left">类型</th><th scope="col" class="px-3 py-2 text-left">提交</th><th scope="col" class="px-3 py-2 text-left">更新</th><th scope="col" class="px-3 py-2"><span class="sr-only">操作</span></th></tr>
           </thead>
           <tbody>
             <tr v-for="s in queueSubs" :key="s.id" :data-testid="`queue-${s.id}`" class="border-b-[1.5px] border-ink">
@@ -172,7 +172,7 @@ function switchStatus(next: 'pending' | 'approved' | 'rejected'): void {
       <StatePanel variant="lines" :loading="worksLoading" :error="panelError(worksError)" @retry="reloadWorks">
         <table class="w-full border-2 border-ink bg-surface text-sm shadow-hard">
           <thead class="border-b-2 border-ink bg-paper font-mono text-[0.6875rem]">
-            <tr><th class="px-3 py-2 text-left">作品</th><th class="px-3 py-2 text-left">运行时</th><th class="px-3 py-2 text-left">当前版本</th><th class="px-3 py-2 text-left">操作</th></tr>
+            <tr><th scope="col" class="px-3 py-2 text-left">作品</th><th scope="col" class="px-3 py-2 text-left">运行时</th><th scope="col" class="px-3 py-2 text-left">当前版本</th><th scope="col" class="px-3 py-2 text-left">操作</th></tr>
           </thead>
           <tbody>
             <template v-for="g in worksData ?? []" :key="g.id">
@@ -219,7 +219,7 @@ function switchStatus(next: 'pending' | 'approved' | 'rejected'): void {
         <StatePanel variant="lines" class="mt-3" :loading="historyLoading" :error="panelError(historyError)" @retry="reloadHistory">
           <table class="w-full border-2 border-ink bg-surface text-sm shadow-hard">
             <thead class="border-b-2 border-ink bg-paper font-mono text-[0.6875rem]">
-              <tr><th class="px-3 py-2 text-left">作品</th><th class="px-3 py-2 text-left">版本</th><th class="px-3 py-2 text-left">通过时间</th><th class="px-3 py-2 text-left">操作</th></tr>
+              <tr><th scope="col" class="px-3 py-2 text-left">作品</th><th scope="col" class="px-3 py-2 text-left">版本</th><th scope="col" class="px-3 py-2 text-left">通过时间</th><th scope="col" class="px-3 py-2 text-left">操作</th></tr>
             </thead>
             <tbody>
               <tr v-for="s in historySubs" :key="s.id" class="border-b-[1.5px] border-ink">
