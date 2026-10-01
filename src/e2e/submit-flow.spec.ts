@@ -174,3 +174,24 @@ test('rejected：审核意见展示 → 编辑重提', async ({ page }) => {
   await expect(page).toHaveURL('http://localhost:4173/submit')
   await expect(page.locator('[data-testid=submission-sub-1]')).toContainText('审核中')
 })
+
+test('脏表单守卫：SPA 离开需确认，save 成功直通', async ({ page }) => {
+  await seedSession(page)
+  const state = { subs: [] as Sub[] }
+  installSubmissionApi(page, state)
+
+  await page.goto('http://localhost:4173/submit/new')
+  await page.getByLabel('展示名称').fill('My Game')
+  // 无监听 → Playwright 自动 dismiss → 导航被拒
+  await page.getByRole('link', { name: '作品', exact: true }).click()
+  await expect(page).toHaveURL('http://localhost:4173/submit/new')
+  // accept → 放行
+  page.once('dialog', (d) => void d.accept())
+  await page.getByRole('link', { name: '作品', exact: true }).click()
+  await expect(page).toHaveURL('http://localhost:4173/games')
+
+  // 回到表单填好 → save-draft 成功 push 不被守卫拦（suppressLeave 回归），fillNewWorkForm 自带 goto
+  await fillNewWorkForm(page)
+  await page.locator('[data-testid=save-draft]').click()
+  await expect(page).toHaveURL('http://localhost:4173/submit')
+})

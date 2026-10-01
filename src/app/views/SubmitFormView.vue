@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, reactive, ref, watch } from 'vue'
-import { RouterLink, useRoute, useRouter } from 'vue-router'
+import { RouterLink, onBeforeRouteLeave, useRoute, useRouter } from 'vue-router'
 import BaseButton from '@/components/ui/BaseButton.vue'
 import BaseCheckbox from '@/components/ui/BaseCheckbox.vue'
 import BaseInput from '@/components/ui/BaseInput.vue'
@@ -60,9 +60,12 @@ const notice = ref<string | null>(null) // 「请重新上传 bundle」等非错
 onBeforeUnmount(() => {
   if (prefillTimer) clearTimeout(prefillTimer)
   if (coverPreview.value) URL.revokeObjectURL(coverPreview.value)
+  window.removeEventListener('beforeunload', onBeforeUnload)
 })
 
 const KIND_LABELS: Record<SubmissionKind, string> = { new_work: '新作品', new_version: '新版本', metadata_change: '元数据更新' }
+// P10-T2 脏表单守卫文案（spec §3.2，逐字不可改）
+const GUARD_COPY = '表单尚未保存，确定离开吗？未保存的修改将丢失。'
 const KIND_OPTIONS = [
   { value: 'new_work', label: KIND_LABELS.new_work },
   { value: 'new_version', label: `${KIND_LABELS.new_version}（已收录的 virtual 作品）` },
@@ -116,6 +119,32 @@ watch([() => form.workId, () => form.version], () => {
     bundleInvalidated.value = true
     notice.value = '名称或版本号已修改，请重新上传 bundle'
   }
+})
+
+// P10-T2 脏表单守卫（spec §3.2 + D-A/D-B）
+// dirty：用户实际改过表单。suppressDirty 抑制回填期（与 suppressAadWatch 同窗同法）；suppressLeave
+// 抑制 save() 成功后的程序化 push——否则 Playwright 对无监听 confirm 自动 dismiss 会把既有用例卡死。
+const dirty = ref(false)
+let suppressDirty = false
+let suppressLeave = false
+
+watch([form, kind, () => bundle.value?.upload_id, () => cover.value?.upload_id], () => {
+  if (!suppressDirty) dirty.value = true
+}, { deep: true })
+
+function onBeforeUnload(e: BeforeUnloadEvent): void {
+  e.preventDefault()
+  e.returnValue = ''
+}
+watch(dirty, (d) => {
+  if (d) window.addEventListener('beforeunload', onBeforeUnload)
+  else window.removeEventListener('beforeunload', onBeforeUnload)
+})
+
+// prefill() 不抑制：其触发前提本身是用户修改（D-B）
+onBeforeRouteLeave(() => {
+  if (suppressLeave || !dirty.value) return true
+  return window.confirm(GUARD_COPY)
 })
 
 const bundleDisabled = computed(() =>
@@ -184,6 +213,7 @@ async function loadExisting(id: string): Promise<void> {
   busy.value = 'load'
   error.value = null
   suppressAadWatch = true
+  suppressDirty = true
   try {
     const s = await contentClient.getSubmission(id)
     existing.value = s
@@ -215,6 +245,9 @@ async function loadExisting(id: string): Promise<void> {
     error.value = toContentMessage(e)
   } finally {
     suppressAadWatch = false
+    await nextTick() // 等回填触发的深度 watch 回调冲完再释放抑制，避免误置 dirty
+    suppressDirty = false
+    dirty.value = false
     busy.value = null
   }
 }
@@ -304,6 +337,8 @@ async function save(submit: boolean): Promise<void> {
         submit
       })
     }
+    dirty.value = false
+    suppressLeave = true
     await router.push('/submit')
   } catch (e) {
     error.value = toContentMessage(e)

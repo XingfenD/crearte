@@ -1,8 +1,12 @@
 // @vitest-environment happy-dom
-import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { flushPromises, mount } from '@vue/test-utils'
-import { createMemoryHistory, createRouter } from 'vue-router'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { enableAutoUnmount, flushPromises, mount } from '@vue/test-utils'
+import { defineComponent } from 'vue'
+import { RouterView, createMemoryHistory, createRouter } from 'vue-router'
 import SubmitFormView from './SubmitFormView.vue'
+
+// 每个用例后卸载 wrapper：否则早前用例改过表单的组件会残留 beforeunload 监听，污染后续断言
+enableAutoUnmount(afterEach)
 
 const h = vi.hoisted(() => {
   const upload = vi.fn()
@@ -245,5 +249,138 @@ describe('SubmitFormView 运行权限五键（P8 ①）', () => {
     expect(features.coop).toBe(false)
     expect(features.gamepad).toBe(false)
     expect(features.inlineStyle).toBe(false)
+  })
+})
+
+describe('SubmitFormView 脏表单离开守卫（P10 T2）', () => {
+  const GUARD = '表单尚未保存，确定离开吗？未保存的修改将丢失。'
+
+  // happy-dom 未实现 window.confirm（默认 undefined），直接赋一个可观测的 stub
+  function stubConfirm(returnValue: boolean) {
+    const fn = vi.fn().mockReturnValue(returnValue)
+    Object.defineProperty(window, 'confirm', { value: fn, configurable: true, writable: true })
+    return fn
+  }
+
+  // onBeforeRouteLeave 只有挂在 <router-view> 内的组件才注册到路由记录（直挂根组件不注册守卫）
+  async function mountRouted(path = '/submit/new') {
+    const r = createRouter({
+      history: createMemoryHistory(),
+      routes: [
+        { path: '/submit/new', name: 'submit-new', component: SubmitFormView },
+        { path: '/submit/:id', name: 'submit-edit', component: SubmitFormView, props: true },
+        { path: '/submit', name: 'submit', component: { template: '<div>submit-list</div>' } },
+        { path: '/games', name: 'catalog', component: { template: '<div>games</div>' } }
+      ]
+    })
+    await r.push(path)
+    await r.isReady()
+    const w = mount(defineComponent({ components: { RouterView }, template: '<RouterView />' }), {
+      global: { plugins: [r] }
+    })
+    await flushPromises()
+    return { w, router: r }
+  }
+
+  it('改动表单后导航被 confirm(false) 拒绝并停留，confirm(true) 放行', async () => {
+    h.state.user = alice
+    const { w, router } = await mountRouted('/submit/new')
+    await w.find('#sf-name').setValue('My Game')
+    await flushPromises()
+    const confirmSpy = stubConfirm(false)
+    await router.push('/games')
+    await flushPromises()
+    expect(confirmSpy).toHaveBeenCalledWith(GUARD)
+    expect(router.currentRoute.value.path).toBe('/submit/new')
+
+    confirmSpy.mockReturnValue(true)
+    await router.push('/games')
+    await flushPromises()
+    expect(router.currentRoute.value.path).toBe('/games')
+  })
+
+  it('未改动的干净表单直接放行，不弹 confirm', async () => {
+    h.state.user = alice
+    const { router } = await mountRouted('/submit/new')
+    const confirmSpy = stubConfirm(false)
+    await router.push('/games')
+    await flushPromises()
+    expect(confirmSpy).not.toHaveBeenCalled()
+    expect(router.currentRoute.value.path).toBe('/games')
+  })
+
+  it('编辑模式 loadExisting 回填不置脏：导航直通且不弹 confirm', async () => {
+    h.state.user = alice
+    h.getSubmission.mockResolvedValue({
+      id: 'sub-1', kind: 'new_work', status: 'draft', work_id: 'alice/my-game',
+      payload: {
+        id: 'alice/my-game', name: 'My Game', url: 'https://example.com',
+        durationMinutes: { min: 1, max: 2 }, type: 'puzzle', tags: []
+      },
+      created_at: '', updated_at: ''
+    })
+    const { router } = await mountRouted('/submit/sub-1')
+    await flushPromises()
+    const confirmSpy = stubConfirm(false)
+    await router.push('/games')
+    await flushPromises()
+    expect(confirmSpy).not.toHaveBeenCalled()
+    expect(router.currentRoute.value.path).toBe('/games')
+  })
+
+  it('存草稿成功 push 直通：suppressLeave 抑制守卫，confirm 未被调', async () => {
+    h.state.user = alice
+    h.createSubmission.mockResolvedValue({ id: 's1', kind: 'new_work', status: 'draft', work_id: 'alice/my-game', payload: {}, created_at: '', updated_at: '' })
+    const { w, router } = await mountRouted('/submit/new')
+    const confirmSpy = stubConfirm(false)
+    await w.find('#sf-name').setValue('My Game')
+    await w.find('#sf-url').setValue('https://example.com')
+    await flushPromises()
+    await w.get('[data-testid="save-draft"]').trigger('click')
+    await flushPromises()
+    expect(h.createSubmission).toHaveBeenCalledTimes(1)
+    expect(confirmSpy).not.toHaveBeenCalled()
+    expect(router.currentRoute.value.path).toBe('/submit')
+  })
+
+  it('脏表单拦截 beforeunload；干净表单不拦截', async () => {
+    h.state.user = alice
+    const { w } = await mountRouted('/submit/new')
+    const clean = new Event('beforeunload', { cancelable: true })
+    window.dispatchEvent(clean)
+    expect(clean.defaultPrevented).toBe(false)
+
+    await w.find('#sf-name').setValue('My Game')
+    await flushPromises()
+    const dirtyEvt = new Event('beforeunload', { cancelable: true })
+    window.dispatchEvent(dirtyEvt)
+    expect(dirtyEvt.defaultPrevented).toBe(true)
+  })
+
+  it('bundle 上传成功即置脏（离开需确认）', async () => {
+    h.state.user = alice
+    h.getSubmission.mockResolvedValue({
+      id: 'sub-1', kind: 'new_work', status: 'draft', work_id: 'alice/my-game',
+      payload: {
+        id: 'alice/my-game', name: 'My Game', durationMinutes: { min: 1, max: 2 }, type: 'puzzle',
+        tags: [], runtime: 'virtual', version: 'v1', entry: 'index.html'
+      },
+      created_at: '', updated_at: ''
+    })
+    h.upload.mockResolvedValue({ upload_id: 'up-1', sha256: 'a'.repeat(64), bytes: 1024, kid: 'k'.repeat(22) })
+    const { w, router } = await mountRouted('/submit/sub-1')
+    await flushPromises()
+
+    const input = w.get('[data-testid="bundle-file"]').element as HTMLInputElement
+    Object.defineProperty(input, 'files', { value: [new File(['zip'], 'b.zip', { type: 'application/zip' })], configurable: true })
+    await w.get('[data-testid="bundle-file"]').trigger('change')
+    await flushPromises()
+    expect(h.upload).toHaveBeenCalledTimes(1)
+
+    const confirmSpy = stubConfirm(false)
+    await router.push('/games')
+    await flushPromises()
+    expect(confirmSpy).toHaveBeenCalledWith(GUARD)
+    expect(router.currentRoute.value.path).toBe('/submit/sub-1')
   })
 })
