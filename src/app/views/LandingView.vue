@@ -4,6 +4,7 @@ import { RouterLink } from 'vue-router'
 import { repo, type GameSummary } from '@/data'
 import { useAsync } from '@/composables/useAsync'
 import { pickFeatured } from '@/lib/featured'
+import { listRecent } from '@/lib/recent'
 import { setupWordmarkAssembly } from '@/lib/wordmark'
 import GameCard from '@/components/GameCard.vue'
 import StatePanel from '@/components/StatePanel.vue'
@@ -12,11 +13,18 @@ const SLOGAN = 'HOST YOUR CREATIONS'
 const TAGLINE = '托管你的创意'
 const CONTACT_EMAIL = 'xingfen.fendy@outlook.com'
 const FEATURED_LIMIT = 6
+const RECENT_LIMIT = 6
 
 const { data: games, error, loading, reload } = useAsync<GameSummary[]>(() => repo.listGames())
 
 const total = computed(() => games.value?.length ?? 0)
 const featured = computed(() => pickFeatured(games.value ?? [], FEATURED_LIMIT))
+// D-J：setup 时读一次即可——路由重挂载天然刷新；id 对不上（下架）的静默丢弃
+const recentIds = listRecent()
+const recent = computed(() => {
+  const byId = new Map((games.value ?? []).map((g) => [g.id, g]))
+  return recentIds.map((id) => byId.get(id)).filter((g): g is GameSummary => Boolean(g)).slice(0, RECENT_LIMIT)
+})
 
 const titleRef = ref<HTMLElement | null>(null)
 let disposeWordmark = () => {}
@@ -49,6 +57,13 @@ const stats = computed(() => {
       <span>{{ stats.types }} 种类型</span>
       <span>更新 {{ stats.latest }}</span>
     </p>
+  </section>
+
+  <section v-if="recent.length" class="mt-8" data-testid="recent-strip">
+    <h2 class="font-mono text-[0.6875rem] font-bold tracking-[0.08em]">继续游玩 · RECENTLY PLAYED</h2>
+    <div class="mt-3 grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+      <GameCard v-for="game in recent" :key="game.id" :game="game" :heading-level="3" />
+    </div>
   </section>
 
   <section class="mt-8">
