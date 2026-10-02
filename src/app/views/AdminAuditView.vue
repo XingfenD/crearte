@@ -57,29 +57,31 @@ function onFilterChange(value: string): void {
 
     <StatePanel variant="lines" class="mt-4" :loading="loading" :error="panelError(error)" @retry="reload">
       <p v-if="entries.length === 0" class="border-2 border-ink bg-surface p-6 text-sm text-ink-soft shadow-hard">该条件下没有审计记录。</p>
-      <table v-else class="w-full border-2 border-ink bg-surface text-sm shadow-hard">
-        <thead class="border-b-2 border-ink bg-paper font-mono text-[0.6875rem]">
-          <tr>
-            <th scope="col" class="px-3 py-2 text-left">时间</th>
-            <th scope="col" class="px-3 py-2 text-left">操作者</th>
-            <th scope="col" class="px-3 py-2 text-left">动作</th>
-            <th scope="col" class="px-3 py-2 text-left">对象</th>
-            <th scope="col" class="px-3 py-2 text-left">结果</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr v-for="e in entries" :key="e.id" :data-testid="`audit-row-${e.id}`" class="border-b-[1.5px] border-ink">
-            <td class="px-3 py-2 font-mono text-[0.625rem]">{{ new Date(e.created_at).toLocaleString('zh-CN') }}</td>
-            <td class="px-3 py-2 font-mono text-[0.625rem]">{{ e.actor_email }}</td>
-            <td class="px-3 py-2 text-xs font-bold">{{ auditActionLabel(e.method, e.route) }}</td>
-            <td class="px-3 py-2 font-mono text-[0.625rem]">{{ auditObject(e.route, e.path) }}</td>
-            <td class="px-3 py-2">
-              <span :data-testid="`audit-status-${e.id}`" class="border-[1.5px] px-1.5 py-0.5 font-mono text-[0.625rem] font-bold"
-                :class="auditStatusClass(e.status)">{{ e.status }}</span>
-            </td>
-          </tr>
-        </tbody>
-      </table>
+      <div v-else class="relative overflow-x-auto pr-1 pb-1">
+        <table class="w-full border-2 border-ink bg-surface text-sm shadow-hard">
+          <thead class="border-b-2 border-ink bg-paper font-mono text-[0.6875rem]">
+            <tr>
+              <th scope="col" class="px-3 py-2 text-left">时间</th>
+              <th scope="col" class="px-3 py-2 text-left">操作者</th>
+              <th scope="col" class="px-3 py-2 text-left">动作</th>
+              <th scope="col" class="px-3 py-2 text-left">对象</th>
+              <th scope="col" class="px-3 py-2 text-left">结果</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="e in entries" :key="e.id" :data-testid="`audit-row-${e.id}`" class="border-b-[1.5px] border-ink">
+              <td class="px-3 py-2 font-mono text-[0.625rem]">{{ new Date(e.created_at).toLocaleString('zh-CN') }}</td>
+              <td class="px-3 py-2 font-mono text-[0.625rem]">{{ e.actor_email }}</td>
+              <td class="px-3 py-2 text-xs font-bold">{{ auditActionLabel(e.method, e.route) }}</td>
+              <td class="px-3 py-2 font-mono text-[0.625rem]">{{ auditObject(e.route, e.path) }}</td>
+              <td class="px-3 py-2">
+                <span :data-testid="`audit-status-${e.id}`" class="border-[1.5px] px-1.5 py-0.5 font-mono text-[0.625rem] font-bold"
+                  :class="auditStatusClass(e.status)">{{ e.status }}</span>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
       <BasePagination v-model:offset="offset" class="mt-3" :limit="LIMIT" :total="total" />
     </StatePanel>
   </section>
