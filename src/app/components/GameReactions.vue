@@ -102,7 +102,7 @@ const summaryText = computed(() =>
         :key="i"
         type="button"
         :data-testid="`star-${i}`"
-        :aria-label="`评 ${i} 星`"
+        :aria-label="rated && i === score ? `已评 ${i} 星，点击取消评分` : `评 ${i} 星`"
         :disabled="busy"
         class="px-0.5 font-mono text-base leading-none disabled:opacity-60"
         @click="pickStar(i)"

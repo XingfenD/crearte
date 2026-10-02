@@ -1,7 +1,7 @@
 // @vitest-environment happy-dom
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { createMemoryHistory, createRouter } from 'vue-router'
-import { attachTitleHook, routes } from './index'
+import { attachTitleHook, focusMain, routes } from './index'
 import { DEFAULT_DESCRIPTION } from '@/lib/pageTitle'
 
 function makeRouter() {
@@ -107,8 +107,11 @@ describe('SPA 导航后焦点（D-E）', () => {
 
   it('#main 缺失时静默 no-op，标题职责照常执行', async () => {
     document.getElementById('main')?.remove()
+    // 直接验证 focusMain 在 #main 缺失时静默 no-op（不经 router，故不依赖
+    // vue-router「afterEach 抛错不被吞」的版本语义——那会让断言退化为恒真）
+    expect(() => focusMain()).not.toThrow()
     const router = makeRouter()
-    await expect(router.push('/docs')).resolves.not.toThrow()
+    await router.push('/docs')
     expect(document.title).toBe('文档 · crearte 创艺')
   })
 })

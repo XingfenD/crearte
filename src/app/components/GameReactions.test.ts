@@ -132,6 +132,40 @@ describe('GameReactions 星标可访问名（D-H）', () => {
     const group = w.get('[role="group"]')
     expect(group.attributes('aria-label')).toBe('评分：4 星')
   })
+
+  // P9B-2（P12-T5(b)）：撤评语义进可访问名——读屏用户听「评 4 星」无法预知
+  // 「再点同一颗星会撤评」（pickStar 支持点当前分取消）。三态钉桩：
+  it('已评 4 分：当前分那颗星的可访问名是「已评 4 星，点击取消评分」，其余仍是「评 N 星」', async () => {
+    h.fetchMine.mockResolvedValue({ favorites: [], ratings: { 'alice/work': 4 } })
+    const w = mountReactions()
+    await flushPromises()
+    expect(w.get('[data-testid="star-4"]').attributes('aria-label')).toBe('已评 4 星，点击取消评分')
+    // 非当前分：改分语义，仍是「评 N 星」
+    for (const i of [1, 2, 3, 5]) {
+      expect(w.get(`[data-testid="star-${i}"]`).attributes('aria-label')).toBe(`评 ${i} 星`)
+    }
+  })
+
+  it('未评：五颗星的可访问名全是「评 N 星」（e2e a11y.spec.ts:61 的断言路径）', async () => {
+    // 默认 fetchMine 返回 ratings:{} → rated=false，走 else 分支
+    const w = mountReactions()
+    await flushPromises()
+    for (const i of [1, 2, 3, 4, 5]) {
+      expect(w.get(`[data-testid="star-${i}"]`).attributes('aria-label')).toBe(`评 ${i} 星`)
+    }
+  })
+
+  it('撤评后（rated=false）可访问名回到「评 N 星」（apply(view) 全量替换驱动）', async () => {
+    h.fetchMine.mockResolvedValue({ favorites: [], ratings: { 'alice/work': 4 } })
+    const w = mountReactions()
+    await flushPromises()
+    expect(w.get('[data-testid="star-4"]').attributes('aria-label')).toBe('已评 4 星，点击取消评分')
+
+    h.unrate.mockResolvedValue({ ...VIEW, favorited: false, rated: false, score: undefined })
+    await w.get('[data-testid="star-4"]').trigger('click')
+    await flushPromises()
+    expect(w.get('[data-testid="star-4"]').attributes('aria-label')).toBe('评 4 星')
+  })
 })
 
 describe('GameReactions 个人态初始化', () => {
