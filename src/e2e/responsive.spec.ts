@@ -122,6 +122,21 @@ test('全站零横向溢出：@375px name=cjk60（CJK 可断行）', async ({ pa
   expect(bad, `横向溢出路由：\n${bad.join('\n')}`).toEqual([])
 })
 
+// —— 768px 钉桩（spec §5 T3 显式覆盖要求）：/account 在 60 字名下 768px 零溢出 ——
+// spike 实测 baseline @768 /account docW=808 → +40px（spec §1 归因缺口 B 的 dd 逃逸）。
+// 但实现者 mutation 实测纠正：单独回退 dd 修复（T3）@768px 仍 GREEN——max-w-xl(576px)
+// 减 px-4 后 dd(542px) 在 flex-wrap 下能折到自成一行的 544px 内，768px 的 +40px 实为
+// 缺口 A（页头 summary 484px）驱动，与全站每个路由同源，由 T1 修复。dd 修复的牙在
+// @320px：mutation 回退 T3 后 /account @320px ascii60 → +272px（scrollWidth=592，
+// 恰为 spec 记录的 ddRight=592）。本腿钉住 768px 这个「桌面窄窗口」的页头回归。
+test('/account @768px 长名零溢出（spec §5 T3：+40px 症状显式覆盖）', async ({ page }) => {
+  await page.setViewportSize({ width: 768, height: 800 })
+  await seedSession(page, 'user', ASCII60)
+  await gotoReady(page, '/account')
+  const m = await measure(page)
+  expect(m.overflow, `@768px /account scrollWidth=${m.scrollWidth} clientWidth=${m.clientWidth} → +${m.overflow}px`).toBeLessThanOrEqual(1)
+})
+
 // —— 缺口 E 钉桩：长名下用户下拉菜单不逃逸视口右缘 ——
 for (const vp of [320, 375]) {
   test(`长名下拉菜单不逃逸视口：@${vp}px（缺口 E）`, async ({ page }) => {
