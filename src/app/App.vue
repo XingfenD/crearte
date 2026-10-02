@@ -3,6 +3,12 @@ import { RouterView } from 'vue-router'
 import AppHeader from '@/components/AppHeader.vue'
 import AppFooter from '@/components/AppFooter.vue'
 import ToastHost from '@/components/ToastHost.vue'
+import { applyTheme, useTheme } from '@/composables/useTheme'
+
+// P13 D-K：内联 pre-paint 脚本已处理首屏；这里再落一次，覆盖内联脚本未执行的场景
+//（e2e 直接操作 DOM、被 CSP 拦截等）。模板结构不动：skip-link 仍是根 div 首子（P9-B 钉桩）。
+const { theme } = useTheme()
+applyTheme(theme.value)
 </script>
 
 <template>

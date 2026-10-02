@@ -11,16 +11,23 @@
   --color-highlight: #f5c518;
   --color-info: #2b62cc;
   --color-success: #1f7a4d;
+  /* P13 新增：骨架屏令牌化（D-G，原 StatePanel 硬编码 bg-[#EFE9DA]）；
+     遮罩专用深色（D-E，两主题同值、不参与翻转——暗色下 var(--color-ink)/60 会泛白，spike 4 实测 oklab L=0.96） */
+  --color-skeleton: #efe9da;
+  --color-scrim: #0d0b08;
 
   --font-display: "Playfair Display", system-ui, "PingFang SC", "Microsoft YaHei", sans-serif;
   --font-sans: system-ui, -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif;
   --font-mono: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
 
-  --shadow-hard-sm: 3px 3px 0 #141414;
-  --shadow-hard: 4px 4px 0 #141414;
-  --shadow-hard-lg: 6px 6px 0 #141414;
-  --shadow-hard-accent: 4px 4px 0 #e8552f;
-  --shadow-hard-accent-lg: 6px 6px 0 #e8552f;
+  /* P13 D-D：内联 hex → var()，硬阴影随主题翻转。运行时改令牌无效（Tailwind 把值烘焙进
+     --tw-shadow，spike 5 实测失败）；源码写 var + 真重建后传导成立（spike 6 实测暗色
+     .shadow-hard 的 box-shadow 变 rgb(247,242,231)）。 */
+  --shadow-hard-sm: 3px 3px 0 var(--color-ink);
+  --shadow-hard: 4px 4px 0 var(--color-ink);
+  --shadow-hard-lg: 6px 6px 0 var(--color-ink);
+  --shadow-hard-accent: 4px 4px 0 var(--color-accent);
+  --shadow-hard-accent-lg: 6px 6px 0 var(--color-accent);
 
   --animate-skeleton: skeleton-pulse 1.4s ease-in-out infinite;
 
@@ -28,6 +35,26 @@
     0%, 100% { opacity: 1; }
     50% { opacity: 0.5; }
   }
+}
+
+/* P13 暗色调色板（D-B）。选择器特异性 (0,1,1) 必须压过 Tailwind 的 :root,:host (0,1,0)——
+   写成裸 [data-theme="dark"] 虽也能生效，但特异性相同、靠源码顺序取胜，脆弱（spike 4 实测）。
+   color-scheme: dark（D-L）随块声明一次；@layer base 的 html{color-scheme:light} 是低特异性
+   默认值，被本块 (0,1,1) 覆盖，不在 base 层重复声明（spec §3.1(c) 二选一，此处择一）。 */
+html[data-theme="dark"] {
+  --color-paper: #17140f;
+  --color-surface: #221e18;
+  --color-ink: #f7f2e7;
+  --color-ink-soft: #cbc4b5;
+  --color-ink-faint: #a79f8e;
+  --color-accent: #ff7a4d;
+  --color-accent-ink: #ffb59a;
+  --color-highlight: #8a6412;
+  --color-info: #7aa7f0;
+  --color-success: #2fa46a;
+  --color-skeleton: #2c2721;
+  --color-scrim: #0d0b08; /* 与亮色同值：遮罩不翻转（D-E） */
+  color-scheme: dark;
 }
 
 @font-face {

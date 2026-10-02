@@ -49,7 +49,7 @@ const activeCount = computed(
       筛选
       <span
         v-if="activeCount"
-        class="ml-0.5 inline-flex h-5 min-w-5 items-center justify-center bg-accent px-1 font-mono text-[0.625rem] text-ink"
+        class="ml-0.5 inline-flex h-5 min-w-5 items-center justify-center bg-accent-ink px-1 font-mono text-[0.625rem] text-paper"
       >{{ activeCount }}</span>
     </button>
   </div>

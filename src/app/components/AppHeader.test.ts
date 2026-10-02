@@ -3,6 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { enableAutoUnmount, mount } from '@vue/test-utils'
 import { createMemoryHistory, createRouter } from 'vue-router'
 import AppHeader from './AppHeader.vue'
+import { __resetTheme, useTheme } from '@/composables/useTheme'
 
 enableAutoUnmount(afterEach)
 
@@ -42,6 +43,16 @@ beforeEach(() => {
   h.displayName = 'tester'
   h.listGames.mockResolvedValue([])
   h.listDocs.mockResolvedValue([])
+  // P13-T4：主题单例隔离（useTheme 模块级 ref，不复位会跨用例污染，P9-B D-I 教训）
+  localStorage.clear()
+  document.documentElement.removeAttribute('data-theme')
+  __resetTheme()
+})
+
+afterEach(() => {
+  localStorage.clear()
+  document.documentElement.removeAttribute('data-theme')
+  __resetTheme()
 })
 
 async function mountHeader() {
@@ -184,6 +195,80 @@ describe('AppHeader 长名截断（P12-T1 / D-A / D-G）', () => {
     expect(cls).toContain('flex')
     expect(cls).toContain('max-w-[6rem]')
     expect(cls).toContain('min-w-0')
+  })
+})
+
+// 60 字不可断行 ASCII（与上方 P12-T1 钉桩的 LONG 同源；单独声明避免跨 describe 依赖）
+const LONG_NAME = 'x'.repeat(60)
+
+describe('AppHeader 主题开关（P13-T4 / D-I / D-J）', () => {
+  it('开关存在：data-testid、aria-label 含当前态与动作、图标 span aria-hidden', async () => {
+    const { w } = await mountHeader()
+    const btn = w.get('[data-testid="theme-toggle"]')
+    // 初始亮色：label 说明动作（切暗）与当前态（亮色）
+    expect(btn.attributes('aria-label')).toBe('切换为暗色主题（当前：亮色）')
+    expect(btn.attributes('title')).toBe('切换为暗色主题（当前：亮色）')
+    const icon = btn.get('span')
+    expect(icon.attributes('aria-hidden')).toBe('true')
+    expect(icon.text()).toBe('☾')
+    // 尺寸钉桩：必须 32px（spike 3：28px 在最坏格 margin 仅 5px）+ shrink-0
+    expect(btn.classes()).toContain('h-8')
+    expect(btn.classes()).toContain('w-8')
+    expect(btn.classes()).toContain('shrink-0')
+  })
+
+  it('点击 → useTheme().theme 翻转、图标与 label 同步、data-theme 落地 <html>', async () => {
+    const { w } = await mountHeader()
+    const btn = w.get('[data-testid="theme-toggle"]')
+
+    await btn.trigger('click')
+    expect(useTheme().theme.value).toBe('dark')
+    expect(btn.get('span').text()).toBe('☀')
+    expect(btn.attributes('aria-label')).toBe('切换为亮色主题（当前：暗色）')
+    expect(document.documentElement.getAttribute('data-theme')).toBe('dark')
+    expect(localStorage.getItem('crearte.theme.v1')).toBe('dark')
+
+    await btn.trigger('click')
+    expect(useTheme().theme.value).toBe('light')
+    expect(btn.get('span').text()).toBe('☾')
+    expect(document.documentElement.getAttribute('data-theme')).toBe('light')
+  })
+
+  it('开关在 authEnabled 块之外：登出态也渲染（spike 2 否决 S6 的理由）', async () => {
+    const { w } = await mountHeader()
+    // mountHeader 默认登录态；此处只钉 DOM 位置：开关是 header 行容器的最后一个子元素，
+    // 不在 <template v-if="authEnabled"> 内（否则登出态无法切换主题）
+    const row = w.get('header > div')
+    const children = row.element.children
+    expect(children[children.length - 1].getAttribute('data-testid')).toBe('theme-toggle')
+  })
+
+  it('gap 钉桩：容器行 gap-2 sm:gap-6、nav gap-2 sm:gap-4（候选 B，最坏格 margin=16）', async () => {
+    const { w } = await mountHeader()
+    expect(w.get('header > div').classes()).toEqual(
+      expect.arrayContaining(['gap-2', 'sm:gap-6'])
+    )
+    expect(w.get('header nav').classes()).toEqual(
+      expect.arrayContaining(['gap-2', 'sm:gap-4'])
+    )
+    // 回退防线：旧的全段大 gap 不得残留
+    expect(w.get('header > div').classes()).not.toContain('gap-6')
+    expect(w.get('header nav').classes()).not.toContain('gap-4')
+  })
+
+  it('P12 F3 形态钉桩仍绿：summary 的 max-w-[6rem]/flex/min-w-0 与两 span 结构未被触碰', async () => {
+    h.displayName = LONG_NAME
+    const { w } = await mountHeader()
+    const summary = w.get('summary')
+    expect(summary.classes()).toEqual(
+      expect.arrayContaining(['flex', 'max-w-[6rem]', 'min-w-0', 'items-center', 'gap-1'])
+    )
+    expect(summary.attributes('title')).toBe(LONG_NAME)
+    const spans = w.findAll('summary > span')
+    expect(spans).toHaveLength(2)
+    expect(spans[0].classes()).toEqual(expect.arrayContaining(['min-w-0', 'truncate']))
+    expect(spans[1].classes()).toContain('shrink-0')
+    expect(spans[1].attributes('aria-hidden')).toBe('true')
   })
 })
 
