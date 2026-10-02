@@ -9,7 +9,9 @@ enableAutoUnmount(afterEach)
 const h = vi.hoisted(() => ({
   listGames: vi.fn(),
   listDocs: vi.fn(),
-  logout: vi.fn()
+  logout: vi.fn(),
+  // P12-T1：长名场景需改 display_name（默认 'tester' 保持既有六个用例行为不变）
+  displayName: 'tester'
 }))
 
 vi.mock('@/data', () => ({
@@ -20,7 +22,16 @@ vi.mock('@/auth', () => ({
   authEnabled: true,
   session: {
     state: {
-      user: { id: 'u1', email: 'tester@e2e.local', display_name: 'tester', username: 'tester', role: 'user' }
+      user: {
+        id: 'u1',
+        email: 'tester@e2e.local',
+        // getter 而非字面量：各用例改 h.displayName 后 mount 即生效
+        get display_name() {
+          return h.displayName
+        },
+        username: 'tester',
+        role: 'user'
+      }
     },
     logout: h.logout
   }
@@ -28,6 +39,7 @@ vi.mock('@/auth', () => ({
 
 beforeEach(() => {
   vi.clearAllMocks()
+  h.displayName = 'tester'
   h.listGames.mockResolvedValue([])
   h.listDocs.mockResolvedValue([])
 })
@@ -135,6 +147,43 @@ describe('AppHeader 用户下拉：路由变化收起（既有行为回归）', 
     document.body.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true }))
     await w.vm.$nextTick()
     expect(details.open).toBe(false)
+  })
+})
+
+describe('AppHeader 长名截断（P12-T1 / D-A / D-G）', () => {
+  const LONG = 'x'.repeat(60) // 60 字不可断行 ASCII：后端 maxDisplayNameLen 的合法上限
+
+  it('60 字名下 summary 带 title 属性且值为全名（截断不丢信息）', async () => {
+    h.displayName = LONG
+    const { w } = await mountHeader()
+    expect(w.get('summary').attributes('title')).toBe(LONG)
+  })
+
+  it('名字包 truncate span，▾ 字形包 shrink-0 span 且 aria-hidden（可访问名不含 ▾）', async () => {
+    h.displayName = LONG
+    const { w } = await mountHeader()
+    const spans = w.findAll('summary > span')
+    expect(spans).toHaveLength(2)
+    // 名字 span：truncate + min-w-0，文本为全名
+    expect(spans[0].classes()).toContain('truncate')
+    expect(spans[0].classes()).toContain('min-w-0')
+    expect(spans[0].text()).toBe(LONG)
+    // ▾ span：aria-hidden 把它排除在可访问名之外（happy-dom 不算 accname，
+    // 故钉结构；真实可访问名与 caret 可见性由 e2e/responsive.spec.ts 兼顾）
+    expect(spans[1].attributes('aria-hidden')).toBe('true')
+    expect(spans[1].text()).toBe('▾')
+    // summary 的可见文本 = 全名 + ▾（Vue 编译时折叠了两 span 间的空白，间距由 flex gap-1 负责），
+    // 但 ▾ 已声明装饰性 → accname 仅剩全名
+    expect(w.get('summary').text()).toBe(`${LONG}▾`)
+  })
+
+  it('summary 带 max-w-[6rem] 宽度上限与 flex/min-w-0（F3 形态钉桩）', async () => {
+    h.displayName = LONG
+    const { w } = await mountHeader()
+    const cls = w.get('summary').classes()
+    expect(cls).toContain('flex')
+    expect(cls).toContain('max-w-[6rem]')
+    expect(cls).toContain('min-w-0')
   })
 })
 
