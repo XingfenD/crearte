@@ -31,9 +31,16 @@ export async function frameDataset(page: Page, key: string): Promise<string | nu
   return page.frameLocator('iframe').locator('body').getAttribute(`data-${key}`)
 }
 
-/** 预置登录会话：localStorage 种子 + /api/auth/me mock（session.restore 复核用） */
-export async function seedSession(page: Page, role: 'user' | 'admin' = 'user'): Promise<void> {
-  const user = { id: 'u-e2e', email: `${role}@e2e.local`, display_name: role, username: 'tester', role }
+/**
+ * 预置登录会话：localStorage 种子 + /api/auth/me mock（session.restore 复核用）。
+ * displayName 可选（P12-T4 长名场景）；默认保持 role，既有调用点行为不变。
+ */
+export async function seedSession(
+  page: Page,
+  role: 'user' | 'admin' = 'user',
+  displayName: string = role
+): Promise<void> {
+  const user = { id: 'u-e2e', email: `${role}@e2e.local`, display_name: displayName, username: 'tester', role }
   await page.addInitScript(([key, u]) => {
     localStorage.setItem(key, JSON.stringify({
       token: 'e2e-token',

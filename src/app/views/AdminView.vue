@@ -147,22 +147,24 @@ function switchStatus(next: 'pending' | 'approved' | 'rejected'): void {
       />
       <StatePanel variant="lines" class="mt-4" :loading="queueLoading" :error="panelError(queueError)" @retry="reloadQueue">
         <p v-if="queueSubs.length === 0" class="border-2 border-ink bg-surface p-6 text-sm text-ink-soft shadow-hard">该状态下没有提交。</p>
-        <table v-else class="w-full border-2 border-ink bg-surface text-sm shadow-hard">
-          <thead class="border-b-2 border-ink bg-paper font-mono text-[0.6875rem]">
-            <tr><th scope="col" class="px-3 py-2 text-left">作品</th><th scope="col" class="px-3 py-2 text-left">类型</th><th scope="col" class="px-3 py-2 text-left">提交</th><th scope="col" class="px-3 py-2 text-left">更新</th><th scope="col" class="px-3 py-2"><span class="sr-only">操作</span></th></tr>
-          </thead>
-          <tbody>
-            <tr v-for="s in queueSubs" :key="s.id" :data-testid="`queue-${s.id}`" class="border-b-[1.5px] border-ink">
-              <td class="px-3 py-2"><span class="font-bold">{{ nameOf(s) }}</span><span class="ml-2 font-mono text-[0.625rem] text-ink-soft">{{ s.work_id }}</span></td>
-              <td class="px-3 py-2 font-mono text-[0.6875rem]">{{ KIND_LABELS[s.kind] ?? s.kind }}</td>
-              <td class="px-3 py-2 font-mono text-[0.625rem]">{{ s.id.slice(0, 8) }}</td>
-              <td class="px-3 py-2 font-mono text-[0.625rem]">{{ s.updated_at.slice(0, 10) }}</td>
-              <td class="px-3 py-2 text-right">
-                <RouterLink :to="`/admin/submissions/${s.id}`" class="border-2 border-ink bg-surface px-2 py-1 text-xs font-bold hover:bg-paper">审核</RouterLink>
-              </td>
-            </tr>
-          </tbody>
-        </table>
+        <div v-else class="relative overflow-x-auto pr-1 pb-1">
+          <table class="w-full border-2 border-ink bg-surface text-sm shadow-hard">
+            <thead class="border-b-2 border-ink bg-paper font-mono text-[0.6875rem]">
+              <tr><th scope="col" class="px-3 py-2 text-left">作品</th><th scope="col" class="px-3 py-2 text-left">类型</th><th scope="col" class="px-3 py-2 text-left">提交</th><th scope="col" class="px-3 py-2 text-left">更新</th><th scope="col" class="px-3 py-2"><span class="sr-only">操作</span></th></tr>
+            </thead>
+            <tbody>
+              <tr v-for="s in queueSubs" :key="s.id" :data-testid="`queue-${s.id}`" class="border-b-[1.5px] border-ink">
+                <td class="px-3 py-2"><span class="font-bold">{{ nameOf(s) }}</span><span class="ml-2 font-mono text-[0.625rem] text-ink-soft">{{ s.work_id }}</span></td>
+                <td class="px-3 py-2 font-mono text-[0.6875rem]">{{ KIND_LABELS[s.kind] ?? s.kind }}</td>
+                <td class="px-3 py-2 font-mono text-[0.625rem]">{{ s.id.slice(0, 8) }}</td>
+                <td class="px-3 py-2 font-mono text-[0.625rem]">{{ s.updated_at.slice(0, 10) }}</td>
+                <td class="px-3 py-2 text-right">
+                  <RouterLink :to="`/admin/submissions/${s.id}`" class="border-2 border-ink bg-surface px-2 py-1 text-xs font-bold hover:bg-paper">审核</RouterLink>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
         <BasePagination v-model:offset="offset" class="mt-3" :limit="LIMIT" :total="queueTotal" />
       </StatePanel>
     </div>
@@ -170,73 +172,77 @@ function switchStatus(next: 'pending' | 'approved' | 'rejected'): void {
     <!-- Tab 2：作品管理 -->
     <div v-else class="mt-6 space-y-8">
       <StatePanel variant="lines" :loading="worksLoading" :error="panelError(worksError)" @retry="reloadWorks">
-        <table class="w-full border-2 border-ink bg-surface text-sm shadow-hard">
-          <thead class="border-b-2 border-ink bg-paper font-mono text-[0.6875rem]">
-            <tr><th scope="col" class="px-3 py-2 text-left">作品</th><th scope="col" class="px-3 py-2 text-left">运行时</th><th scope="col" class="px-3 py-2 text-left">当前版本</th><th scope="col" class="px-3 py-2 text-left">操作</th></tr>
-          </thead>
-          <tbody>
-            <template v-for="g in worksData ?? []" :key="g.id">
-              <tr :data-testid="`work-row-${g.id}`" class="border-b-[1.5px] border-ink">
-                <td class="px-3 py-2"><span class="font-bold">{{ g.name }}</span><span class="ml-2 font-mono text-[0.625rem] text-ink-soft">{{ g.id }}</span></td>
-                <td class="px-3 py-2 font-mono text-[0.6875rem]">{{ g.runtime ?? 'external' }}</td>
-                <td class="px-3 py-2 font-mono text-[0.6875rem]">
-                  <template v-if="g.runtime === 'virtual'">
-                    <BaseButton size="sm" @click="toggleVersions(g.id)">
-                      {{ expanded === g.id ? (versionOf[g.id] ?? '加载中…') : '查看' }}
-                    </BaseButton>
-                  </template>
-                  <template v-else>—</template>
-                </td>
-                <td class="px-3 py-2">
-                  <BaseButton size="sm" :disabled="busyKey !== null"
-                    @click="run(`unpub-${g.id}`, () => contentClient.adminUnpublish(g.id), reloadWorks)">下架</BaseButton>
-                  <BaseButton v-if="expanded === g.id && versionOf[g.id]" size="sm" class="ml-2" :disabled="busyKey !== null"
-                    @click="run(`revoke-${g.id}`, () => contentClient.adminSetRevoked(g.id, versionOf[g.id]!, true))">吊销密钥</BaseButton>
-                  <BaseButton v-if="expanded === g.id && versionOf[g.id]" size="sm" class="ml-2" :disabled="busyKey !== null"
-                    @click="run(`restore-${g.id}`, () => contentClient.adminSetRevoked(g.id, versionOf[g.id]!, false))">恢复密钥</BaseButton>
-                </td>
-              </tr>
-              <tr v-if="expanded === g.id && featuresOf[g.id]" :data-testid="`work-detail-${g.id}`">
-                <td colspan="4" class="border-b-[1.5px] border-ink bg-paper px-3 py-3">
-                  <div class="space-y-2">
-                    <p class="font-mono text-[0.6875rem] tracking-[0.05em]">运行权限（仅对站内运行作品生效；保存后该作品的 CSP 立即按新开关放行）</p>
-                    <BaseCheckbox v-for="item in FEATURE_ITEMS" :key="item.key"
-                      v-model="featuresOf[g.id][item.key]" :data-testid="`admin-feature-${g.id}-${item.key}`">
-                      <span class="font-bold">{{ item.label }}</span><span class="ml-1 text-xs text-ink-soft">{{ item.hint }}</span>
-                    </BaseCheckbox>
-                    <BaseButton size="sm" data-testid="admin-feature-save"
-                      :disabled="busyKey !== null" @click="saveFeatures(g.id)">保存权限</BaseButton>
-                  </div>
-                </td>
-              </tr>
-            </template>
-          </tbody>
-        </table>
+        <div class="relative overflow-x-auto pr-1 pb-1">
+          <table class="w-full border-2 border-ink bg-surface text-sm shadow-hard">
+            <thead class="border-b-2 border-ink bg-paper font-mono text-[0.6875rem]">
+              <tr><th scope="col" class="px-3 py-2 text-left">作品</th><th scope="col" class="px-3 py-2 text-left">运行时</th><th scope="col" class="px-3 py-2 text-left">当前版本</th><th scope="col" class="px-3 py-2 text-left">操作</th></tr>
+            </thead>
+            <tbody>
+              <template v-for="g in worksData ?? []" :key="g.id">
+                <tr :data-testid="`work-row-${g.id}`" class="border-b-[1.5px] border-ink">
+                  <td class="px-3 py-2"><span class="font-bold">{{ g.name }}</span><span class="ml-2 font-mono text-[0.625rem] text-ink-soft">{{ g.id }}</span></td>
+                  <td class="px-3 py-2 font-mono text-[0.6875rem]">{{ g.runtime ?? 'external' }}</td>
+                  <td class="px-3 py-2 font-mono text-[0.6875rem]">
+                    <template v-if="g.runtime === 'virtual'">
+                      <BaseButton size="sm" @click="toggleVersions(g.id)">
+                        {{ expanded === g.id ? (versionOf[g.id] ?? '加载中…') : '查看' }}
+                      </BaseButton>
+                    </template>
+                    <template v-else>—</template>
+                  </td>
+                  <td class="px-3 py-2">
+                    <BaseButton size="sm" :disabled="busyKey !== null"
+                      @click="run(`unpub-${g.id}`, () => contentClient.adminUnpublish(g.id), reloadWorks)">下架</BaseButton>
+                    <BaseButton v-if="expanded === g.id && versionOf[g.id]" size="sm" class="ml-2" :disabled="busyKey !== null"
+                      @click="run(`revoke-${g.id}`, () => contentClient.adminSetRevoked(g.id, versionOf[g.id]!, true))">吊销密钥</BaseButton>
+                    <BaseButton v-if="expanded === g.id && versionOf[g.id]" size="sm" class="ml-2" :disabled="busyKey !== null"
+                      @click="run(`restore-${g.id}`, () => contentClient.adminSetRevoked(g.id, versionOf[g.id]!, false))">恢复密钥</BaseButton>
+                  </td>
+                </tr>
+                <tr v-if="expanded === g.id && featuresOf[g.id]" :data-testid="`work-detail-${g.id}`">
+                  <td colspan="4" class="border-b-[1.5px] border-ink bg-paper px-3 py-3">
+                    <div class="space-y-2">
+                      <p class="font-mono text-[0.6875rem] tracking-[0.05em]">运行权限（仅对站内运行作品生效；保存后该作品的 CSP 立即按新开关放行）</p>
+                      <BaseCheckbox v-for="item in FEATURE_ITEMS" :key="item.key"
+                        v-model="featuresOf[g.id][item.key]" :data-testid="`admin-feature-${g.id}-${item.key}`">
+                        <span class="font-bold">{{ item.label }}</span><span class="ml-1 text-xs text-ink-soft">{{ item.hint }}</span>
+                      </BaseCheckbox>
+                      <BaseButton size="sm" data-testid="admin-feature-save"
+                        :disabled="busyKey !== null" @click="saveFeatures(g.id)">保存权限</BaseButton>
+                    </div>
+                  </td>
+                </tr>
+              </template>
+            </tbody>
+          </table>
+        </div>
       </StatePanel>
 
       <section>
         <h2 class="font-display text-sm font-black">已通过提交（含已下架作品，可恢复上架 / 操作历史版本）</h2>
         <StatePanel variant="lines" class="mt-3" :loading="historyLoading" :error="panelError(historyError)" @retry="reloadHistory">
-          <table class="w-full border-2 border-ink bg-surface text-sm shadow-hard">
-            <thead class="border-b-2 border-ink bg-paper font-mono text-[0.6875rem]">
-              <tr><th scope="col" class="px-3 py-2 text-left">作品</th><th scope="col" class="px-3 py-2 text-left">版本</th><th scope="col" class="px-3 py-2 text-left">通过时间</th><th scope="col" class="px-3 py-2 text-left">操作</th></tr>
-            </thead>
-            <tbody>
-              <tr v-for="s in historySubs" :key="s.id" class="border-b-[1.5px] border-ink">
-                <td class="px-3 py-2"><span class="font-bold">{{ nameOf(s) }}</span><span class="ml-2 font-mono text-[0.625rem] text-ink-soft">{{ s.work_id }}</span></td>
-                <td class="px-3 py-2 font-mono text-[0.6875rem]">{{ versionOfSub(s) }}</td>
-                <td class="px-3 py-2 font-mono text-[0.625rem]">{{ s.updated_at.slice(0, 10) }}</td>
-                <td class="px-3 py-2">
-                  <BaseButton size="sm" :disabled="busyKey !== null"
-                    @click="run(`repub-${s.work_id}`, () => contentClient.adminRepublish(s.work_id), () => { reloadWorks(); reloadHistory() })">恢复上架</BaseButton>
-                  <BaseButton v-if="s.payload?.version" size="sm" class="ml-2" :disabled="busyKey !== null"
-                    @click="run(`hrev-${s.work_id}-${s.payload.version}`, () => contentClient.adminSetRevoked(s.work_id, s.payload.version!, true))">吊销密钥</BaseButton>
-                  <BaseButton v-if="s.payload?.version" size="sm" class="ml-2" :disabled="busyKey !== null"
-                    @click="run(`hres-${s.work_id}-${s.payload.version}`, () => contentClient.adminSetRevoked(s.work_id, s.payload.version!, false))">恢复密钥</BaseButton>
-                </td>
-              </tr>
-            </tbody>
-          </table>
+          <div class="relative overflow-x-auto pr-1 pb-1">
+            <table class="w-full border-2 border-ink bg-surface text-sm shadow-hard">
+              <thead class="border-b-2 border-ink bg-paper font-mono text-[0.6875rem]">
+                <tr><th scope="col" class="px-3 py-2 text-left">作品</th><th scope="col" class="px-3 py-2 text-left">版本</th><th scope="col" class="px-3 py-2 text-left">通过时间</th><th scope="col" class="px-3 py-2 text-left">操作</th></tr>
+              </thead>
+              <tbody>
+                <tr v-for="s in historySubs" :key="s.id" class="border-b-[1.5px] border-ink">
+                  <td class="px-3 py-2"><span class="font-bold">{{ nameOf(s) }}</span><span class="ml-2 font-mono text-[0.625rem] text-ink-soft">{{ s.work_id }}</span></td>
+                  <td class="px-3 py-2 font-mono text-[0.6875rem]">{{ versionOfSub(s) }}</td>
+                  <td class="px-3 py-2 font-mono text-[0.625rem]">{{ s.updated_at.slice(0, 10) }}</td>
+                  <td class="px-3 py-2">
+                    <BaseButton size="sm" :disabled="busyKey !== null"
+                      @click="run(`repub-${s.work_id}`, () => contentClient.adminRepublish(s.work_id), () => { reloadWorks(); reloadHistory() })">恢复上架</BaseButton>
+                    <BaseButton v-if="s.payload?.version" size="sm" class="ml-2" :disabled="busyKey !== null"
+                      @click="run(`hrev-${s.work_id}-${s.payload.version}`, () => contentClient.adminSetRevoked(s.work_id, s.payload.version!, true))">吊销密钥</BaseButton>
+                    <BaseButton v-if="s.payload?.version" size="sm" class="ml-2" :disabled="busyKey !== null"
+                      @click="run(`hres-${s.work_id}-${s.payload.version}`, () => contentClient.adminSetRevoked(s.work_id, s.payload.version!, false))">恢复密钥</BaseButton>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
           <BasePagination v-model:offset="worksOffset" class="mt-3" :limit="LIMIT" :total="historyTotal" />
         </StatePanel>
       </section>

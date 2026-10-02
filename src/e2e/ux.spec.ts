@@ -22,7 +22,7 @@ test('复制链接：clipboard 写入规范 URL + toast 确认', async ({ contex
 test('页头菜单：Esc 与外点关闭', async ({ page }) => {
   await seedSession(page)
   await page.goto('http://localhost:4173/')
-  // details summary 的可访问名即用户名；此处直接定位页头菜单触发器
+  // details summary 的可访问名即用户名（P12 拆分后 ▾ 字形带 aria-hidden，不再计入名字）；此处直接定位页头菜单触发器
   const summary = page.locator('header details summary')
   await expect(summary).toBeVisible()
   await summary.click()

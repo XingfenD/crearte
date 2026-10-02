@@ -112,53 +112,55 @@ async function setUserRole(user: AdminUser, role: AdminUserRole): Promise<void> 
 
     <StatePanel variant="lines" class="mt-4" :loading="loading" :error="panelError(error)" @retry="reload">
       <p v-if="users.length === 0" class="border-2 border-ink bg-surface p-6 text-sm text-ink-soft shadow-hard">没有匹配的用户。</p>
-      <table v-else class="w-full border-2 border-ink bg-surface text-sm shadow-hard">
-        <thead class="border-b-2 border-ink bg-paper font-mono text-[0.6875rem]">
-          <tr>
-            <th scope="col" class="px-3 py-2 text-left">用户名</th>
-            <th scope="col" class="px-3 py-2 text-left">邮箱</th>
-            <th scope="col" class="px-3 py-2 text-left">显示名</th>
-            <th scope="col" class="px-3 py-2 text-left">角色</th>
-            <th scope="col" class="px-3 py-2 text-left">注册时间</th>
-            <th scope="col" class="px-3 py-2"><span class="sr-only">操作</span></th>
-          </tr>
-        </thead>
-        <tbody>
-          <template v-for="u in users" :key="u.id">
-            <tr :data-testid="`user-row-${u.id}`" class="border-b-[1.5px] border-ink">
-              <td class="px-3 py-2 font-bold">{{ u.username }}</td>
-              <td class="px-3 py-2 font-mono text-[0.6875rem]">{{ u.email }}</td>
-              <td class="px-3 py-2">{{ u.display_name || '—' }}</td>
-              <td class="px-3 py-2">
-                <span class="border-[1.5px] border-ink px-1.5 py-0.5 font-mono text-[0.625rem] font-bold"
-                  :class="u.role === 'admin' ? 'bg-accent-ink text-paper' : 'bg-surface'">{{ ROLE_LABELS[u.role] ?? u.role }}</span>
-              </td>
-              <td class="px-3 py-2 font-mono text-[0.625rem]">{{ new Date(u.created_at).toLocaleString('zh-CN') }}</td>
-              <td class="px-3 py-2 text-right">
-                <BaseButton v-if="u.role === 'user'" size="sm" :disabled="busyId !== null"
-                  @click="setUserRole(u, 'admin')">升为 admin</BaseButton>
-                <BaseButton v-else size="sm" class="bg-accent-ink text-paper" :disabled="busyId !== null"
-                  @click="toggleDemoteConfirm(u)">降为 user</BaseButton>
-              </td>
+      <div v-else class="relative overflow-x-auto pr-1 pb-1">
+        <table class="w-full border-2 border-ink bg-surface text-sm shadow-hard">
+          <thead class="border-b-2 border-ink bg-paper font-mono text-[0.6875rem]">
+            <tr>
+              <th scope="col" class="px-3 py-2 text-left">用户名</th>
+              <th scope="col" class="px-3 py-2 text-left">邮箱</th>
+              <th scope="col" class="px-3 py-2 text-left">显示名</th>
+              <th scope="col" class="px-3 py-2 text-left">角色</th>
+              <th scope="col" class="px-3 py-2 text-left">注册时间</th>
+              <th scope="col" class="px-3 py-2"><span class="sr-only">操作</span></th>
             </tr>
-            <!-- 降级确认弹层：两个必含要点（登录态失效 / 最后一个 admin 会被 409 拒绝） -->
-            <tr v-if="demoteTarget?.id === u.id" data-testid="demote-confirm">
-              <td colspan="6" class="border-b-[1.5px] border-ink bg-paper px-3 py-3">
-                <p class="text-xs font-bold">确认将 {{ u.username }}（{{ u.email }}）降为普通用户？</p>
-                <ul class="mt-2 list-disc space-y-1 pl-5 text-xs">
-                  <li data-testid="demote-note-sessions">降级后对方的所有登录态立即失效，需重新登录。</li>
-                  <li data-testid="demote-note-last-admin">若其为最后一个管理员，本次降级将被拒绝（409）。</li>
-                </ul>
-                <div class="mt-2 flex gap-2">
-                  <BaseButton size="sm" class="bg-accent-ink text-paper" :disabled="busyId !== null"
-                    @click="setUserRole(u, 'user')">{{ busyId === u.id ? '处理中…' : '确认降级' }}</BaseButton>
-                  <BaseButton size="sm" @click="demoteTarget = null">取消</BaseButton>
-                </div>
-              </td>
-            </tr>
-          </template>
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            <template v-for="u in users" :key="u.id">
+              <tr :data-testid="`user-row-${u.id}`" class="border-b-[1.5px] border-ink">
+                <td class="px-3 py-2 font-bold">{{ u.username }}</td>
+                <td class="px-3 py-2 font-mono text-[0.6875rem]">{{ u.email }}</td>
+                <td class="px-3 py-2">{{ u.display_name || '—' }}</td>
+                <td class="px-3 py-2">
+                  <span class="border-[1.5px] border-ink px-1.5 py-0.5 font-mono text-[0.625rem] font-bold"
+                    :class="u.role === 'admin' ? 'bg-accent-ink text-paper' : 'bg-surface'">{{ ROLE_LABELS[u.role] ?? u.role }}</span>
+                </td>
+                <td class="px-3 py-2 font-mono text-[0.625rem]">{{ new Date(u.created_at).toLocaleString('zh-CN') }}</td>
+                <td class="px-3 py-2 text-right">
+                  <BaseButton v-if="u.role === 'user'" size="sm" :disabled="busyId !== null"
+                    @click="setUserRole(u, 'admin')">升为 admin</BaseButton>
+                  <BaseButton v-else size="sm" class="bg-accent-ink text-paper" :disabled="busyId !== null"
+                    @click="toggleDemoteConfirm(u)">降为 user</BaseButton>
+                </td>
+              </tr>
+              <!-- 降级确认弹层：两个必含要点（登录态失效 / 最后一个 admin 会被 409 拒绝） -->
+              <tr v-if="demoteTarget?.id === u.id" data-testid="demote-confirm">
+                <td colspan="6" class="border-b-[1.5px] border-ink bg-paper px-3 py-3">
+                  <p class="text-xs font-bold">确认将 {{ u.username }}（{{ u.email }}）降为普通用户？</p>
+                  <ul class="mt-2 list-disc space-y-1 pl-5 text-xs">
+                    <li data-testid="demote-note-sessions">降级后对方的所有登录态立即失效，需重新登录。</li>
+                    <li data-testid="demote-note-last-admin">若其为最后一个管理员，本次降级将被拒绝（409）。</li>
+                  </ul>
+                  <div class="mt-2 flex gap-2">
+                    <BaseButton size="sm" class="bg-accent-ink text-paper" :disabled="busyId !== null"
+                      @click="setUserRole(u, 'user')">{{ busyId === u.id ? '处理中…' : '确认降级' }}</BaseButton>
+                    <BaseButton size="sm" @click="demoteTarget = null">取消</BaseButton>
+                  </div>
+                </td>
+              </tr>
+            </template>
+          </tbody>
+        </table>
+      </div>
       <BasePagination v-model:offset="offset" class="mt-3" :limit="LIMIT" :total="total" />
     </StatePanel>
   </section>

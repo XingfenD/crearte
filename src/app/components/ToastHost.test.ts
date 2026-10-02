@@ -109,6 +109,43 @@ describe('ToastHost', () => {
     expect(announce.findAll('button')).toHaveLength(0)
   })
 
+  // P9B-4（P12-T5(c)）：单调播报守卫——只在末尾 id 变大时播报。
+  // announcedId 是 ToastHost <script setup> 里的 per-instance 闭包变量（非模块级），
+  // 每次 mount(ToastHost) 都从 0 起，故不跨测试污染——无需挂 store 侧或进 __resetToasts
+  // 复位；toasts 单例仍由 beforeEach/afterEach 的 __resetToasts() 隔离（nextId 复位为 1）。
+  it('三条并存 → 关掉最新 → 播报文字不变（不重念仍在屏上的旧消息）', async () => {
+    const w = mount(ToastHost)
+    toast.info('一')
+    toast.info('二')
+    toast.info('三')
+    await nextTick()
+    // 三条并存，播报最新一条
+    expect(w.findAll('[data-testid="toast"]')).toHaveLength(3)
+    expect(w.get('[data-testid="toast-announce"]').text()).toBe('三')
+
+    // 手动关掉最新（末尾 id=3）：数组回到 [1,2]，末尾 id 回退到 2。
+    // 无单调守卫时 watch 会以 id=2 重念「二」；有守卫时 2<=announcedId(3) → 不重念。
+    toast.dismiss(toast.toasts.value[toast.toasts.value.length - 1].id)
+    await nextTick()
+    expect(w.findAll('[data-testid="toast"]')).toHaveLength(2)
+    expect(w.get('[data-testid="toast-announce"]').text()).toBe('三')
+  })
+
+  it('关掉最新后再 push 新消息（id 更大）→ 正常播报', async () => {
+    const w = mount(ToastHost)
+    toast.info('一')
+    toast.info('二')
+    await nextTick()
+    expect(w.get('[data-testid="toast-announce"]').text()).toBe('二')
+
+    toast.dismiss(toast.toasts.value[toast.toasts.value.length - 1].id)
+    await nextTick()
+    // 单调守卫不回退，但新消息 id=3 > announcedId=2 仍照常播报
+    toast.info('三')
+    await nextTick()
+    expect(w.get('[data-testid="toast-announce"]').text()).toBe('三')
+  })
+
   it('点关闭按钮 → store 少一条', async () => {
     const w = mount(ToastHost)
     toast.success('a')

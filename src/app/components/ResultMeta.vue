@@ -19,7 +19,7 @@ const activeCount = computed(
     <div class="h-0 flex-1 border-t-2 border-ink" aria-hidden="true" />
     <PhArrowsDownUp :size="14" weight="bold" aria-hidden="true" class="hidden shrink-0 text-ink-soft sm:block" />
     <label for="catalog-sort" class="sr-only">排序</label>
-    <div class="relative shrink-0">
+    <div class="relative min-w-0">
       <select
         id="catalog-sort"
         :value="state.sort"

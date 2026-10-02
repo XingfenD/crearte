@@ -99,7 +99,14 @@ function logout(): void {
         >登录</RouterLink>
 
         <details v-else ref="detailsRef" class="relative ml-auto sm:ml-0" @toggle="menuOpen = ($event.target as HTMLDetailsElement).open">
-          <summary ref="summaryRef" class="list-none cursor-pointer select-none border-2 border-ink bg-surface px-2 py-1 text-xs font-bold [&::-webkit-details-marker]:hidden">{{ user.display_name }} ▾</summary>
+          <summary
+            ref="summaryRef"
+            :title="user.display_name"
+            class="flex max-w-[6rem] min-w-0 list-none cursor-pointer select-none items-center gap-1 border-2 border-ink bg-surface px-2 py-1 text-xs font-bold [&::-webkit-details-marker]:hidden"
+          >
+            <span class="min-w-0 truncate">{{ user.display_name }}</span>
+            <span class="shrink-0" aria-hidden="true">▾</span>
+          </summary>
           <div class="absolute right-0 z-50 mt-1 w-32 border-2 border-ink bg-surface shadow-hard">
             <RouterLink to="/submit" class="block px-3 py-2 text-xs font-bold hover:bg-paper">提交作品</RouterLink>
             <RouterLink
