@@ -38,6 +38,22 @@ function themeSeq(page: Page): Promise<Array<string | null>> {
   return page.evaluate(() => (window as unknown as { __themeSeq: Array<string | null> }).__themeSeq)
 }
 
+/**
+ * 从 CSS 颜色串解析 alpha，兼容三种序列化形态：
+ * - `rgba(13, 11, 8, 0.8)` —— 逗号形态，第四个数即 alpha
+ * - `rgb(13 11 8 / 0.8)` / `color(srgb … / 0.8)` —— CSS Color 4 斜杠形态
+ * - `rgb(13 11 8 / 80%)` —— **百分比 alpha**：裸取数字会得到 80 而非 0.8 → 假红
+ *   （控制者实测该形态确实解析错），故百分比必须除以 100。
+ * 无 alpha = 不透明（1），对本守卫而言同样偏离 D-E 的 `bg-scrim/80`。
+ */
+function parseAlpha(css: string, nums: number[]): number {
+  const percent = /\/\s*([\d.]+)\s*%\s*\)/.exec(css)
+  if (percent) return Number(percent[1]) / 100
+  const slash = /\/\s*([\d.]+)\s*\)/.exec(css)
+  if (slash) return Number(slash[1])
+  return nums.length >= 4 ? nums[3] : 1
+}
+
 test('默认跟随系统：prefers-color-scheme=dark 且无 stored 时首屏即暗色（D-J / D-K 无 FOUC）', async ({
   page
 }) => {
@@ -202,15 +218,17 @@ test('遮罩不泛白：暗色下 FilterDrawer 的 ::backdrop 仍是深色（D-E
   // Chromium 对 ::backdrop 的 getComputedStyle 保留 oklab 形态（实测 `oklab(0.150853
   // 0.00139775 0.00721639 / 0.8)`），故亮度判据必须按色彩空间解析，不能假设 rgb。
   // spike 4 的失败形态 = color-mix(var(--color-ink) 60%) 在暗色下 L≈0.962（近白）。
-  const oklab = /^oklab\(([\d.e+-]+)\s+([\d.e+-]+)\s+([\d.e+-]+)(?:\s*\/\s*([\d.]+))?\)$/i.exec(
+  const oklab = /^oklab\(([\d.e+-]+)\s+([\d.e+-]+)\s+([\d.e+-]+)(?:\s*\/\s*[\d.]+%?)?\)$/i.exec(
     backdrop.trim()
   )
   if (oklab) {
     const L = Number(oklab[1])
-    const alpha = oklab[4] === undefined ? 1 : Number(oklab[4])
     // scrim(#0d0b08) 实测 L=0.1509；失败形态 L=0.962 → 阈值 0.4 有充分鉴别力
     expect(L, `暗色遮罩泛白（::backdrop=${backdrop}）：oklab L=${L} 应 < 0.4`).toBeLessThan(0.4)
-    expect(alpha, `遮罩透明度应为 80%（D-E），实得 ${backdrop}`).toBeCloseTo(0.8, 2)
+    expect(
+      parseAlpha(backdrop, []),
+      `遮罩透明度应为 80%（D-E），实得 ${backdrop}`
+    ).toBeCloseTo(0.8, 2)
   } else {
     // 兼容 rgb()/rgba()/color(srgb …) 序列化形态（未来浏览器行为变化不至于假绿）。
     // ⚠️ 兜底分支必须与 oklab 主分支**同等严格**：只断言最大通道会让全透明遮罩
@@ -224,9 +242,8 @@ test('遮罩不泛白：暗色下 FilterDrawer 的 ::backdrop 仍是深色（D-E
       maxChannel,
       `暗色遮罩泛白（::backdrop=${backdrop}）：最大通道 ${maxChannel.toFixed(0)} 应 < 128`
     ).toBeLessThan(128)
-    const alpha = nums.length >= 4 ? nums[3] : 1
     expect(
-      alpha,
+      parseAlpha(backdrop, nums),
       `遮罩透明度应为 80%（D-E），实得 ${backdrop}；不带 alpha 的形态意味着遮罩不透明，同样偏离 D-E`
     ).toBeCloseTo(0.8, 2)
   }
