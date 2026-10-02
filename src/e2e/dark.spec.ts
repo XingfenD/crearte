@@ -44,7 +44,12 @@ function themeSeq(page: Page): Promise<Array<string | null>> {
  * - `rgb(13 11 8 / 0.8)` / `color(srgb … / 0.8)` —— CSS Color 4 斜杠形态
  * - `rgb(13 11 8 / 80%)` —— **百分比 alpha**：裸取数字会得到 80 而非 0.8 → 假红
  *   （控制者实测该形态确实解析错），故百分比必须除以 100。
- * 无 alpha = 不透明（1），对本守卫而言同样偏离 D-E 的 `bg-scrim/80`。
+ * 无 alpha = 不透明（1），对本守卫而言同样偏离 D-E 钉的「scrim 80% 遮罩」。
+ *
+ * ⚠️ 本文件注释**不得写出 Tailwind 类名字面量**（spec §8-5b）：Tailwind v4 扫描全部源文件
+ * 含 `.spec.ts`，会把注释里的候选类名当真、生成死 utility 烧进产物。控制者实测：本文件
+ * 两处注释写了该类名 → 产物多出一条无 backdrop 前缀的死规则、`var(--color-*)` 从 75 涨到
+ * 76、哈希 C7966Gm- → CV7wAyTH。故此处只用散文描述「scrim 80% 遮罩」。
  */
 function parseAlpha(css: string, nums: number[]): number {
   const percent = /\/\s*([\d.]+)\s*%\s*\)/.exec(css)
@@ -233,7 +238,7 @@ test('遮罩不泛白：暗色下 FilterDrawer 的 ::backdrop 仍是深色（D-E
     // 兼容 rgb()/rgba()/color(srgb …) 序列化形态（未来浏览器行为变化不至于假绿）。
     // ⚠️ 兜底分支必须与 oklab 主分支**同等严格**：只断言最大通道会让全透明遮罩
     // rgba(0,0,0,0)（= 遮罩功能完全失效）通过——控制者实测 GREEN。故一并钉 alpha≈0.8。
-    // 若浏览器返回不带 alpha 的三数形态，说明遮罩不透明，同样偏离 D-E 的 bg-scrim/80。
+    // 若浏览器返回不带 alpha 的三数形态，说明遮罩不透明，同样偏离 D-E 钉的 80% 遮罩。
     const nums = (backdrop.match(/[\d.]+/g) ?? []).map(Number)
     expect(nums.length, `无法解析 ::backdrop 颜色：${backdrop}`).toBeGreaterThanOrEqual(3)
     const scale = Math.max(nums[0], nums[1], nums[2]) <= 1 ? 255 : 1
