@@ -131,6 +131,30 @@ test('持久化：stored=dark 时 reload 后主题保持且不闪回（显式选
   await expect(page.locator('meta[name="theme-color"]')).toHaveAttribute('content', '#17140f')
 })
 
+// 审查 finding #2 的解药：themeBootstrap.test.ts 用「三个子串文本先后位置」钉判定优先级，
+// 对**语义重排**无鉴别力——把 index.html 的三元改成 system-before-stored 后子串位置不变、
+// 守卫仍绿，但在 stored=light & system=dark 一格会造成内联脚本(dark) 与 useTheme(light)
+// 真实分歧 = 首屏暗、挂载后闪亮的 FOUC（审查者 M3 实证，控制者 node 模拟复算确认）。
+// 上面那条持久化腿是 stored=dark + system=light（方向相反），抓不到该重排。
+// 这条腿钉**反方向的真实行为**：stored=light 必须压过系统暗色偏好，且首屏即是。
+test('stored 压过 system（反方向）：stored=light + 系统暗色时首屏即亮色（D-J / finding #2）', async ({
+  page
+}) => {
+  await page.emulateMedia({ colorScheme: 'dark' })
+  await page.addInitScript(([key]) => localStorage.setItem(key, 'light'), [THEME_KEY] as const)
+  await installThemeRecorder(page)
+
+  await page.goto(`${API}/`)
+  await expect(page.locator('html')).toHaveAttribute('data-theme', 'light')
+
+  // 首屏就是 light：序列里不得出现 dark（若内联脚本让 system 优先，这里会先记到 dark）
+  const seq = await themeSeq(page)
+  expect(seq, `stored=light 时首屏序列不得出现 dark：${JSON.stringify(seq)}`).not.toContain(
+    'dark'
+  )
+  await expect(page.locator('meta[name="theme-color"]')).toHaveAttribute('content', '#f7f2e7')
+})
+
 test('暗色下硬阴影跟随翻转（spike 6 的 var() 传导在真产物上复验，D-D）', async ({ page }) => {
   await page.emulateMedia({ colorScheme: 'light' })
   await page.goto(`${API}/`)
@@ -188,7 +212,10 @@ test('遮罩不泛白：暗色下 FilterDrawer 的 ::backdrop 仍是深色（D-E
     expect(L, `暗色遮罩泛白（::backdrop=${backdrop}）：oklab L=${L} 应 < 0.4`).toBeLessThan(0.4)
     expect(alpha, `遮罩透明度应为 80%（D-E），实得 ${backdrop}`).toBeCloseTo(0.8, 2)
   } else {
-    // 兼容 rgb()/rgba()/color(srgb …) 序列化形态（未来浏览器行为变化不至于假绿）
+    // 兼容 rgb()/rgba()/color(srgb …) 序列化形态（未来浏览器行为变化不至于假绿）。
+    // ⚠️ 兜底分支必须与 oklab 主分支**同等严格**：只断言最大通道会让全透明遮罩
+    // rgba(0,0,0,0)（= 遮罩功能完全失效）通过——控制者实测 GREEN。故一并钉 alpha≈0.8。
+    // 若浏览器返回不带 alpha 的三数形态，说明遮罩不透明，同样偏离 D-E 的 bg-scrim/80。
     const nums = (backdrop.match(/[\d.]+/g) ?? []).map(Number)
     expect(nums.length, `无法解析 ::backdrop 颜色：${backdrop}`).toBeGreaterThanOrEqual(3)
     const scale = Math.max(nums[0], nums[1], nums[2]) <= 1 ? 255 : 1
@@ -197,6 +224,11 @@ test('遮罩不泛白：暗色下 FilterDrawer 的 ::backdrop 仍是深色（D-E
       maxChannel,
       `暗色遮罩泛白（::backdrop=${backdrop}）：最大通道 ${maxChannel.toFixed(0)} 应 < 128`
     ).toBeLessThan(128)
+    const alpha = nums.length >= 4 ? nums[3] : 1
+    expect(
+      alpha,
+      `遮罩透明度应为 80%（D-E），实得 ${backdrop}；不带 alpha 的形态意味着遮罩不透明，同样偏离 D-E`
+    ).toBeCloseTo(0.8, 2)
   }
 })
 

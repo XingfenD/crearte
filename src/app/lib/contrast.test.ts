@@ -150,18 +150,26 @@ for (const theme of ['light', 'dark'] as ThemeName[]) {
       ).toBeGreaterThanOrEqual(3)
     })
 
-    // D-F 正确不变量 = max(填充侧 paper, 边框侧 ink) vs scrim ≥ 3。
-    // ⚠️ spec §5 T1.4 原文「ink vs scrim ≥ 3 两主题」与实测冲突：亮色 ink(#141414) vs
-    // scrim(#0d0b08) = 1.07（两个深色互不分离）——亮色的分离由填充侧 paper(17.60) 提供；
-    // 暗色填充侧 paper(1.07) 不分离、必须由边框侧 ink(17.60) 提供（下方暗色专属钉桩）。
-    // 依 FINDINGS 第 7 轮定案：「正确不变量 = max(填充侧, 边框侧) ≥ 3，两主题均满足」。
-    it('scrim 分离：max(paper, ink) vs scrim ≥ 3（D-F）', () => {
+    // D-F：面板与遮罩的分离由**哪一侧**提供是主题相关的，故按主题钉实际分离侧：
+    // 亮色 = 填充侧 paper(17.60)（边框侧 ink 仅 1.07，两个深色互不分离）；
+    // 暗色 = 边框侧 ink(17.60)（填充侧 paper 仅 1.07）。抽屉靠 border-t-[3px] border-ink
+    // 与遮罩分开，故暗色钉边框侧正是 D-F 的原意；亮色纸面本身已与深色 scrim 强分离。
+    //
+    // ⚠️ 不要写 max(填充侧, 边框侧) ≥ 3 —— 它**数学恒真**（审查 finding #1，控制者
+    // 独立复算证实）：两侧互补，对任意 scrim 色 c 都有
+    //   max(cr(paper,c), cr(ink,c)) ≥ √cr(paper,ink) = √16.50 = 4.0621 > 3
+    // （node 暴力验证 50653 个采样色，亮色最小 4.0621 @#eb0541、暗色 4.0560 @#0f78d2）。
+    // 后果实证：把亮色 scrim 改成纯白 #ffffff（正是 D-E 要防的「遮罩泛白」）时
+    // 填充侧 paper vs 白 = 1.1165（面板与遮罩真的不可辨），但 max() = 18.42 → 守卫仍绿。
+    // 钉**具体那一侧**后，白 scrim 得 1.1165 < 3 → 红，牙口恢复。
+    it('scrim 分离：亮色钉填充侧 paper、暗色钉边框侧 ink（≥ 3，D-F）', () => {
       const scrim = token(theme, 'scrim')
-      const fill = contrast(token(theme, 'paper'), scrim)
-      const border = contrast(token(theme, 'ink'), scrim)
+      const side = theme === 'light' ? 'paper' : 'ink'
+      const other = theme === 'light' ? 'ink' : 'paper'
       expect(
-        Math.max(fill, border),
-        `${zh} paper vs scrim=${fill.toFixed(2)}, ink vs scrim=${border.toFixed(2)}（scrim=${scrim}）`
+        contrast(token(theme, side), scrim),
+        `${zh} scrim 分离侧 ${side}(${token(theme, side)}) vs scrim(${scrim})；` +
+          `另一侧 ${other}=${contrast(token(theme, other), scrim).toFixed(2)} 本就不提供分离`
       ).toBeGreaterThanOrEqual(3)
     })
 
@@ -174,17 +182,6 @@ for (const theme of ['light', 'dark'] as ThemeName[]) {
     })
   })
 }
-
-describe('WCAG 对比度守卫 · scrim 边框侧（P13 D-F）', () => {
-  // 暗色下填充侧 paper(#17140f) vs scrim(#0d0b08) = 1.07，不提供分离 →
-  // 抽屉与遮罩的分离必须由 border-t-[3px] border-ink 承担（实测 17.60）。
-  it('暗色下 ink vs scrim ≥ 3（边框侧是暗色唯一分离来源，实测 17.60）', () => {
-    expect(
-      contrast(token('dark', 'ink'), token('dark', 'scrim')),
-      `暗色 ink(${token('dark', 'ink')}) vs scrim(${token('dark', 'scrim')})`
-    ).toBeGreaterThanOrEqual(3)
-  })
-})
 
 // —— D-H 反面钉桩：单 Map 解析器对含暗色块的 CSS 会得出错误结果 ——
 // 重构前 parseTokens() 的逐字拷贝（FINDINGS「守卫重构必要性」引用的原始实现）。
