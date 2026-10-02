@@ -4,10 +4,32 @@
     <meta charset="UTF-8" />
     <link rel="icon" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="color-scheme" content="light" />
+    <meta name="color-scheme" content="light dark" />
     <meta name="theme-color" content="#F7F2E7" />
     <meta name="description" content="crearte 创艺——互动小说与浏览器小游戏托管社区，收录可直接游玩的作品目录。" />
     <title>crearte 创艺</title>
+    <!-- P13 D-K：pre-paint 主题脚本，必须在 CSS 与 Vue 之前执行，否则暗色用户每次刷新闪白。
+         判定优先级与 useTheme.ts 逐字一致：stored → prefers-color-scheme → light
+         （两处一致性由 app/lib/themeBootstrap.test.ts 钉住，改一处必须改另一处）。
+         CSP 提示：将来若上 CSP（P11 已判定需独立设计批），本内联脚本需 nonce 或外置。 -->
+    <script>
+      (function () {
+        try {
+          var stored = localStorage.getItem('crearte.theme.v1')
+          var theme =
+            stored === 'light' || stored === 'dark'
+              ? stored
+              : window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches
+                ? 'dark'
+                : 'light'
+          document.documentElement.setAttribute('data-theme', theme)
+          var meta = document.querySelector('meta[name="theme-color"]')
+          if (meta) meta.setAttribute('content', theme === 'dark' ? '#17140f' : '#f7f2e7')
+        } catch (e) {
+          document.documentElement.setAttribute('data-theme', 'light')
+        }
+      })()
+    </script>
   </head>
   <body class="bg-paper text-ink font-sans antialiased">
     <div id="app"></div>

@@ -3,6 +3,7 @@ import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { RouterLink, useRoute } from 'vue-router'
 import { repo, type DocMeta, type GameSummary } from '@/data'
 import { useAsync } from '@/composables/useAsync'
+import { useTheme } from '@/composables/useTheme'
 import { authEnabled, session } from '@/auth'
 
 const route = useRoute()
@@ -56,6 +57,13 @@ const sticker = computed(() => {
 const user = computed(() => session.state.user)
 const isAdmin = computed(() => user.value?.role === 'admin')
 
+// P13 D-I：主题开关。aria-label 同时说明当前态与动作（两态开关无可见标签，
+// AT 用户须能听到状态）；图标字形包 aria-hidden（与 P9-B 星形按钮、P12 caret 同范式）。
+const { theme, toggle } = useTheme()
+const themeLabel = computed(() =>
+  theme.value === 'dark' ? '切换为亮色主题（当前：暗色）' : '切换为暗色主题（当前：亮色）'
+)
+
 function logout(): void {
   session.logout()
 }
@@ -63,11 +71,11 @@ function logout(): void {
 
 <template>
   <header class="sticky top-0 z-40 border-b-[3px] border-ink bg-paper">
-    <div class="mx-auto flex h-14 w-full max-w-6xl items-center gap-6 px-4">
+    <div class="mx-auto flex h-14 w-full max-w-6xl items-center gap-2 px-4 sm:gap-6">
       <RouterLink to="/" class="bg-ink px-2 py-1 text-sm font-extrabold tracking-[0.04em] text-paper">
         crearte <span class="text-[0.6875rem] tracking-[0.2em]">创艺</span>
       </RouterLink>
-      <nav class="flex gap-4 text-sm font-bold">
+      <nav class="flex gap-2 text-sm font-bold sm:gap-4">
         <RouterLink
           to="/games"
           class="border-b-[3px] pb-0.5 text-sm font-bold"
@@ -119,6 +127,20 @@ function logout(): void {
           </div>
         </details>
       </template>
+
+      <!-- P13 D-I：主题开关，必须 h-8 w-8（32px；spike 3 实测 28px 在最坏格 margin 仅 5px）、
+           shrink-0（否则被 flex 压缩）；落点与 gap-2 sm:gap-6 / gap-2 sm:gap-4 同为候选 B，
+           最坏格 @320px 登录态 ascii60 margin=16 且不触碰 P12 的 max-w-[6rem] 钉桩 -->
+      <button
+        type="button"
+        data-testid="theme-toggle"
+        class="flex h-8 w-8 shrink-0 items-center justify-center border-2 border-ink bg-surface text-sm font-bold"
+        :aria-label="themeLabel"
+        :title="themeLabel"
+        @click="toggle"
+      >
+        <span aria-hidden="true">{{ theme === 'dark' ? '☀' : '☾' }}</span>
+      </button>
     </div>
   </header>
 </template>
