@@ -123,7 +123,8 @@ test('全站零横向溢出：@375px name=cjk60（CJK 可断行）', async ({ pa
 })
 
 // —— 768px 钉桩（spec §5 T3 显式覆盖要求）：/account 在 60 字名下 768px 零溢出 ——
-// spike 实测 baseline @768 /account docW=808 → +40px（spec §1 归因缺口 B 的 dd 逃逸）。
+// spike 实测 baseline @768 /account docW=808 → +40px（spec §1 原归因缺口 B，后经 spike 17
+// 2×2 消融 re-pin 为缺口 A 驱动；下方叙述即该纠正过程，spec §1/§5 T3 已同步更正）。
 // 但实现者 mutation 实测纠正：单独回退 dd 修复（T3）@768px 仍 GREEN——max-w-xl(576px)
 // 减 px-4 后 dd(542px) 在 flex-wrap 下能折到自成一行的 544px 内，768px 的 +40px 实为
 // 缺口 A（页头 summary 484px）驱动，与全站每个路由同源，由 T1 修复。dd 修复的牙在
@@ -168,6 +169,10 @@ test('长名 summary 的 caret ▾ 仍可见（防整体 truncate 吞字形）',
   const box = await caret.boundingBox()
   expect(box, 'caret 应有边界盒').not.toBeNull()
   expect(box!.x + box!.width, `caret right=${(box!.x + box!.width).toFixed(0)} 应 <= 320`).toBeLessThanOrEqual(320)
+  // spec §5 T1.2③ 直接落地（审查 FE-6）：真实浏览器的可访问名计算 = 全名、不含 ▾。
+  // 单测侧只能钉结构（happy-dom 不算 accname，见 AppHeader.test.ts 注释），
+  // 这里钉计算结果；a11y.spec.ts:50/52/61 已在用同一 API。
+  await expect(page.locator('header details summary')).toHaveAccessibleName(ASCII60)
 })
 
 // —— 表格可达性钉桩（spec §5 T2.4）：修溢出靠包裹层滚动，不靠裁剪藏内容 ——

@@ -33,13 +33,20 @@ const VOID_ELEMENTS = new Set([
 // 属性串允许引号内含 `>`（如 :class="a > b"），引号外的 `>` 才是标签终点。
 const TAG_RE = /<(\/?)([a-zA-Z][a-zA-Z0-9-]*)((?:"[^"]*"|'[^']*'|[^>"'])*?)(\/?)>/g
 
-// 把 <script>/<style> 整块替换成等长空白（保留换行，故行号不变）：
-// TS 里的 Record<string, string>、a < b 会被标签正则误当成起始标签，污染父元素栈。
-// 表格只出现在 <template>，屏蔽脚本/样式后栈只反映模板结构。
+// 把「不是模板结构」的文本整块替换成等长空白（保留换行，故行号不变），共三类：
+// 1. HTML 注释：注释里的 <table> 会被当真标签（误报）；更危险的是注释掉的包裹层
+//    <div class="…overflow-x-auto…"> 仍会入栈充当父元素 → 守卫假绿（审查 FE-1）。
+// 2. <script>/<style>：TS 里的 Record<string, string>、a < b 会被标签正则误当
+//    起始标签，污染父元素栈。表格只出现在 <template>，屏蔽后栈只反映模板结构。
+// 3. raw-text 元素 <textarea>/<title>：按 HTML 规范其文本内容不解析为标签，
+//    含 `<table` 字样会误报（审查 FE-2）。
+// 顺序：注释最先（防注释里的 <script> 字样吞掉后续内容）。
 function maskNonTemplate(content: string): string {
-  return content.replace(/<(script|style)\b[^>]*>[\s\S]*?<\/\1>/gi, (block) =>
-    block.replace(/[^\n]/g, ' ')
-  )
+  const blank = (block: string) => block.replace(/[^\n]/g, ' ')
+  return content
+    .replace(/<!--[\s\S]*?-->/g, blank)
+    .replace(/<(script|style)\b[^>]*>[\s\S]*?<\/\1>/gi, blank)
+    .replace(/<(textarea|title)\b[^>]*>[\s\S]*?<\/\1>/gi, blank)
 }
 
 interface OpenTag {
