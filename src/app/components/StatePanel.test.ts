@@ -21,6 +21,17 @@ describe('StatePanel 骨架变体', () => {
     expect(w.findAll('.animate-skeleton')).toHaveLength(3)
     expect(w.text()).toContain('加载中')
   })
+
+  // P13-T3 / D-G 迁移 2/3：骨架占位块必须走 bg-skeleton 令牌（硬编码 bg-[#EFE9DA]
+  // 在暗色下不翻转 = 亮色斑，spec §1.2-3）。源码 7 处 class 声明（cards 变体 6 卡 ×
+  // （1 封面 + 3 线）= 24 块，lines 变体 3 块 × 3 线 = 9 块）。noHardcodedColor.test.ts
+  // 钉「禁硬编码」，此处钉「确实换成了令牌」——防迁移到别的颜色 utility 绕过守卫。
+  it('骨架占位块全部用 bg-skeleton 令牌（cards 24 块 / lines 9 块）', () => {
+    const cards = mountPanel({ loading: true, error: null })
+    expect(cards.findAll('.bg-skeleton')).toHaveLength(24)
+    const lines = mountPanel({ loading: true, error: null, variant: 'lines' })
+    expect(lines.findAll('.bg-skeleton')).toHaveLength(9)
+  })
 })
 
 describe('StatePanel 状态分支', () => {

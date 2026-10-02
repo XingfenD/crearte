@@ -16,9 +16,9 @@ defineEmits<{ retry: [] }>()
         :key="n"
         class="animate-skeleton border-2 border-ink bg-surface p-4 shadow-hard"
       >
-        <div class="h-4 w-2/3 bg-[#EFE9DA]" />
-        <div class="mt-3 h-3 w-full bg-[#EFE9DA]" />
-        <div class="mt-2 h-3 w-1/2 bg-[#EFE9DA]" />
+        <div class="h-4 w-2/3 bg-skeleton" />
+        <div class="mt-3 h-3 w-full bg-skeleton" />
+        <div class="mt-2 h-3 w-1/2 bg-skeleton" />
       </div>
     </div>
     <div v-else class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
@@ -27,11 +27,11 @@ defineEmits<{ retry: [] }>()
         :key="n"
         class="animate-skeleton border-2 border-ink bg-surface shadow-hard"
       >
-        <div class="aspect-video border-b-2 border-ink bg-[#EFE9DA]" />
+        <div class="aspect-video border-b-2 border-ink bg-skeleton" />
         <div class="space-y-3 p-4">
-          <div class="h-4 w-2/3 bg-[#EFE9DA]" />
-          <div class="h-3 w-full bg-[#EFE9DA]" />
-          <div class="h-3 w-1/2 bg-[#EFE9DA]" />
+          <div class="h-4 w-2/3 bg-skeleton" />
+          <div class="h-3 w-full bg-skeleton" />
+          <div class="h-3 w-1/2 bg-skeleton" />
         </div>
       </div>
     </div>
