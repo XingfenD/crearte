@@ -127,7 +127,8 @@ test('全站零横向溢出：@375px name=cjk60（CJK 可断行）', async ({ pa
 // 2×2 消融 re-pin 为缺口 A 驱动；下方叙述即该纠正过程，spec §1/§5 T3 已同步更正）。
 // 但实现者 mutation 实测纠正：单独回退 dd 修复（T3）@768px 仍 GREEN——max-w-xl(576px)
 // 减 px-4 后 dd(542px) 在 flex-wrap 下能折到自成一行的 544px 内，768px 的 +40px 实为
-// 缺口 A（页头 summary 484px）驱动，与全站每个路由同源，由 T1 修复。dd 修复的牙在
+// 缺口 A（页头 summary 索取内容宽：spike 5 @320px 实测 484px、spike 17 @768px 实测
+// 494px；两视口差 10px 来自滚动条/取整）驱动，与全站每个路由同源，由 T1 修复。dd 修复的牙在
 // @320px：mutation 回退 T3 后 /account @320px ascii60 → +272px（scrollWidth=592，
 // 恰为 spec 记录的 ddRight=592）。本腿钉住 768px 这个「桌面窄窗口」的页头回归。
 test('/account @768px 长名零溢出（spec §5 T3：+40px 症状显式覆盖）', async ({ page }) => {
