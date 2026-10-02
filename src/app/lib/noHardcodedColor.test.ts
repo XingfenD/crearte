@@ -21,7 +21,10 @@ import { describe, expect, it } from 'vitest'
 // 故此处只提 hex 值不提 utility 名；下方的 fixture 也用字符串拼接构造。
 
 const SRC_ROOT = fileURLToPath(new URL('../..', import.meta.url))
-const APP_DIR = join(SRC_ROOT, 'app')
+// 终审 N4：扫描根必须含 `runtime/`。`runtime/host/GameHost.vue` 与 `app` **同级**，
+// 旧扫描根（只 `app`）使 runtime/ 永不被扫——与 spec §3.2 的 accent 盲区同源
+// （spike 0 grep 也只扫了 app/）。实测 runtime/ 当前零硬编码 hex，扩根不会立刻红。
+const SCAN_ROOTS = [join(SRC_ROOT, 'app'), join(SRC_ROOT, 'runtime')]
 
 function* walk(dir: string): Generator<string> {
   for (const entry of readdirSync(dir)) {
@@ -33,9 +36,11 @@ function* walk(dir: string): Generator<string> {
 
 function candidates(): string[] {
   const files: string[] = []
-  for (const file of walk(APP_DIR)) {
-    if (file.endsWith('.test.ts')) continue
-    if (file.endsWith('.vue')) files.push(file)
+  for (const root of SCAN_ROOTS) {
+    for (const file of walk(root)) {
+      if (file.endsWith('.test.ts')) continue
+      if (file.endsWith('.vue')) files.push(file)
+    }
   }
   return files
 }
@@ -93,18 +98,26 @@ describe('硬编码颜色守卫（P13-T3 / D-A / D-G）', () => {
   // Positive control（审查 finding #4）：上面那条断言在「扫不到任何文件」或「正则恒不匹配」
   // 时同样绿——审查者 M5（扫描根改 e2e → 扫 0 个 .vue）与 M6（HEX_RE 改恒不匹配）实测都绿，
   // 与 P12 FE-1「注释掉包裹层守卫仍绿」同一类假信心。以下两条钉住守卫自身有效。
-  it('扫描范围非空：确实扫到了 app/ 下的 .vue（防 M5：扫描根被改坏后静默空扫）', () => {
+  it('扫描范围覆盖 app/ 与 runtime/ 各子树（防 M5 空扫 + 终审 N4 的 views//runtime 盲区）', () => {
     const files = candidates()
-    expect(files.length, '扫描根应含 .vue 文件；为 0 说明 APP_DIR 或后缀过滤被改坏').toBeGreaterThan(0)
-    // 钉住几个必须被扫到的关键组件（迁移过的三个 + 带表单的）
-    const names = files.map((f) => relative(APP_DIR, f))
+    expect(
+      files.length,
+      '扫描根应含 .vue 文件；为 0 说明 SCAN_ROOTS 或后缀过滤被改坏'
+    ).toBeGreaterThan(0)
+    // 钉住**每个子树**的代表组件。终审 F-c-prime 实测：旧版只钉 components/ 下四个名字，
+    // 故把 walk 改成跳过 views/ 子树后 positive control 仍绿、而 views/ 下的真违规漏检。
+    // 现按子树各钉一个：components/、views/、runtime/——跳过任一子树即红。
+    const names = files.map((f) => relative(SRC_ROOT, f))
     for (const expected of [
-      'components/StatePanel.vue',
-      'components/ResultMeta.vue',
-      'components/FilterDrawer.vue',
-      'components/AppHeader.vue'
+      'app/components/StatePanel.vue',
+      'app/components/ResultMeta.vue',
+      'app/components/FilterDrawer.vue',
+      'app/components/AppHeader.vue',
+      'app/views/GameView.vue',
+      'app/views/AccountView.vue',
+      'runtime/host/GameHost.vue'
     ])
-      expect(names, `扫描范围应含 ${expected}`).toContain(expected)
+      expect(names, `扫描范围应含 ${expected}（子树被跳过或扫描根被收窄）`).toContain(expected)
   })
 
   it('检测逻辑有牙：fixture 里的硬编码 hex 能被命中且行号正确（防 M6：正则失效）', () => {

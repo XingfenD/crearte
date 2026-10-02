@@ -52,11 +52,19 @@ function themeSeq(page: Page): Promise<Array<string | null>> {
  * 76、哈希 C7966Gm- → CV7wAyTH。故此处只用散文描述「scrim 80% 遮罩」。
  */
 function parseAlpha(css: string, nums: number[]): number {
-  const percent = /\/\s*([\d.]+)\s*%\s*\)/.exec(css)
-  if (percent) return Number(percent[1]) / 100
-  const slash = /\/\s*([\d.]+)\s*\)/.exec(css)
-  if (slash) return Number(slash[1])
-  return nums.length >= 4 ? nums[3] : 1
+  const tail = css.trim()
+  // 斜杠形态（CSS Color 4）：alpha = 最后一个 `/` 之后、`)` 之前的值，可为指数记号或百分比。
+  // 终审 N3：旧版 `[\d.]+` 不含 `e`，`/ 8e-1)` 只抓到 8；旧版 percent 正则只认斜杠形态，
+  // 逗号形态 `rgba(…, 80%)` 落到 nums[3]=80。三个形态均实测过。
+  const slash = /\/\s*([\d.eE+-]+)\s*(%)?\s*\)$/.exec(tail)
+  if (slash) return slash[2] ? Number(slash[1]) / 100 : Number(slash[1])
+  // 逗号形态：仅当有四个及以上数字时第四个才是 alpha（否则 `rgb(13, 11, 8)` 的 8 会被误当 alpha）。
+  if (nums.length >= 4) {
+    const commaPercent = /,\s*([\d.eE+-]+)\s*%\s*\)$/.exec(tail)
+    if (commaPercent) return Number(commaPercent[1]) / 100
+    return nums[3]
+  }
+  return 1 // 无 alpha = 不透明；对本守卫而言同样偏离 D-E 钉的 80% 遮罩
 }
 
 test('默认跟随系统：prefers-color-scheme=dark 且无 stored 时首屏即暗色（D-J / D-K 无 FOUC）', async ({
@@ -174,6 +182,39 @@ test('stored 压过 system（反方向）：stored=light + 系统暗色时首屏
     'dark'
   )
   await expect(page.locator('meta[name="theme-color"]')).toHaveAttribute('content', '#f7f2e7')
+  // 终审 N9：与 leg1 一致，另钉 body 计算值——属性/序列/meta 之外的第四重证据，
+  // 证明首屏真渲染成了亮色而不只是 data-theme 属性对。
+  const bg = await page.evaluate(() => getComputedStyle(document.body).backgroundColor)
+  expect(bg, `stored=light 时 body 背景应为亮色 paper：实得 ${bg}`).toBe('rgb(247, 242, 231)')
+})
+
+// 终审 N2 / F-b：themeBootstrap 只钉三个子串的文本位置，对「index.html 放宽 stored 校验」
+// 这类语义破坏无鉴别力——F-b 实测把校验放宽成 `stored ? stored` 后，themeBootstrap 6/6 绿、
+// useTheme.test 14/14 绿、**两边都不红**，而放宽后 stored=垃圾值 + 系统暗色会让内联脚本落地
+// `data-theme="neon"`（不匹配暗色块 `html[data-theme="dark"]` → 渲染亮色）、挂载后 useTheme
+// 回退 system=dark → **首屏亮、挂载后暗的 FOUC**（正是 D-K 要防的）。
+// 交付代码本身有正确校验（故 F-b 非真缺陷，是守卫盲区）；这条腿钉**行为**作解药：
+// 垃圾 stored 必须被忽略、首屏即跟随系统偏好。
+test('垃圾 stored 被忽略：stored=neon + 系统暗色时首屏即暗色（D-J / 终审 N2）', async ({
+  page
+}) => {
+  await page.emulateMedia({ colorScheme: 'dark' })
+  await page.addInitScript(([key]) => localStorage.setItem(key, 'neon'), [THEME_KEY] as const)
+  await installThemeRecorder(page)
+
+  await page.goto(`${API}/`)
+  await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark')
+
+  const seq = await themeSeq(page)
+  expect(seq, `垃圾 stored 不得产生无效 data-theme 帧：${JSON.stringify(seq)}`).not.toContain(
+    'neon'
+  )
+  expect(
+    seq,
+    `垃圾 stored 应回退系统偏好，首屏序列不得出现 light：${JSON.stringify(seq)}`
+  ).not.toContain('light')
+  const bg = await page.evaluate(() => getComputedStyle(document.body).backgroundColor)
+  expect(bg, `body 应渲染暗色 paper：实得 ${bg}`).toBe(DARK_PAPER)
 })
 
 test('暗色下硬阴影跟随翻转（spike 6 的 var() 传导在真产物上复验，D-D）', async ({ page }) => {
