@@ -187,7 +187,7 @@ function pathOf(game: GameSummary): string {
     <dl v-if="user" class="mt-6 border-2 border-ink bg-surface p-4 shadow-hard">
       <div class="flex flex-wrap items-baseline gap-2">
         <dt class="font-mono text-[0.6875rem] tracking-[0.05em] text-ink-soft">昵称</dt>
-        <dd class="text-sm font-bold">{{ user.display_name }}</dd>
+        <dd class="min-w-0 text-sm font-bold wrap-anywhere">{{ user.display_name }}</dd>
       </div>
       <div class="mt-2 flex flex-wrap items-baseline gap-2">
         <dt class="font-mono text-[0.6875rem] tracking-[0.05em] text-ink-soft">用户名</dt>
