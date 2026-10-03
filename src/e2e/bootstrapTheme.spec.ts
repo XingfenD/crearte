@@ -1,4 +1,4 @@
-import { expect, test, type Page } from '@playwright/test'
+import { expect, test, type BrowserContext, type Page } from '@playwright/test'
 import { API, fixtureGame, gameOrigin } from './helpers'
 
 // P15-B-T4 新增腿（spec §5-T4.3）：钉住**父侧 hash 注入**——这是改动①里唯一无法被
@@ -130,16 +130,165 @@ test('加载屏子侧：垃圾 hash theme=neon 被忽略，回落系统偏好（
   expect(bg, `body 应为暗色 paper，实得 ${bg}`).toBe(DARK_BG)
 })
 
-// ⚠️ 刻意**不做**「进真游戏页后读 iframe 内加载屏底色」的端到端腿：加载屏按设计是**瞬态**的，
-// 对它做第二次 await 必然与导航赛跑 = flaky 测试，不是实现缺陷。实测过四种拦截手法都无法
-// 确定性冻结它（证据：.superpowers/sdd-p15b/impl-evidence/t4-e2e-end-to-end-evidence.log）：
-//   · 只拦 bundle    → SW 装完 location.replace('/') 离开（报 Execution context was destroyed）
-//   · abort sw.js    → 走 fail() → signalDegrade → 父侧降级到下一目标（读到空白文档）
-//   · 挂起 sw.js     → 首次原子快照**正确**（hash 含 theme=dark、data-theme=dark、
-//                     body 底色 rgb(23,20,15)、h1=「正在准备游戏运行环境…」），但 +3s 后仍被顶掉
-//   · abort 子域根导航 → 文档变空白（styleTags=0）
-// 上面那次正确的原子快照已作为端到端证据落盘存档（含逐项判读）。
+// 🔴 F-3（critical 级缺口的**唯一鉴别格**）：[系统暗色] × [hash=light] → 期望 light。
+// 审查实测：H1（白名单提取成变量 + prefers 优先）与 H3（拆中间变量的嵌套三元）两种语义等价的
+// 缺陷形态都逃过源码腿2，**且 H1 同时逃过全部 5 条既有 e2e 腿**——覆盖矩阵缺的正是这一格
+// （正确实现给 light，H1/H3 给 dark）。缺陷是真的：系统暗色 + hash 显式选亮色的用户会看到暗色
+// 加载屏，违反 D-A「hash 优先」。对照主应用 dark.spec.ts:169 有反方向腿，bootstrap 侧此前缺。
+test('加载屏子侧：系统暗色 + hash theme=light → 亮色（hash 优先的反方向格，H1/H3 鉴别）', async ({
+  page
+}) => {
+  await page.emulateMedia({ colorScheme: 'dark' })
+  const { attr, bg } = await bootstrapThemeOf(page, 'theme=light&v=1')
+  expect(attr, 'hash 显式选亮色须压过系统暗色偏好（D-A 第一级：hash 优先）').toBe('light')
+  expect(bg, `body 应为亮色 paper，实得 ${bg}`).toBe(LIGHT_BG)
+})
+
+// —— F-2：端到端腿（偏离 5 被裁定**驳回**后加回）——
 //
-// 本文件保留的 5 条腿是确定性的，且**组合覆盖同一性质**（两半各自对且接口对得上）：
-//   腿1/2 读**父文档**的 iframe src 属性——子文档内部导航不会改写父侧属性，故无竞态；
-//   腿3/4/5 直访子域加载屏（不经父页启动安装流程），验子侧 pre-paint 的真实渲染值。
+// 前任「刻意不做端到端腿」的归因错了。它四种手法用的都是 **page.route**，而审查者 PROBE-6A
+// 实测三个 route 命中数全为 0——`page.route` 根本拦不到 SW 注册请求、SW 发起的请求、以及被
+// SW `respondWith` 合成的导航（子文档已跑到 `/`）。故「挂起 sw.js → +3s 被顶掉」的观察真、归因错：
+// 挂起从未生效，真 SW 照常安装 → `runtime:ready` → `location.replace('/')`，被误归因为「加载屏本质
+// 瞬态、无法冻结」。换 **context.route**（浏览器上下文级）后 PROBE-7A `sw.js hits=1`、子文档稳定停在
+// `/__bootstrap` 且 `attr=dark`；PROBE-7B T+0/T+10s/T+25s 三次全 `attr=dark` + `bg=rgb(23,20,15)`，
+// T+25s 因 Playwright 自身 `timeout:45_000` 中断而**不是被顶掉** → 加载屏可确定性冻结。
+//
+// 手法：`context.route('**/sw.js', fulfill 惰性脚本)` 冻住安装流程，使加载屏停在 /__bootstrap。
+// 三条腿：①暗色端到端（snap.url === 父侧 iframe src，因果链闭合）②亮色端到端（stored=light 压过
+// 系统暗色）③**行为腿**（游戏页切主题 → iframe src 不变，= D-B critical 性质的唯一行为级防线）。
+
+/** 用 context.route 冻住子域 sw.js（fulfill 惰性脚本，SW 装上但永不发 runtime:ready → 加载屏不离开）。 */
+async function freezeBootstrapSw(ctx: BrowserContext): Promise<void> {
+  await ctx.route('**/sw.js', (route) =>
+    route.fulfill({ status: 200, contentType: 'text/javascript', body: '// inert sw: freeze bootstrap loader\n' })
+  )
+}
+
+/**
+ * 等到子域加载屏 frame 真的可快照，再返回它。
+ *
+ * ⚠️ 不能假定「读到 iframe src 属性时子 frame 已就绪」：属性由 Vue 先落，子文档随后才导航，
+ * frame 对象出现前 evaluate 会抛。且子域与主域**跨源**（`<sub>.localhost` vs `localhost`），
+ * 主 frame 的 waitForFunction 读不到它 → 只能用 Playwright 的 frame 句柄 + 轮询。
+ * 轮询到 `data-theme` 非 null 才返回：该属性由 pre-paint 内联脚本在解析器阻塞期落地，
+ * 读到非 null 即证明脚本已执行（不会快照到解析中途的空文档）。
+ */
+async function waitForBootstrapFrame(page: Page) {
+  const find = () => page.frames().find((f) => f.url().includes('/__bootstrap'))
+  await expect
+    .poll(() => find() !== undefined, {
+      message: `父页应出现停在 /__bootstrap 的子 frame，实得 ${JSON.stringify(page.frames().map((f) => f.url()))}`,
+      timeout: 20_000
+    })
+    .toBe(true)
+  const child = find()!
+  await child.waitForLoadState('domcontentloaded')
+  await expect
+    .poll(() => child.evaluate(() => document.documentElement.getAttribute('data-theme')), {
+      message: '加载屏的 pre-paint 脚本应已落地 data-theme',
+      timeout: 20_000
+    })
+    .not.toBeNull()
+  return child
+}
+
+/** 子域加载屏 iframe 的原子快照：url + data-theme + body 底色 + h1 + theme-color meta。 */
+async function bootstrapFrameSnap(page: Page): Promise<{
+  url: string
+  attr: string | null
+  bg: string
+  h1: string
+  meta: string | null
+}> {
+  const child = await waitForBootstrapFrame(page)
+  return child.evaluate(() => ({
+    url: location.href,
+    attr: document.documentElement.getAttribute('data-theme'),
+    bg: getComputedStyle(document.body).backgroundColor,
+    h1: document.querySelector('h1')?.textContent ?? '',
+    meta: document.querySelector('meta[name="theme-color"]')?.getAttribute('content') ?? null
+  }))
+}
+
+test('端到端：暗色用户进真游戏页 → iframe 内加载屏渲染为暗色（snap.url === 父侧 src，因果链闭合）', async ({
+  browser
+}) => {
+  const ctx = await browser.newContext({ colorScheme: 'dark' })
+  await freezeBootstrapSw(ctx)
+  const page = await ctx.newPage()
+  const { id } = fixtureGame(VIRTUAL_FIXTURE)
+
+  await page.goto(`${API}/games/${id}`)
+  const src = await iframeSrc(page)
+  expect(src, `iframe 应指向 __bootstrap 加载屏，实得 ${src}`).toContain('/__bootstrap')
+
+  const snap = await bootstrapFrameSnap(page)
+  // 🔴 因果链闭合：子文档读到的 url 就是父侧 adapters.ts 算出的那个 src（不是测试手搓的 hash）。
+  // 补上「父侧算出的 hash 形态与子侧读的 hash 形态是否一致」这一环（F-2 裁定 §2.4：9 键含编码 vs 字面量）。
+  expect(snap.url, `子文档 url 应逐字等于父侧 iframe src（因果链闭合），父侧=${src} 子侧=${snap.url}`).toBe(src)
+  expect(snap.attr, '暗色用户加载屏应落地 data-theme=dark').toBe('dark')
+  expect(snap.bg, `body 应为暗色 paper，实得 ${snap.bg}`).toBe(DARK_BG)
+  expect(snap.h1, '应仍停在加载屏（h1=正在准备…）').toContain('正在准备游戏运行环境')
+  expect(snap.meta, 'theme-color meta 应同步为暗色 paper').toBe('#17140f')
+  // +8s 后仍在加载屏（证明 context.route 冻住了 SW，不是瞬态快照）
+  await page.waitForTimeout(8_000)
+  const later = await bootstrapFrameSnap(page)
+  expect(new URL(later.url).pathname, '+8s 后 path 应仍是 /__bootstrap（加载屏未被顶掉）').toBe('/__bootstrap')
+  await ctx.close()
+})
+
+test('端到端（亮色格）：stored=light 压过系统暗色 → iframe 内加载屏渲染为亮色', async ({
+  browser
+}) => {
+  const ctx = await browser.newContext({ colorScheme: 'dark' })
+  await freezeBootstrapSw(ctx)
+  const page = await ctx.newPage()
+  await page.addInitScript(([key]) => localStorage.setItem(key, 'light'), [THEME_KEY] as const)
+  const { id } = fixtureGame(VIRTUAL_FIXTURE)
+
+  await page.goto(`${API}/games/${id}`)
+  const src = await iframeSrc(page)
+  const snap = await bootstrapFrameSnap(page)
+  expect(snap.url, '子文档 url 应逐字等于父侧 iframe src').toBe(src)
+  expect(
+    hashParam(src, 'theme'),
+    `stored=light 应压过系统暗色 → hash 带 theme=light，实得 src=${src}`
+  ).toBe('light')
+  expect(snap.attr, '显式 stored=light 的加载屏应渲染亮色').toBe('light')
+  expect(snap.bg, `body 应为亮色 paper，实得 ${snap.bg}`).toBe(LIGHT_BG)
+  await ctx.close()
+})
+
+// 🔴 F-1 的**行为级解药**（adjudication §三-3）：D-B 那个 critical 性质（targets computed 不得依赖
+// 主题 ref）的唯一行为级防线。源码腿5 改回全文后仍有残留局限（抓不住模块级作用域读 ref 再传值），
+// 本腿在运行时钉死性质本身：游戏页切主题 → iframe 的 src 属性**逐字不变** → 运行中的游戏不重载。
+// 手法同上（context.route 冻住 SW，加载屏停在 /__bootstrap，src 稳定可读）。
+test('行为腿（D-B）：游戏页切主题 → iframe src 不变（运行中的游戏不被重载）', async ({
+  browser
+}) => {
+  const ctx = await browser.newContext({ colorScheme: 'light' })
+  await freezeBootstrapSw(ctx)
+  const page = await ctx.newPage()
+  const { id } = fixtureGame(VIRTUAL_FIXTURE)
+
+  await page.goto(`${API}/games/${id}`)
+  const before = await iframeSrc(page)
+  expect(before, '前置：iframe 应已渲染并指向加载屏').toContain('/__bootstrap')
+
+  // 在主应用文档里点主题开关（游戏页 header 仍在）→ useTheme 单例翻转 → 若 targets 依赖主题 ref，
+  // computed 会重算 → iframe src 变 → 游戏重载。正确实现（effectiveTheme() 快照）下 src 不变。
+  await page.getByTestId('theme-toggle').click()
+  await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark') // 确认切换真的发生了
+  await page.waitForTimeout(1_000) // 给响应式重算留窗口（若存在）
+
+  const after = await iframeSrc(page)
+  expect(
+    after,
+    `切主题后 iframe src 必须逐字不变（D-B：targets 不得依赖主题 ref，否则运行中的游戏被重载、存档丢失），切前=${before} 切后=${after}`
+  ).toBe(before)
+  // 子文档也确实没导航走（仍在加载屏，url 未变）
+  const snap = await bootstrapFrameSnap(page)
+  expect(snap.url, `子文档 url 也不应变（未重载），实得 ${snap.url}`).toBe(before)
+  await ctx.close()
+})
