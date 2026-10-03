@@ -9,7 +9,6 @@
   --color-accent: #e8552f;
   --color-accent-ink: #c03a1b;
   --color-highlight: #f5c518;
-  --color-info: #2b62cc;
   --color-success: #1f7a4d;
   /* P13 新增：骨架屏令牌化（D-G，原 StatePanel 硬编码 bg-[#EFE9DA]）；
      遮罩专用深色（D-E，两主题同值、不参与翻转——暗色下 var(--color-ink)/60 会泛白，spike 4 实测 oklab L=0.96） */
@@ -50,7 +49,6 @@ html[data-theme="dark"] {
   --color-accent: #ff7a4d;
   --color-accent-ink: #ffb59a;
   --color-highlight: #8a6412;
-  --color-info: #7aa7f0;
   --color-success: #2fa46a;
   --color-skeleton: #2c2721;
   --color-scrim: #0d0b08; /* 与亮色同值：遮罩不翻转（D-E） */

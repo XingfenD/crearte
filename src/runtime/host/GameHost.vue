@@ -3,6 +3,7 @@ import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { PhArrowsInSimple, PhArrowsOutSimple } from '@phosphor-icons/vue'
 import type { Game } from '../../app/data/types'
 import { runtimeConfig } from './config'
+import { effectiveTheme } from '../../app/composables/useTheme'
 import { resolveRuntimeTargets, type RuntimeTarget } from './adapters'
 import { useGameFrame } from './useGameFrame'
 import { useFullscreen } from './useFullscreen'
@@ -24,10 +25,17 @@ const frame = useGameFrame({
 const emit = defineEmits<{ exit: [] }>()
 // 全屏目标 = 整个游玩区（展柜 + 控制按钮）；状态由 fullscreenchange 同步，Esc/他方抢占都能正确回落
 const fullscreen = useFullscreen()
+// 🔴 P15-B D-B 架构陷阱：**必须用非响应式快照 effectiveTheme()，不得改成 useTheme().theme.value**。
+// targets 是 computed；若在其中读主题 ref 的 getter，computed 就会依赖主题 —— 用户在游戏页
+// 切主题时 targets 重算 → iframe 的 src 变化 → **正在运行的游戏被重载**（存档/进度丢失）。
+// effectiveTheme() 内部读 localStorage 与 matchMedia，两者都不是响应式源，故不建立依赖。
+// 代价：切主题后已打开的加载屏保持旧主题直到下次导航 —— 而加载屏只在启动瞬间可见，
+// 这个代价远小于重载游戏。守卫：app/lib/bootstrapTheme.test.ts 腿5（mutation (d) 验牙）。
 const targets = computed<RuntimeTarget[]>(() => resolveRuntimeTargets(props.game, {
   baseDomain: config.baseDomain,
   protocol: location.protocol,
-  config
+  config,
+  theme: effectiveTheme()
 }))
 const degradedToExternal = ref<string | null>(null)
 const lastError = ref<string | null>(null)
