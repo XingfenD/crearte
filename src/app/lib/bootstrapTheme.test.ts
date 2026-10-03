@@ -54,12 +54,77 @@ function customProps(block: string, prefix: string): Map<string, string> {
   return map
 }
 
+/**
+ * 把注释替换为**等长空白**（保行号），沿用 noHardcodedColor.test.ts 的屏蔽范式。
+ * 支持 HTML `<!-- -->`、块注释、行尾 `//`（跳过 `://`，P14 教训：字符串里的 `//`
+ * 被当注释起点会造成假阳性）。
+ *
+ * 为何必需（实测，2026-10-03）：
+ * 1. spec §3.1(a) 给的注释文本里写着「必须在 `<style>` 与 `<body>` 之前」。注释位于 pre-paint
+ *    脚本之前，naive `indexOf` 会先命中**注释里的字面量** → styleOpen 偏小 → 「scriptPos <
+ *    styleOpen」对**正确实现**判假红（node 复现：styleOpen=48 命中注释、scriptPos=245 命中真
+ *    脚本，断言 false）。主应用 `src/index.html` 的注释刻意写「必须在 CSS 与 Vue 之前」避开
+ *    这两个字面量，故 themeBootstrap.test.ts 的 naive indexOf 不误红；本守卫不依赖实现侧的
+ *    措辞自律，直接屏蔽注释。
+ * 2. 腿5 的负向断言与 spec §3.1(e)「须在代码注释里写明这个陷阱」相冲：陷阱注释必然写出被禁
+ *    的响应式形态字面量 → 不屏蔽则对正确实现假红。
+ * 3. 腿 6/7/8 同样受益：注释里出现暗色块选择器、旧亮色 hex 或 style 示例都不会造成假绿/假红。
+ */
+function maskSourceComments(src: string): string {
+  let out = ''
+  let i = 0
+  while (i < src.length) {
+    const two = src.slice(i, i + 2)
+    let stop = -1
+    let end = -1
+    if (two === '<!--') {
+      const s = src.indexOf('-->', i + 4)
+      if (s > -1) { stop = s; end = s + 3 }
+    } else if (two === '/*') {
+      const s = src.indexOf('*/', i + 2)
+      if (s > -1) { stop = s; end = s + 2 }
+    } else if (two === '//' && src[i - 1] !== ':') {
+      const s = src.indexOf('\n', i)
+      if (s > -1) { stop = s; end = s }
+    }
+    if (stop > -1) {
+      out += src.slice(i, end).replace(/[^\n]/g, ' ')
+      i = end
+    } else {
+      out += src[i]
+      i++
+    }
+  }
+  return out
+}
+
+/** 已屏蔽注释的文本（所有位置/存在性/负向断言都基于它们）。 */
+const bootstrapMasked = maskSourceComments(bootstrapHtml)
+const gameHostMasked = maskSourceComments(gameHostSrc)
+
 /** bootstrap <head> 内的内联（非 module）pre-paint 脚本体；缺失 → 空串。 */
 function bootstrapInlineScript(): string {
-  const bodyIdx = bootstrapHtml.indexOf('<body')
-  const head = bodyIdx > -1 ? bootstrapHtml.slice(0, bodyIdx) : bootstrapHtml
+  const bodyIdx = bootstrapMasked.indexOf('<body')
+  const head = bodyIdx > -1 ? bootstrapMasked.slice(0, bodyIdx) : bootstrapMasked
   const m = /<script>([\s\S]*?)<\/script>/.exec(head)
   return m ? m[1] : ''
+}
+
+/**
+ * GameHost 里 `resolveRuntimeTargets(...)` 调用的完整实参文本（括号深度匹配）。
+ * 腿5 的断言限定在**调用点**而非全文件：陷阱注释写在语句上方，不会被当成注入形态。
+ */
+function resolveCallArgs(): string {
+  const marker = 'resolveRuntimeTargets('
+  const start = gameHostMasked.indexOf(marker)
+  if (start < 0) return ''
+  let depth = 0
+  for (let i = start + marker.length - 1; i < gameHostMasked.length; i++) {
+    const c = gameHostMasked[i]
+    if (c === '(') depth++
+    else if (c === ')' && --depth === 0) return gameHostMasked.slice(start, i + 1)
+  }
+  return gameHostMasked.slice(start)
 }
 
 // contrast.test.ts 里的 AA_PAIRS / REQUIRED_KEYS（腿 10 用；两者均未 export，故按文本解析）
@@ -90,10 +155,10 @@ const DARK_TOKENS = ['paper', 'surface', 'ink', 'ink-soft', 'accent', 'accent-in
 describe('bootstrap 加载屏主题守卫（P15-B §5-T1 / D-A…D-G）', () => {
   // 腿 1：pre-paint 脚本位置（D-G）。marker = setAttribute('data-theme'，唯一属于 pre-paint 脚本。
   it('腿1 pre-paint 脚本在 <head> 内、<style> 与 <body> 之前（否则暗色用户每次启动闪白）', () => {
-    const headOpen = bootstrapHtml.indexOf('<head>')
-    const styleOpen = bootstrapHtml.indexOf('<style')
-    const bodyOpen = bootstrapHtml.indexOf('<body')
-    const scriptPos = bootstrapHtml.indexOf("setAttribute('data-theme'")
+    const headOpen = bootstrapMasked.indexOf('<head>')
+    const styleOpen = bootstrapMasked.indexOf('<style')
+    const bodyOpen = bootstrapMasked.indexOf('<body')
+    const scriptPos = bootstrapMasked.indexOf("setAttribute('data-theme'")
     expect(headOpen, '应有 <head>').toBeGreaterThan(-1)
     expect(styleOpen, '应有 <style>').toBeGreaterThan(-1)
     expect(bodyOpen, '应有 <body>').toBeGreaterThan(-1)
@@ -147,26 +212,27 @@ describe('bootstrap 加载屏主题守卫（P15-B §5-T1 / D-A…D-G）', () => 
   // 用户在游戏页切主题 → targets 重算 → iframe src 变 → **正在运行的游戏被重载**（存档丢失）。
   // effectiveTheme() 读 localStorage/matchMedia（非响应式源），不建立依赖。
   it('腿5 GameHost 注入 effectiveTheme() 快照而非响应式 theme.value（D-B：防切主题重载游戏）', () => {
-    expect(gameHostSrc, 'GameHost 应 import effectiveTheme').toMatch(
+    expect(gameHostMasked, 'GameHost 应 import effectiveTheme').toMatch(
       /import\s*\{[^}]*\beffectiveTheme\b[^}]*\}\s*from\s*['"][^'"]*useTheme['"]/
     )
-    expect(gameHostSrc, 'resolveRuntimeTargets 应注入 theme: effectiveTheme()').toContain(
+    const args = resolveCallArgs()
+    expect(args, '应能在 GameHost 里找到 resolveRuntimeTargets 调用').not.toBe('')
+    expect(args, 'D-B：注入的必须是非响应式快照 effectiveTheme()').toContain(
       'theme: effectiveTheme()'
     )
-    // 反向钉桩：不得出现任何响应式主题注入形态
-    expect(gameHostSrc, '不得注入 useTheme().theme.value（响应式会重载 iframe）').not.toContain(
-      'useTheme().theme.value'
-    )
-    expect(gameHostSrc, '不得注入 theme.value（响应式）').not.toMatch(/theme:\s*theme\.value/)
-    expect(gameHostSrc, '不得注入 useTheme().theme（响应式 ref）').not.toMatch(
-      /theme:\s*useTheme\(\)\.theme\b/
-    )
+    // 反向钉桩限定在调用点：targets 是 computed，读 ref 的 getter 会让它依赖主题 →
+    // 用户切主题 → 重算 → iframe src 变 → 运行中的游戏被重载（存档丢失）。
+    expect(
+      args,
+      '不得注入响应式 theme.value（D-B 架构陷阱；后果是切主题重载运行中的游戏）'
+    ).not.toContain('theme.value')
+    expect(args, '不得在调用点取用 useTheme()（模块级响应式单例）').not.toContain('useTheme()')
   })
 
   // 腿 6：bootstrap 暗色块六个 hex 与 main.css 暗色调色板**逐值一致**（字符串相等）。
   // ⚠️ 不得写成 max(a,b) ≥ k 形态（P13 恒真高发区）；此处用 toBe 字符串相等。
   it('腿6 bootstrap 暗色块六个 hex 与 main.css 暗色调色板逐值一致（字符串相等）', () => {
-    const bsDark = customProps(extractBlock(bootstrapHtml, 'html[data-theme="dark"]'), 'bs')
+    const bsDark = customProps(extractBlock(bootstrapMasked, 'html[data-theme="dark"]'), 'bs')
     const mcDark = customProps(extractBlock(mainCss, 'html[data-theme="dark"]'), 'color')
     for (const t of DARK_TOKENS) {
       const mcVal = mcDark.get(t)
@@ -180,7 +246,7 @@ describe('bootstrap 加载屏主题守卫（P15-B §5-T1 / D-A…D-G）', () => 
 
   // 腿 7：bootstrap 亮色六个 hex 未被改动（§1.1 表，「不得回退」钉桩，RED 相位即应绿）。
   it('腿7 bootstrap 亮色六个 hex 仍在（§1.1 表，本批只加暗色不动亮色值）', () => {
-    const lower = bootstrapHtml.toLowerCase()
+    const lower = bootstrapMasked.toLowerCase()
     for (const [token, hex] of LIGHT_HEX) {
       expect(lower, `bootstrap 亮色 ${token}(${hex}) 应仍在`).toContain(hex)
     }
@@ -188,7 +254,7 @@ describe('bootstrap 加载屏主题守卫（P15-B §5-T1 / D-A…D-G）', () => 
 
   // 腿 8：bootstrap 内不存在 inline style 里的 color:（D-E 回归钉桩；本批刚删两处 2.2594/2.4776）。
   it('腿8 bootstrap/index.html 内不存在 inline style 里的 color:（防 WCAG 违规复发）', () => {
-    expect(bootstrapHtml, 'inline style 属性里不得再写 color:（应由 <style> 块的达标值生效）').not.toMatch(
+    expect(bootstrapMasked, 'inline style 属性里不得再写 color:（应由样式块的达标值生效）').not.toMatch(
       /style\s*=\s*"[^"]*\bcolor\s*:/i
     )
   })
