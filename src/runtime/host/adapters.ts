@@ -7,7 +7,7 @@ export interface RuntimeTarget {
   origin: string | null
 }
 
-export function resolveRuntimeTargets(game: Game, opts: { baseDomain: string; protocol: string; config?: ReturnType<typeof runtimeConfig> }): RuntimeTarget[] {
+export function resolveRuntimeTargets(game: Game, opts: { baseDomain: string; protocol: string; config?: ReturnType<typeof runtimeConfig>; theme?: 'light' | 'dark' }): RuntimeTarget[] {
   const config = opts.config ?? runtimeConfig()
   const origin = game.runtime === 'virtual' || game.runtime === 'hosted'
     ? game.playOrigin ?? derivePlayOrigin(game.playSubdomain ?? '', opts.baseDomain, opts.protocol)
@@ -34,6 +34,10 @@ export function resolveRuntimeTargets(game: Game, opts: { baseDomain: string; pr
       }
     }
     if (game.features && Object.keys(game.features).length > 0) fragment.features = JSON.stringify(game.features)
+    // P15-B D-A：把加载屏的主题搭现有 hash 通道传给 bootstrap（bootstrap/main.ts:4 已在解析
+    // hash）。游戏跑在独立子域，localStorage 按源隔离读不到主域的显式选择，故必须由父侧传入。
+    // 键是**可选**的：不传就不写，external/hosted 模式的 url 与既有 virtual url 形态完全不变。
+    if (opts.theme) fragment.theme = opts.theme
     const hash = new URLSearchParams(fragment)
     targets.push({ mode: 'virtual', url: `${origin}/__bootstrap#${hash.toString()}`, origin })
   }

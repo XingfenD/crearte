@@ -3,28 +3,84 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="robots" content="noindex" />
+    <meta name="color-scheme" content="light dark" />
+    <meta name="theme-color" content="#F7F2E7" />
     <title>游戏加载中…</title>
+    <!-- P15-B D-A/D-G：加载屏 pre-paint 主题脚本。必须在样式块与正文之前执行，否则暗色用户
+         每次启动游戏都闪白。判定序比主应用少 stored 一级（游戏跑在独立子域，本地存储按源
+         隔离，读不到主域的 crearte.theme.v1）：hash theme → prefers-color-scheme → light。
+         后两级与 useTheme.effectiveTheme() 逐字一致，一致性由 app/lib/bootstrapTheme.test.ts
+         钉住（改一处必须改另一处）。
+         CSP 提示：将来若上 CSP（P11 已判定需独立设计批），本内联脚本需 nonce 或外置。 -->
+    <script>
+      (function () {
+        try {
+          var params = new URLSearchParams(location.hash.replace(/^#/, ''))
+          var hashTheme = params.get('theme')
+          var theme =
+            hashTheme === 'light' || hashTheme === 'dark'
+              ? hashTheme
+              : window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches
+                ? 'dark'
+                : 'light'
+          document.documentElement.setAttribute('data-theme', theme)
+          var meta = document.querySelector('meta[name="theme-color"]')
+          if (meta) meta.setAttribute('content', theme === 'dark' ? '#17140f' : '#f7f2e7')
+        } catch (e) {
+          document.documentElement.setAttribute('data-theme', 'light')
+        }
+      })()
+    </script>
     <style>
-      body { margin: 0; background: #f7f2e7; color: #141414; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; display: grid; place-items: center; min-height: 100vh; }
+      /* P15-B D-F：加载屏自包含调色板（bootstrap 是独立入口、不加载主应用 CSS，故此处刻意
+         硬编码 hex 而非引用 var(--color-*)；两处调色板的六个共有值由 bootstrapTheme.test.ts
+         腿6 逐值钉住，腿7 钉亮色值不得改动）。亮色值与改造前逐字相同，只是改由具名变量供给。 */
+      :root {
+        --bs-paper: #f7f2e7;
+        --bs-surface: #ffffff;
+        --bs-ink: #141414;
+        --bs-ink-soft: #5c584d;
+        --bs-accent: #e8552f;
+        --bs-accent-ink: #c03a1b;
+      }
+      /* 暗色覆盖块（同主应用 main.css 的手法）：html[data-theme="dark"] 特异性 (0,1,1)
+         压过 :root (0,1,0)。color-scheme: dark 随块声明一次。
+         实测对比度（node 复算，spec §1.1）：正文 ink on paper 16.4507 · 状态/详情 ink-soft on
+         paper 10.5847 · 错误文 accent-ink on paper 10.7821 · 按钮文 paper on ink 16.4507 ·
+         进度条值 accent on surface 6.4274 · 进度条边框与阴影 ink on surface 14.8468 —— 全部达标。 */
+      html[data-theme="dark"] {
+        --bs-paper: #17140f;
+        --bs-surface: #221e18;
+        --bs-ink: #f7f2e7;
+        --bs-ink-soft: #cbc4b5;
+        --bs-accent: #ff7a4d;
+        --bs-accent-ink: #ffb59a;
+        color-scheme: dark;
+      }
+      body { margin: 0; background: var(--bs-paper); color: var(--bs-ink); font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; display: grid; place-items: center; min-height: 100vh; }
       main { text-align: center; max-width: 26rem; padding: 1.5rem; }
       h1 { font-size: 1rem; font-weight: 800; }
-      progress { width: 100%; height: 16px; box-sizing: border-box; border: 2px solid #141414; background: #ffffff; box-shadow: 4px 4px 0 #141414; appearance: none; -webkit-appearance: none; }
-      progress::-webkit-progress-bar { background: #ffffff; }
-      progress::-webkit-progress-value { background: #e8552f; }
-      progress::-moz-progress-bar { background: #e8552f; }
-      #status { font-size: 0.8rem; color: #5c584d; }
-      button { margin-top: 1rem; padding: 0.5rem 1.25rem; border: 2px solid #141414; border-radius: 0; background: #141414; color: #f7f2e7; font-size: 0.875rem; font-weight: 800; box-shadow: 3px 3px 0 #141414; cursor: pointer; }
-      #error-message { color: #c03a1b; font-size: 0.9rem; font-weight: 700; }
-      pre { text-align: left; font-size: 0.75rem; color: #5c584d; white-space: pre-wrap; }
+      progress { width: 100%; height: 16px; box-sizing: border-box; border: 2px solid var(--bs-ink); background: var(--bs-surface); box-shadow: 4px 4px 0 var(--bs-ink); appearance: none; -webkit-appearance: none; }
+      progress::-webkit-progress-bar { background: var(--bs-surface); }
+      progress::-webkit-progress-value { background: var(--bs-accent); }
+      progress::-moz-progress-bar { background: var(--bs-accent); }
+      /* P15-B D-E：#status 与 #error-message 的颜色**只**在此声明。原先两处 inline style 各写了
+         一个对比度不达标的重复值（2.2594 / 2.4776 on paper），靠特异性压过这里达标的
+         6.3586 / 4.8700 —— 属 pre-existing WCAG 违规，已删（inline 只保留 font-size）。
+         回归由 bootstrapTheme.test.ts 腿8 钉住，勿再加回 inline color。 */
+      #status { font-size: 0.8rem; color: var(--bs-ink-soft); }
+      button { margin-top: 1rem; padding: 0.5rem 1.25rem; border: 2px solid var(--bs-ink); border-radius: 0; background: var(--bs-ink); color: var(--bs-paper); font-size: 0.875rem; font-weight: 800; box-shadow: 3px 3px 0 var(--bs-ink); cursor: pointer; }
+      #error-message { color: var(--bs-accent-ink); font-size: 0.9rem; font-weight: 700; }
+      pre { text-align: left; font-size: 0.75rem; color: var(--bs-ink-soft); white-space: pre-wrap; }
     </style>
   </head>
   <body>
     <main>
       <h1>正在准备游戏运行环境…</h1>
       <progress id="progress" max="100" value="0"></progress>
-      <p id="status" style="font-size:0.8rem;color:#a3a3a3">初始化</p>
+      <p id="status" style="font-size:0.8rem">初始化</p>
       <div id="error" hidden>
-        <p id="error-message" style="color:#f87171;font-size:0.9rem"></p>
+        <p id="error-message" style="font-size:0.9rem"></p>
         <button id="retry">重试</button>
         <pre id="error-detail" hidden></pre>
       </div>
