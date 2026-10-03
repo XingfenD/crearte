@@ -265,6 +265,10 @@ describe('bootstrap 加载屏主题守卫（P15-B §5-T1 / D-A…D-G）', () => 
 
   // 腿 8：bootstrap 内不存在 inline style 里的 color:（D-E 回归钉桩；本批刚删两处 2.2594/2.4776）。
   it('腿8 bootstrap/index.html 内不存在 inline style 里的 color:（防 WCAG 违规复发）', () => {
+    // 前提断言（mutation (i) 实测暴露的弱点）：空文本天然满足 not.toMatch → 文件读不到时
+    // 本腿会假绿。腿9 虽会红，但每条腿自带前提才不依赖别的腿兜底（纪律：两方向都验）。
+    expect(bootstrapMasked, '前提：应读到非空的 bootstrap/index.html').not.toBe('')
+    expect(bootstrapMasked, '前提：文件里应有 style 属性（否则本腿无鉴别对象）').toContain('style=')
     expect(bootstrapMasked, 'inline style 属性里不得再写 color:（应由样式块的达标值生效）').not.toMatch(
       /style\s*=\s*"[^"]*\bcolor\s*:/i
     )
