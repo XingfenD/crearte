@@ -170,14 +170,25 @@ describe('bootstrap 加载屏主题守卫（P15-B §5-T1 / D-A…D-G）', () => 
 
   // 腿 2：判定序 hash → prefers → light（D-A）。⚠️ 先断言三者都 > -1，否则某个 indexOf 返 -1 时
   // 「-1 < 任何正数」会让顺序断言恒真（themeBootstrap.test.ts:42-44 同款手法）。
-  it('腿2 判定序 = hash theme → prefers-color-scheme → light（indexOf 比较，先钉三者存在）', () => {
+  //
+  // ⚠️ 锚点必须钉在**判定分支**（hashTheme === 'light'），不能钉在**提取处**（params.get('theme')）。
+  // 实测（2026-10-03，python 复现）：锚提取处时，把判定序语义重排成 prefers 优先后
+  // iHash=103 < iPref=198 依旧成立 → 守卫**假绿**，而缺陷是真的（显式选亮色但系统暗色的
+  // 用户会看到暗色加载屏）。锚判定处则 iHash=275 > iPref=198 → 红，有牙。
+  // 这是 themeBootstrap.test.ts finding #2 / M3 承认过的同族盲区（「子串文本位置对语义重排
+  // 无鉴别力」）；主应用靠 dark.spec.ts 的反方向行为腿补救，本腿则直接把锚点钉对，
+  // 另由 e2e/bootstrapTheme.spec.ts 的子侧行为腿提供运行时证据。
+  it('腿2 判定序 = hash theme → prefers-color-scheme → light（锚判定分支，先钉三者存在）', () => {
     const script = bootstrapInlineScript()
-    const iHash = script.indexOf("params.get('theme')")
+    const iExtract = script.indexOf("params.get('theme')")
+    const iHash = script.indexOf("hashTheme === 'light'")
     const iPrefers = script.indexOf('prefers-color-scheme')
     const iLight = script.indexOf(": 'light'")
-    expect(iHash, 'bootstrap 脚本应读 hash theme').toBeGreaterThan(-1)
+    expect(iExtract, 'bootstrap 脚本应从 hash 提取 theme').toBeGreaterThan(-1)
+    expect(iHash, 'bootstrap 脚本应有 hash theme 的白名单判定分支').toBeGreaterThan(-1)
     expect(iPrefers, 'bootstrap 脚本应查 prefers-color-scheme').toBeGreaterThan(-1)
     expect(iLight, 'bootstrap 脚本应有 light 兜底').toBeGreaterThan(-1)
+    expect(iExtract, '提取须先于判定（hashTheme 的来源必须是 hash，不得来自别处）').toBeLessThan(iHash)
     expect(iHash, 'hash theme 判定须在 prefers 之前（D-A：hash 优先）').toBeLessThan(iPrefers)
     expect(iPrefers, 'prefers 须在 light 兜底之前').toBeLessThan(iLight)
     // D-A「后两级与 effectiveTheme 逐字一致」：同一 prefers 媒体查询字面量
