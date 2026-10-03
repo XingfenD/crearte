@@ -55,6 +55,20 @@ function customProps(block: string, prefix: string): Map<string, string> {
 }
 
 /**
+ * 提取所有 inline `style=` 属性值（双引号 / 单引号 / 无引号三形态都收），返回去引号后的值数组。
+ * F-5：腿8 用它替代「只认双引号」的单正则，使单引号 / 无引号违规色也能被抓到（HTML 三种引号
+ * 形态均合法）。实测见 impl-evidence/fix-f5-regex-analysis.log。
+ */
+function inlineStyleValues(src: string): string[] {
+  const out: string[] = []
+  for (const m of src.matchAll(/style\s*=\s*("[^"]*"|'[^']*'|[^\s>]+)/gi)) {
+    const raw = m[1]
+    out.push(raw.startsWith('"') || raw.startsWith("'") ? raw.slice(1, -1) : raw)
+  }
+  return out
+}
+
+/**
  * 把注释替换为**等长空白**（保行号），沿用 noHardcodedColor.test.ts 的屏蔽范式。
  * 支持 HTML `<!-- -->`、块注释、行尾 `//`（跳过 `://`，P14 教训：字符串里的 `//`
  * 被当注释起点会造成假阳性）。
@@ -101,6 +115,9 @@ function maskSourceComments(src: string): string {
 /** 已屏蔽注释的文本（所有位置/存在性/负向断言都基于它们）。 */
 const bootstrapMasked = maskSourceComments(bootstrapHtml)
 const gameHostMasked = maskSourceComments(gameHostSrc)
+// F-6：mainCss 也须屏蔽注释——腿6 的 extractBlock 用 indexOf 定位暗色块选择器，注释里的同名
+// 选择器会先命中（I3/I3c 假块劫持）。屏蔽策略须一致，不能只屏蔽 bootstrap/gameHost。
+const mainCssMasked = maskSourceComments(mainCss)
 
 /** bootstrap <head> 内的内联（非 module）pre-paint 脚本体；缺失 → 空串。 */
 function bootstrapInlineScript(): string {
@@ -176,8 +193,14 @@ describe('bootstrap 加载屏主题守卫（P15-B §5-T1 / D-A…D-G）', () => 
   // iHash=103 < iPref=198 依旧成立 → 守卫**假绿**，而缺陷是真的（显式选亮色但系统暗色的
   // 用户会看到暗色加载屏）。锚判定处则 iHash=275 > iPref=198 → 红，有牙。
   // 这是 themeBootstrap.test.ts finding #2 / M3 承认过的同族盲区（「子串文本位置对语义重排
-  // 无鉴别力」）；主应用靠 dark.spec.ts 的反方向行为腿补救，本腿则直接把锚点钉对，
-  // 另由 e2e/bootstrapTheme.spec.ts 的子侧行为腿提供运行时证据。
+  // 无鉴别力」）；主应用靠 dark.spec.ts 的反方向行为腿补救，本腿则直接把锚点钉对。
+  //
+  // ⚠️ F-3（critical 级缺口）：锚判定分支只对**已枚举的那一种重排**有牙。审查实测 H1（白名单提取
+  // 成变量 + prefers 优先）与 H3（拆中间变量的嵌套三元）两种语义等价的缺陷形态都绕过本腿
+  // （RED=[]），且 H1 **同时逃过全部 5 条既有 e2e 腿**（覆盖矩阵缺 [系统暗色]×[hash=light] 这一格）。
+  // 故本腿的字面脆弱性可接受，但**语义正确性由 e2e/bootstrapTheme.spec.ts 的反方向格
+  // （[系统暗色]×[hash=light] → 期望 light）在运行时钉死**——那一格是 H1/H3 的唯一鉴别格，
+  // 分工与主应用一致（源码腿钉文本、e2e 腿钉行为）。
   it('腿2 判定序 = hash theme → prefers-color-scheme → light（锚判定分支，先钉三者存在）', () => {
     const script = bootstrapInlineScript()
     const iExtract = script.indexOf("params.get('theme')")
@@ -199,6 +222,16 @@ describe('bootstrap 加载屏主题守卫（P15-B §5-T1 / D-A…D-G）', () => 
   })
 
   // 腿 3：白名单校验 hash theme（防放宽成「任意 truthy」，P13 finding #2 / N2 同族）。
+  //
+  // ⚠️ F-7（控制者裁定：不改断言，只加注释）：本腿钉的是**字面写法**，与主应用
+  // themeBootstrap.test.ts:56-57 的 stored 白名单腿（`stored === 'light' || stored === 'dark'`）
+  // **逐字同款**——这是继承自 P13 的既有范式，不是本批新引入。审查实测：把两项无害换序成
+  // `'dark' || 'light'`（语义 100% 等价）会误红本腿（I1），改成 `['light','dark'].includes(hashTheme)`
+  // （同样严格）会误红腿2+腿3（I2）→ 本腿钉的是「文本长相」而非「白名单语义」。
+  // **若将来要改成语义等价形态（.includes() / 换序），须同步改这两处守卫**，否则两个守卫风格分叉、
+  // 下批贡献者无从判断哪个是范式。**白名单的语义正确性由 e2e/bootstrapTheme.spec.ts 的反方向格
+  // （[系统暗色]×[hash=light]→light）与垃圾值格（theme=neon 被忽略）在运行时钉死**；本腿的职责
+  // 收窄为「两处字面写法保持一致」，这正是字面钉桩擅长的。
   it('腿3 用白名单校验 hash theme（只接受 light/dark，放宽成任意 truthy 即红）', () => {
     const script = bootstrapInlineScript()
     expect(script, 'bootstrap 应只接受 light/dark 两个 hash theme 值').toContain(
@@ -231,20 +264,40 @@ describe('bootstrap 加载屏主题守卫（P15-B §5-T1 / D-A…D-G）', () => 
     expect(args, 'D-B：注入的必须是非响应式快照 effectiveTheme()').toContain(
       'theme: effectiveTheme()'
     )
-    // 反向钉桩限定在调用点：targets 是 computed，读 ref 的 getter 会让它依赖主题 →
-    // 用户切主题 → 重算 → iframe src 变 → 运行中的游戏被重载（存档丢失）。
+    // 🔴 F-1（critical）：负向断言钉**已屏蔽注释的全文**（gameHostMasked），不再缩到调用点内。
+    // 缩范围是前任修法自己引入的缺口：G1（computed 体内别处 `const _t = useTheme().theme.value`、
+    // 调用点字面量与交付版逐字相同）与 G2（import 别名 + 本地同名响应式包装）都绕过调用点级断言，
+    // 且 vue-tsc exit 0（类型合法 → 缺陷可静默进主干）；审查者用 effectScope+computed 求值计数证明
+    // 二者 evals 1→2、url 从 …theme=light 翻成 …theme=dark → iframe src 变 → 运行中的游戏被重载、
+    // 存档丢失。缩范围的理由（陷阱注释必然写出被禁字面量 → 会假红）不成立：maskSourceComments()
+    // 已把 GameHost.vue 的陷阱注释整段屏蔽（屏蔽后 useTheme() 与 theme.value 都从文件消失、
+    // effectiveTheme 真实代码保留），故全文负向断言对合法树不误红、对 G1/G2 有牙。
+    //
+    // ⚠️ 残留局限（纪律 #4：不声称「唯一手段」）：改回全文后仍抓不住「在 computed 之外的**模块级
+    // 作用域**读 ref 再传值」（如把 `const t = useTheme().theme.value` 写在 computed 外面、computed
+    // 只读这个已求值的常量）——该形态快照在模块加载时求值一次、computed 无主题依赖 → **不会**造成
+    // 重载，属无害。真正的解药是 e2e/bootstrapTheme.spec.ts 的**行为腿**（游戏页切主题 → iframe src
+    // 不变），它在运行时钉死「targets 不依赖主题」这个性质本身，不依赖任何字面形态。
     expect(
-      args,
+      gameHostMasked,
       '不得注入响应式 theme.value（D-B 架构陷阱；后果是切主题重载运行中的游戏）'
     ).not.toContain('theme.value')
-    expect(args, '不得在调用点取用 useTheme()（模块级响应式单例）').not.toContain('useTheme()')
+    expect(
+      gameHostMasked,
+      '不得在 GameHost 任何位置取用 useTheme()（模块级响应式单例；computed 内读其 ref 会建立主题依赖）'
+    ).not.toContain('useTheme()')
   })
 
   // 腿 6：bootstrap 暗色块六个 hex 与 main.css 暗色调色板**逐值一致**（字符串相等）。
   // ⚠️ 不得写成 max(a,b) ≥ k 形态（P13 恒真高发区）；此处用 toBe 字符串相等。
   it('腿6 bootstrap 暗色块六个 hex 与 main.css 暗色调色板逐值一致（字符串相等）', () => {
+    // F-5.4：扫描集合自身长度自证钉。H4（清空 DARK_TOKENS）会让下面的 for 循环执行零次 →
+    // 恒真空绿（P13 M5/M6 精确同族：「扫描集合被清空 → 报 0 违规」）。这是 spec §5-T1 ⚠️ 三条
+    // 遗漏的**第四类**恒真形态，用 toBe(6) 钉死集合非空（与腿10 的 toBe(11) 同款手法）。
+    expect(DARK_TOKENS.length, 'DARK_TOKENS 须含 6 个令牌（清空即恒真空绿）').toBe(6)
     const bsDark = customProps(extractBlock(bootstrapMasked, 'html[data-theme="dark"]'), 'bs')
-    const mcDark = customProps(extractBlock(mainCss, 'html[data-theme="dark"]'), 'color')
+    // F-6：用 mainCssMasked（见顶部声明）——注释里的同名选择器会先命中 indexOf，造成假块劫持。
+    const mcDark = customProps(extractBlock(mainCssMasked, 'html[data-theme="dark"]'), 'color')
     for (const t of DARK_TOKENS) {
       const mcVal = mcDark.get(t)
       expect(mcVal, `前提：main.css 暗色块应含 --color-${t}`).toBeTruthy()
@@ -256,10 +309,21 @@ describe('bootstrap 加载屏主题守卫（P15-B §5-T1 / D-A…D-G）', () => 
   })
 
   // 腿 7：bootstrap 亮色六个 hex 未被改动（§1.1 表，「不得回退」钉桩，RED 相位即应绿）。
-  it('腿7 bootstrap 亮色六个 hex 仍在（§1.1 表，本批只加暗色不动亮色值）', () => {
-    const lower = bootstrapMasked.toLowerCase()
+  it('腿7 bootstrap 亮色六个 hex 未被改动（§1.1 表，从 :root 块逐值比对，本批只加暗色不动亮色值）', () => {
+    // F-5.4：集合长度自证钉（同腿6，防 LIGHT_HEX 被清空 → for 零次恒真）。
+    expect(LIGHT_HEX.length, 'LIGHT_HEX 须含 6 个令牌（清空即恒真空绿）').toBe(6)
+    // 🔴 F-4：改为从 :root 块提取 --bs-* 逐值比对（与腿6 对称），不用全文子串搜索。
+    // 旧写法 `bootstrapMasked.toLowerCase().toContain(hex)` 对 #f7f2e7 无鉴别力——该 hex 在文件里
+    // 出现 3 次（:root 的 --bs-paper、暗色块的 --bs-ink、pre-paint 脚本的 theme-color meta），
+    // 故 F1（把 :root 亮色 paper 改成 #eeeeee）时全文搜索仍命中别处 → RED=[]，而四个守卫合跑
+    // 38 passed / 0 failed 全绿 → 腿7 的守卫目的（「防顺手把亮色也改了」）无断言覆盖。从 :root 块
+    // 提取后只比对亮色调色板自身的值，同时消除「暗色块 --bs-ink 与亮色 --bs-paper 同值」的耦合。
+    const bsLight = customProps(extractBlock(bootstrapMasked, ':root'), 'bs')
     for (const [token, hex] of LIGHT_HEX) {
-      expect(lower, `bootstrap 亮色 ${token}(${hex}) 应仍在`).toContain(hex)
+      expect(
+        bsLight.get(token),
+        `bootstrap 亮色 :root 的 --bs-${token} 应仍为 ${hex}（不得回退/改动）`
+      ).toBe(hex)
     }
   })
 
@@ -269,14 +333,24 @@ describe('bootstrap 加载屏主题守卫（P15-B §5-T1 / D-A…D-G）', () => 
     // 本腿会假绿。腿9 虽会红，但每条腿自带前提才不依赖别的腿兜底（纪律：两方向都验）。
     expect(bootstrapMasked, '前提：应读到非空的 bootstrap/index.html').not.toBe('')
     expect(bootstrapMasked, '前提：文件里应有 style 属性（否则本腿无鉴别对象）').toContain('style=')
-    expect(bootstrapMasked, 'inline style 属性里不得再写 color:（应由样式块的达标值生效）').not.toMatch(
-      /style\s*=\s*"[^"]*\bcolor\s*:/i
-    )
+    // 🔴 F-5：改为**提取所有 style= 属性值**（双引号/单引号/无引号三形态都收）再逐条查 color:，
+    // 不用只认双引号的单正则。旧写法 /style\s*=\s*"[^"]*\bcolor\s*:/i 对单引号形态无牙——
+    // F2（inline style 改单引号并塞回违规色 #a3a3a3）时 RED=[]，而 HTML 单引号属性完全合法
+    // （prettier/手写都可能产出）→ spec mutation (f) 想钉的性质被引号形态绕过（与「带引号 grep
+    // 对 minified 假阴性」同族：模式只覆盖了自己见过的那种写法）。
+    // ⚠️ adjudication §三-6 并列给出的一行正则 /style\s*=\s*(?:"[^"]*|'[^']*')[^>]*?\bcolor\s*:/i
+    // 经实测**仍抓不到 F2 单引号本尊**（贪婪 [^']* 吃掉属性内部的 color:，闭引号后 [^>]*?\bcolor:
+    // 失配；证据 impl-evidence/fix-f5-regex-analysis.log）→ 故采用同条并列的「更稳」变体（提取属性值）。
+    const offenders = inlineStyleValues(bootstrapMasked).filter((v) => /\bcolor\s*:/i.test(v))
+    expect(
+      offenders,
+      `inline style 属性里不得再写 color:（应由样式块的达标值生效），实得违规属性值 ${JSON.stringify(offenders)}`
+    ).toEqual([])
   })
 
   // 腿 9：前提检查（防「读 0 文件也报 0 违规」的假信心，P13 M5/M6、P14 R0 同族）。
   // 独立于上面的共享 tryRead，直接核验三个核心源文件在盘上存在且非空——这条腿是 precondition gate。
-  it('腿9 前提检查：三个核心源文件确实读到且 bootstrap html 长度 >500', () => {
+  it('腿9 前提检查：三个核心源文件确实读到 + bootstrap html 含 head/style/body 三标记且长度 >4000', () => {
     const canonical = [
       join(SRC_ROOT, 'bootstrap/index.html'),
       join(SRC_ROOT, 'app/composables/useTheme.ts'),
@@ -287,7 +361,17 @@ describe('bootstrap 加载屏主题守卫（P15-B §5-T1 / D-A…D-G）', () => 
       present.length,
       `应读到 ≥3 个核心源文件，实读 ${present.length}/${canonical.length}（路径被改坏或文件被删即红）`
     ).toBeGreaterThanOrEqual(3)
-    expect(bootstrapHtml.length, 'bootstrap/index.html 应 >500 字符（防空文件假绿）').toBeGreaterThan(500)
+    // 🔴 F-8：把 >500 下界提到 >4000（源码字符数；实测合法树 4423 字符 / 5201 字节——⚠️ 单位是
+    // **源码字符**，不是产物 7056/7069），并加**结构性前提**（须含 <head>/<style>/<body> 三标记，
+    // 与腿1 的前提断言同源、更有鉴别力）。审查实测：旧 >500 下界对「截断到 501 字符」（K4/H8a，
+    // 原 4423）仍绿，靠 7 条腿兜住；截断后 <style>/<body> 标记必缺失 → 结构性前提红。
+    expect(bootstrapHtml, 'bootstrap/index.html 应含 <head>（结构完整性）').toContain('<head>')
+    expect(bootstrapHtml, 'bootstrap/index.html 应含 <style>（结构完整性）').toContain('<style')
+    expect(bootstrapHtml, 'bootstrap/index.html 应含 <body>（结构完整性）').toContain('<body')
+    expect(
+      bootstrapHtml.length,
+      `bootstrap/index.html 应 >4000 字符（防空文件/截断假绿；实测合法树 4423 字符），实得 ${bootstrapHtml.length}`
+    ).toBeGreaterThan(4000)
   })
 
   // 腿 10：改动②③回归钉桩。⚠️ 长度用 toBe(11) 而非 toBeGreaterThanOrEqual（后者删令牌后仍绿=无牙）。
