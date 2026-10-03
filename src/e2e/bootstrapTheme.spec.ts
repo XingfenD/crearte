@@ -130,7 +130,8 @@ test('加载屏子侧：垃圾 hash theme=neon 被忽略，回落系统偏好（
   expect(bg, `body 应为暗色 paper，实得 ${bg}`).toBe(DARK_BG)
 })
 
-// 🔴 F-3（critical 级缺口的**唯一鉴别格**）：[系统暗色] × [hash=light] → 期望 light。
+// 🔴 F-3（critical 级缺口在**子侧直访**路径上的鉴别格）：[系统暗色] × [hash=light] → 期望 light。
+// （端到端亮色格是第二个鉴别格 → 不写「唯一」；终审 E2 实测该缺陷红 2 条腿，纪律 #4。）
 // 审查实测：H1（白名单提取成变量 + prefers 优先）与 H3（拆中间变量的嵌套三元）两种语义等价的
 // 缺陷形态都逃过源码腿2，**且 H1 同时逃过全部 5 条既有 e2e 腿**——覆盖矩阵缺的正是这一格
 // （正确实现给 light，H1/H3 给 dark）。缺陷是真的：系统暗色 + hash 显式选亮色的用户会看到暗色
@@ -225,7 +226,11 @@ test('端到端：暗色用户进真游戏页 → iframe 内加载屏渲染为�
 
   const snap = await bootstrapFrameSnap(page)
   // 🔴 因果链闭合：子文档读到的 url 就是父侧 adapters.ts 算出的那个 src（不是测试手搓的 hash）。
-  // 补上「父侧算出的 hash 形态与子侧读的 hash 形态是否一致」这一环（F-2 裁定 §2.4：9 键含编码 vs 字面量）。
+  // ⚠️ 鉴别力精确定位（终审 §9.3，RE-PIN 2026-10-04）：本断言钉的是「**子文档停在父侧算出的那个 url**」
+  // —— hash 被子侧改写（P1 实测红）、子文档被导航走、冻结失效（E3 实测红 28.5s）三类。
+  // 它**抓不到**「父侧算出的 hash 键名/编码与子侧解析是否一致」：E1 把键名 theme→t、E4 传大写
+  // theme=DARK 时父子两侧**同步**变化，等式恒成立 → 本腿仍绿。那一环由**腿1/腿2 的
+  // `hashParam(src,'theme')`（父侧断言）与端到端亮色格**覆盖（前任 0fd2c5a 已覆盖，非本腿新增）。
   expect(snap.url, `子文档 url 应逐字等于父侧 iframe src（因果链闭合），父侧=${src} 子侧=${snap.url}`).toBe(src)
   expect(snap.attr, '暗色用户加载屏应落地 data-theme=dark').toBe('dark')
   expect(snap.bg, `body 应为暗色 paper，实得 ${snap.bg}`).toBe(DARK_BG)
@@ -262,9 +267,12 @@ test('端到端（亮色格）：stored=light 压过系统暗色 → iframe 内�
 
 // 🔴 F-1 的**行为级解药**（adjudication §三-3）：D-B 那个 critical 性质（targets computed 不得依赖
 // 主题 ref）的唯一行为级防线。源码腿5 改回全文后仍有残留局限（抓不住模块级作用域读 ref 再传值），
-// 本腿在运行时钉死性质本身：游戏页切主题 → iframe 的 src 属性**逐字不变** → 运行中的游戏不重载。
+// 本腿在运行时钉死性质本身：游戏页切主题 → iframe 的 src 属性**逐字不变** = 不触发重载。
+// ⚠️ 措辞收窄（终审 §8.1(c)）：inert sw.js 是「纯注释的合法 JS」→ 注册成功、install 完成、
+// 但无 fetch handler → 永不发 runtime:ready → 加载屏不离开，**游戏严格说并未启动**。
+// 钉的性质仍然成立且与游戏是否在跑无关：`src` 变 → Vue 的 `:src` 绑定变 → iframe **必然**重载（浏览器语义）。
 // 手法同上（context.route 冻住 SW，加载屏停在 /__bootstrap，src 稳定可读）。
-test('行为腿（D-B）：游戏页切主题 → iframe src 不变（运行中的游戏不被重载）', async ({
+test('行为腿（D-B）：游戏页切主题 → iframe src 不变（= 不触发重载）', async ({
   browser
 }) => {
   const ctx = await browser.newContext({ colorScheme: 'light' })
@@ -280,7 +288,9 @@ test('行为腿（D-B）：游戏页切主题 → iframe src 不变（运行中�
   // computed 会重算 → iframe src 变 → 游戏重载。正确实现（effectiveTheme() 快照）下 src 不变。
   await page.getByTestId('theme-toggle').click()
   await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark') // 确认切换真的发生了
-  await page.waitForTimeout(1_000) // 给响应式重算留窗口（若存在）
+  // ⚠️ 窗口是**启发式**：延迟传导形态的检出下界 = 窗口长度。终审 N9/N10 实测 3s 延迟传导下
+  // 1s 窗口漏（源码腿也漏 → 双防线同时失守），6s 即红。不声称覆盖所有延迟形态（纪律 #4）。
+  await page.waitForTimeout(6_000) // 给响应式重算留窗口（若存在）
 
   const after = await iframeSrc(page)
   expect(

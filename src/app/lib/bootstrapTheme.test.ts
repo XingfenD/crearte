@@ -89,9 +89,10 @@ function maskSourceComments(src: string): string {
   let i = 0
   while (i < src.length) {
     const two = src.slice(i, i + 2)
+    const four = src.slice(i, i + 4)   // 🔴 HTML 注释标记是 4 字符：用 two 比较恒 false（终审 F-FINAL-1）
     let stop = -1
     let end = -1
-    if (two === '<!--') {
+    if (four === '<!--') {
       const s = src.indexOf('-->', i + 4)
       if (s > -1) { stop = s; end = s + 3 }
     } else if (two === '/*') {
@@ -99,7 +100,9 @@ function maskSourceComments(src: string): string {
       if (s > -1) { stop = s; end = s + 2 }
     } else if (two === '//' && src[i - 1] !== ':') {
       const s = src.indexOf('\n', i)
-      if (s > -1) { stop = s; end = s }
+      // 行注释不在行尾（文件无换行结尾）时也要屏蔽到文件尾，否则该分支静默失效（终审 §1.3）
+      stop = s > -1 ? s : src.length
+      end = stop
     }
     if (stop > -1) {
       out += src.slice(i, end).replace(/[^\n]/g, ' ')
@@ -199,7 +202,7 @@ describe('bootstrap 加载屏主题守卫（P15-B §5-T1 / D-A…D-G）', () => 
   // 成变量 + prefers 优先）与 H3（拆中间变量的嵌套三元）两种语义等价的缺陷形态都绕过本腿
   // （RED=[]），且 H1 **同时逃过全部 5 条既有 e2e 腿**（覆盖矩阵缺 [系统暗色]×[hash=light] 这一格）。
   // 故本腿的字面脆弱性可接受，但**语义正确性由 e2e/bootstrapTheme.spec.ts 的反方向格
-  // （[系统暗色]×[hash=light] → 期望 light）在运行时钉死**——那一格是 H1/H3 的唯一鉴别格，
+  // （[系统暗色]×[hash=light] → 期望 light）在运行时钉死**——那一格是 H1/H3 在**子侧直访**路径上的鉴别格（端到端亮色格是第二个鉴别格，走 stored→父侧 hash→子侧全链路；终审 E2 实测判定序真缺陷会红 2 条腿，故不写「唯一」），
   // 分工与主应用一致（源码腿钉文本、e2e 腿钉行为）。
   it('腿2 判定序 = hash theme → prefers-color-scheme → light（锚判定分支，先钉三者存在）', () => {
     const script = bootstrapInlineScript()
@@ -278,6 +281,22 @@ describe('bootstrap 加载屏主题守卫（P15-B §5-T1 / D-A…D-G）', () => 
     // 只读这个已求值的常量）——该形态快照在模块加载时求值一次、computed 无主题依赖 → **不会**造成
     // 重载，属无害。真正的解药是 e2e/bootstrapTheme.spec.ts 的**行为腿**（游戏页切主题 → iframe src
     // 不变），它在运行时钉死「targets 不依赖主题」这个性质本身，不依赖任何字面形态。
+    // 🔴 F-FINAL-2（终审 N 系列实测，RE-PIN 2026-10-04）：本腿是**字面量钉桩**（钉「文本长相」），
+    // 不是语义守卫；「targets 不依赖主题」这个**性质**由 e2e 行为腿在运行时钉死。与腿3（F-7）同构。
+    //
+    // (i) 上面那段「残留局限」只枚举了一种**无害**形态。实测另有 **5 类有害形态同样漏**，
+    //     全部 `vue-tsc exit=0`（类型合法 → 可静默进主干），全部由**行为腿兜住**：
+    //     · 方括号取值 `__uT().theme['value']`（两个被禁字面量都不出现）
+    //     · Vue 官方 API 旁路 `unref(__uT().theme)`
+    //     · **跨文件**：`adapters.ts` 内无条件求值（本腿只扫 GameHost.vue）
+    //     · `provide`/`inject` 把响应式 ref 传进来，computed 内旁路读（调用点字面量逐字不变）
+    //     · 事后改写：调用点字面量保留（正向断言也满足），再 `url.replace(/theme=[a-z]+/, …)`
+    //     终审用 effectScope + computed 求值计数确证这 5 类 `evals` 1→2、url 翻转 = 缺陷真实。
+    // (ii) **过紧面**（同样实测，不得声称「零假红」）：setup 顶层为**别的目的**读
+    //     `useTheme().theme.value`（注入仍 effectiveTheme()）、或一次性快照后传值（evals=1 无害）
+    //     → 本腿都会**假红**。取舍可接受（有行为腿兜底），但排障时先想到这一层。
+    // (iii) 职责收窄声明（与腿3 同款）：本腿钉的是「注入点字面形态 + 全文不出现两个被禁字面量」，
+    //     不是「targets 不依赖主题」。改语义等价写法而撞红时，看 e2e 行为腿是否也红再定性。
     expect(
       gameHostMasked,
       '不得注入响应式 theme.value（D-B 架构陷阱；后果是切主题重载运行中的游戏）'
