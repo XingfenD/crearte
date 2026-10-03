@@ -44,7 +44,7 @@ type ThemeName = 'light' | 'dark'
 /**
  * 按块解析（D-H）：亮色 = `@theme` 块，暗色 = `html[data-theme="dark"]` 块（D-C 钉的选择器）。
  * 亮色 `@theme` 缺失 = 真解析失败 → throw（沿用既有范式，不静默）；
- * 暗色块缺失（T1 RED 相位）→ 空 Map，由「12 令牌齐备」断言明确报「暗色 12 令牌缺失」。
+ * 暗色块缺失（T1 RED 相位）→ 空 Map，由「11 令牌齐备」断言明确报「暗色 11 令牌缺失」。
  */
 function parsePalettes(): Record<ThemeName, Map<string, string>> {
   const css = readMainCss()
@@ -71,7 +71,9 @@ export function contrast(a: string, b: string): number {
 
 const PALETTES = parsePalettes()
 
-// P13 全量 12 令牌（spec §3.1(b)）；旧九键是其子集（见文件末尾 LEGACY_KEYS）。
+// P13 全量 11 令牌（spec §3.1(b)；P15-B 改动③后为 11）；旧九键是其子集（见文件末尾 LEGACY_KEYS）。
+// P15-B：`info` 已删（死令牌，全仓 text-info/bg-info/border-info/ring-info 零命中，
+// success/highlight 已覆盖 toast 与 alert 语义需求）→ 12 → 11 令牌。
 const REQUIRED_KEYS = [
   'paper',
   'surface',
@@ -81,7 +83,6 @@ const REQUIRED_KEYS = [
   'accent',
   'accent-ink',
   'highlight',
-  'info',
   'success',
   'skeleton', // P13 新增（D-G）：StatePanel 骨架屏令牌化
   'scrim' // P13 新增（D-E）：遮罩专用，两主题同值 #0d0b08，不参与翻转
@@ -105,6 +106,9 @@ const AA_PAIRS: Array<[fg: string, bg: string, note: string]> = [
   ['ink-faint', 'paper', '::placeholder+弱文 亮4.83/暗6.99'],
   ['ink-soft', 'surface', '卡片次要文 亮7.10/暗9.55'],
   ['ink-faint', 'surface', '卡片弱文 亮5.40/暗6.31'],
+  // P15-B 改动②补钉：这是所有未钉配对里使用面最大的一条（62 处 vs 已钉最多的 14 处），
+  // 且其中 58 处不写 text- 类、靠 body 继承拿到 ink。补钉前若调 surface/ink，58 处会静默回归。
+  ['ink', 'surface', '卡片/表格/表单底（bg-surface 62 处，58 靠 body 继承 text-ink）亮18.42/暗14.85'],
   ['ink', 'highlight', 'alert×8/strong/选中态/::selection 亮11.30/暗4.81'],
   ['paper', 'accent-ink', 'badge/按钮/error toast 亮4.87/暗10.78'],
   ['paper', 'success', 'success toast 亮4.76/暗5.81'],
@@ -116,9 +120,9 @@ for (const theme of ['light', 'dark'] as ThemeName[]) {
   const zh = theme === 'dark' ? '暗色' : '亮色'
 
   describe(`WCAG 对比度守卫 · ${zh}调色板（P9-B §3.1 / P13 D-B）`, () => {
-    it(`${zh} 12 令牌齐备（spec §3.1(b)）`, () => {
+    it(`${zh} 11 令牌齐备（spec §3.1(b)）`, () => {
       const missing = REQUIRED_KEYS.filter((k) => !PALETTES[theme].has(k))
-      expect(missing, `${zh} 12 令牌缺失: ${missing.join(', ')}`).toEqual([])
+      expect(missing, `${zh} 11 令牌缺失: ${missing.join(', ')}`).toEqual([])
     })
 
     for (const [fg, bg, note] of AA_PAIRS) {
