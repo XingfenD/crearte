@@ -72,8 +72,10 @@ export function contrast(a: string, b: string): number {
 const PALETTES = parsePalettes()
 
 // P13 全量 11 令牌（spec §3.1(b)；P15-B 改动③后为 11）；旧九键是其子集（见文件末尾 LEGACY_KEYS）。
-// P15-B：`info` 已删（死令牌，全仓 text-info/bg-info/border-info/ring-info 零命中，
-// success/highlight 已覆盖 toast 与 alert 语义需求）→ 12 → 11 令牌。
+// P15-B：`info` 已删——它是死令牌（全仓没有任何以 info 为后缀的色彩 utility 使用，
+// 只有这两行定义本身），success/highlight 已覆盖 toast 与 alert 的语义需求 → 12 → 11 令牌。
+// ⚠️ 此处不写出那些 utility 的完整字面量（spec §8-8 / AGENTS.md 不变量）：Tailwind v4
+// 扫描全部源文件含 .test.ts，注释里的类名字面量会被当候选、烧死 utility 进产物。
 const REQUIRED_KEYS = [
   'paper',
   'surface',
