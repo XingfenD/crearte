@@ -26,9 +26,18 @@ function fail(message: string, detail?: string, dropRegistration = false): void 
 // 父级 origin：环境变量缺失/配错时回退 referrer，避免信号链路静默死亡（见 host-origin.ts）
 const hostOrigin = resolveHostOrigin(import.meta.env.VITE_HOST_ORIGIN, document.referrer)
 const BOOTSTRAP_TIMEOUT_MS = 45_000
-let settleTimer: ReturnType<typeof setTimeout> | null = setTimeout(() => {
-  fail('准备超时')
-}, BOOTSTRAP_TIMEOUT_MS)
+// 45s 兜底：宿主整段时间收不到任何进度事件才算超时，故每条 runtime:progress 都续期
+// （弱网下载大包超 45s 不是故障，不进降级面板）；ready/degrade/priorVersion 收尾照旧清除
+let settleTimer: ReturnType<typeof setTimeout> | null = null
+
+function renewSettleTimer(): void {
+  if (settleTimer) clearTimeout(settleTimer)
+  settleTimer = setTimeout(() => {
+    fail('准备超时')
+  }, BOOTSTRAP_TIMEOUT_MS)
+}
+
+renewSettleTimer()
 
 function signalDegrade(message: string): void {
   if (settleTimer) { clearTimeout(settleTimer); settleTimer = null }
@@ -39,6 +48,7 @@ retry.addEventListener('click', () => location.reload())
 
 function handle(message: ShellMessage): void {
   if (message.type === 'runtime:progress') {
+    renewSettleTimer()
     progress.value = message.total > 0 ? Math.min(100, Math.round((message.received / message.total) * 100)) : 0
     status.textContent = `下载资产 ${formatBytes(message.received)}`
   } else if (message.type === 'runtime:ready') {

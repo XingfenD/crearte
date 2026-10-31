@@ -6,6 +6,23 @@ All notable changes to crearte are documented in this file.
 The format follows Keep a Changelog (https://keepachangelog.com/) and is used as this repository's release-note format.
 书写格式遵循 Keep a Changelog（https://keepachangelog.com/），作为本仓发布记录的格式约定。
 
+## [0.27.1] - 2026-11-01
+
+### Fixed / 修复
+
+- The bootstrap install page's 45s settle timer now **renews on every `runtime:progress` event** (`src/bootstrap/main.ts`): the previously direct `setTimeout` arm moved into a single `renewSettleTimer()` (same `fail('准备超时')` fallback, unchanged timeout text), called once as the module-top initial arm and as the first statement of the progress branch. Without renewal, a large bundle downloading on a slow connection (< ~2.3 MB/s for the tail) crossed 45s while still downloading, the host was falsely shown the degrade panel, and when the Service Worker finally finished installing, `runtime:ready` snatched the page back — a fail↔ready flash-recover loop on exactly the users most likely to be on weak networks. Closing semantics untouched: ready, degrade (via `signalDegrade`), and `runtime:error(priorVersion)` still clear the timer verbatim.
+- bootstrap 安装页的 45s settle 兜底计时器现在**在每条 `runtime:progress` 事件上续期**（`src/bootstrap/main.ts`）：原先直接 `setTimeout` 的初始臂收敛进单点 `renewSettleTimer()`（超时文案/`fail('准备超时')` 调用逐字不变），模块顶层初始臂与 progress 分支第一条语句各调一次。不续期时，弱网下载大包（尾速 < ~2.3 MB/s）会在仍在下载时跨过 45s，宿主被假报进降级面板，而 SW 最终装完后 `runtime:ready` 又把页面抢回来——在最能撞上弱网的那批用户身上形成 fail↔ready 反复横跳。收尾语义未动：ready、degrade（经 `signalDegrade`）与 `runtime:error(priorVersion)` 三处清除逐字保留。
+
+### Tests / 测试
+
+- New source-level guard `src/app/lib/bootstrapTimerRenewal.test.ts` (node environment, P13 disk-reading paradigm with comment masking à la P15-B `maskSourceComments`): pins that the `runtime:progress` branch region calls `renewSettleTimer()` (region-located, not a full-text indexOf), that exactly one zero-indented initial arm exists, that `BOOTSTRAP_TIMEOUT_MS`/`setTimeout(` appear only inside `renewSettleTimer` (no second drifting timer), and that the three verbatim clear sites (ready / degrade / priorVersion) are preserved. Mutation-verified in both directions: absent fix = red, and commenting out the progress-branch call re-reds exactly the renewal leg.
+- 新增源码级守卫 `src/app/lib/bootstrapTimerRenewal.test.ts`（node 环境，P13 读盘守卫范式 + P15-B `maskSourceComments` 同款注释遮蔽）：钉住 `runtime:progress` 分支区段内调用 `renewSettleTimer()`（先定位分支再做区段内匹配，非全文 indexOf）、零缩进初始臂恰好一条、`BOOTSTRAP_TIMEOUT_MS`/`setTimeout(` 只出现在 `renewSettleTimer` 体内（防第二只漂移计时器）、三处逐字清除位点（ready / degrade / priorVersion）不被削弱。两向变异验牙：修复缺位 = 红；注释掉 progress 分支调用后守卫精确红在续期腿上。
+
+### Context / 背景
+
+- P16 audit-fix batch (F1), spec `docs/specs/2026-11-01-p16-audit-fixes-design.md` in the wrapper repo. Gates at the delivered commit: vitest 693 passed / 80 files, vue-tsc clean, `build` + `build:runtime` clean, noauth e2e 4 passed; main e2e 101 passed + 1 skipped with `ux.spec.ts:22`（页头菜单 Esc 关闭）flaking — reproduced failing (3×/4) on the unmodified master baseline in the same session, so it is a pre-existing race (Escape keydown vs. `@toggle`-driven `menuOpen` in AppHeader), not introduced by this diff; recorded for the controller, not chased in scope.
+- P16 审计修复批（F1），spec 见 wrapper 仓 `docs/specs/2026-11-01-p16-audit-fixes-design.md`。交付 commit 处的门：vitest 693 通过 / 80 文件、vue-tsc 零错、`build` + `build:runtime` 零错、noauth e2e 4 通过；主 e2e 101 通过 + 1 跳过，其中 `ux.spec.ts:22`（页头菜单 Esc 关闭）抖动——同一会话内在未改动的 master 基线上复现失败（3/4 次），属既有竞态（AppHeader 的 Escape keydown 与 `@toggle` 驱动的 `menuOpen` 赛跑），非本 diff 引入；已记录给控制者、不在本批范围追改。
+
 ## [0.27.0] - 2026-10-04
 
 ### Added / 新增
